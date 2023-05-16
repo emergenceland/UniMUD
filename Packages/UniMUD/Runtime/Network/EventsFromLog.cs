@@ -87,8 +87,6 @@ namespace mud.Network
 				return ecsEvent;
 			}
 			
-			Debug.Log("DIDN'T GET ANYTHING " + eventSig);
-
 			return null;
 		}
 	}

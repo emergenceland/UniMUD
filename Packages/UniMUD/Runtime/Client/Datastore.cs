@@ -3,7 +3,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reactive.Subjects;
-using Newtonsoft.Json;
 using UnityEngine;
 
 namespace mud.Client
@@ -51,6 +50,12 @@ namespace mud.Client
         public string TableName { get; set; }
         public string Key { get; set; }
         public Tuple<Property?, Property?> Value { get; set; }
+    }
+    
+    
+    public class TypedRecordUpdate<T> : RecordUpdate
+    {
+        public T TypedValue { get; set; }
     }
 
     public class Datastore
