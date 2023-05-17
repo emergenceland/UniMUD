@@ -2,6 +2,7 @@ using System;
 using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Linq;
+using System.Numerics;
 using System.Text;
 using Nethereum.Util;
 using UnityEngine;
@@ -31,7 +32,7 @@ namespace mud.Network.schemas
             var actualStaticDataLength = bytesOffset;
             if (actualStaticDataLength != schema.StaticDataLength)
             {
-                throw new Exception(
+                Debug.LogWarning(
                     $"Static data length mismatch. Expected {schema.StaticDataLength}, got {actualStaticDataLength}");
             }
 
@@ -40,19 +41,29 @@ namespace mud.Network.schemas
                 byte[] dynamicDataLayout = new byte[32];
                 Array.Copy(bytes, schema.StaticDataLength, dynamicDataLayout, 0, 32);
                 bytesOffset += 32;
-                var dynamicDataLength = BinaryPrimitives.ReadUInt32BigEndian(dynamicDataLayout.AsSpan());
+                const SchemaType packedCounterAccumulatorType = SchemaType.UINT56;
+                const SchemaType packedCounterCounterType = SchemaType.UINT40;
+
+                // we know this will always return a bigint
+                var dynamicDataLength = 
+                    (BigInteger)StaticFieldUtils.DecodeStaticField(packedCounterAccumulatorType, dynamicDataLayout, 0);
 
                 for (var i = 0; i < schema.DynamicFields.Count; i++)
                 {
                     var fieldType = schema.DynamicFields[i];
-                    var dataLength = BinaryPrimitives.ReadUInt16BigEndian(dynamicDataLayout.AsSpan(4 + i * 2));
-                    var value = DecodeDynamicField(fieldType, bytes.Slice(bytesOffset, bytesOffset + dataLength));
-                    bytesOffset += dataLength;
+                    
+                    // we know this will return a uint64
+                    var dataLength = (UInt64)StaticFieldUtils.DecodeStaticField(packedCounterCounterType,
+                        dynamicDataLayout,
+                        Schema.GetStaticByteLength(packedCounterAccumulatorType) +
+                        i * Schema.GetStaticByteLength(packedCounterCounterType));
+                    var value = DecodeDynamicField(fieldType, bytes.Slice(bytesOffset, bytesOffset + (int)dataLength));
+                    bytesOffset += (int)dataLength;
                     data[schema.StaticFields.Count + i] = value;
                 }
 
                 var actualDynamicDataLength = bytesOffset - 32 - schema.StaticDataLength;
-                if (actualDynamicDataLength != dynamicDataLength)
+                if ((BigInteger)actualDynamicDataLength != dynamicDataLength)
                 {
                     Debug.LogWarning(
                         "Decoded dynamic data length does not match data layout's expected data length. Data may get corrupted. Did the data layout change?");

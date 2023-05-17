@@ -9,13 +9,26 @@ namespace mud.Network.schemas
 {
     public static class StaticFieldUtils
     {
+        
+        private static string BytesToHex(byte[] value)
+        {
+            var hexString = value.Aggregate("", (current, b) => current + b.ToString("X2"));
+            return $"0x{hexString}";
+        }
+        
         public static object DecodeStaticField(SchemaType fieldType, byte[] bytes, int bytesOffset)
 
         {
             var staticLength = Schema.GetStaticByteLength(fieldType);
             byte[] slice = bytes.Skip(bytesOffset).Take(staticLength).ToArray();
-            string hex = BitConverter.ToString(slice).Replace("-", "");
-            string numberHex = string.IsNullOrEmpty(hex) ? "0x0" : $"0x{hex}";
+            var hex = BytesToHex(slice);
+            var numberHex = hex == "0x" ? "0x0" : hex;
+            if (numberHex != "0x0" && numberHex.Length < bytes.Length)
+            {
+                var noZero = numberHex.Substring(2);
+                var padded = noZero.PadLeft(32, '0');
+                numberHex = "0x" + padded;
+            }
             switch (fieldType)
             {
                 case SchemaType.BOOL:
@@ -53,7 +66,7 @@ namespace mud.Network.schemas
                 case SchemaType.UINT240:
                 case SchemaType.UINT248:
                 case SchemaType.UINT256:
-                    return BigInteger.Parse(numberHex, NumberStyles.HexNumber);
+                    return BigInteger.Parse(numberHex.Replace("0x",""), NumberStyles.HexNumber);
                 case SchemaType.INT8:
                 case SchemaType.INT16:
                 case SchemaType.INT24:

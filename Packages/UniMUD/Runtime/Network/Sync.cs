@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reactive.Disposables;
 using System.Reactive.Subjects;
 using System.Threading.Tasks;
@@ -28,10 +29,12 @@ namespace mud.Network
             var merged = new List<Types.NetworkTableUpdate>();
             merged.AddRange(initialLiveEvents);
             merged.AddRange(gapStateEvents);
+            
+            var filteredMerged = merged.Where(e => e is { Ephemeral: null or false });
 
             latestEventSub.Dispose();
 
-            foreach (var update in merged)
+            foreach (var update in filteredMerged)
             {
                 _outputStream.OnNext(update);
             }

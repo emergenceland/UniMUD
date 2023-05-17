@@ -1,10 +1,16 @@
+using System;
+using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.Numerics;
-using System.Threading;
-using System.Threading.Tasks;
-using mud.Network.IStore.ContractDefinition;
-using Nethereum.Contracts.ContractHandlers;
+using Nethereum.Hex.HexTypes;
+using Nethereum.ABI.FunctionEncoding.Attributes;
+using Nethereum.Web3;
 using Nethereum.RPC.Eth.DTOs;
+using Nethereum.Contracts.CQS;
+using Nethereum.Contracts.ContractHandlers;
+using Nethereum.Contracts;
+using System.Threading;
+using mud.Network.IStore.ContractDefinition;
 
 namespace mud.Network.IStore
 {
@@ -70,6 +76,36 @@ namespace mud.Network.IStore
              return ContractHandler.SendRequestAndWaitForReceiptAsync(deleteRecordFunction, cancellationToken);
         }
 
+        public Task<string> EmitEphemeralRecordRequestAsync(EmitEphemeralRecordFunction emitEphemeralRecordFunction)
+        {
+             return ContractHandler.SendRequestAsync(emitEphemeralRecordFunction);
+        }
+
+        public Task<TransactionReceipt> EmitEphemeralRecordRequestAndWaitForReceiptAsync(EmitEphemeralRecordFunction emitEphemeralRecordFunction, CancellationTokenSource cancellationToken = null)
+        {
+             return ContractHandler.SendRequestAndWaitForReceiptAsync(emitEphemeralRecordFunction, cancellationToken);
+        }
+
+        public Task<string> EmitEphemeralRecordRequestAsync(byte[] table, List<byte[]> key, byte[] data)
+        {
+            var emitEphemeralRecordFunction = new EmitEphemeralRecordFunction();
+                emitEphemeralRecordFunction.Table = table;
+                emitEphemeralRecordFunction.Key = key;
+                emitEphemeralRecordFunction.Data = data;
+            
+             return ContractHandler.SendRequestAsync(emitEphemeralRecordFunction);
+        }
+
+        public Task<TransactionReceipt> EmitEphemeralRecordRequestAndWaitForReceiptAsync(byte[] table, List<byte[]> key, byte[] data, CancellationTokenSource cancellationToken = null)
+        {
+            var emitEphemeralRecordFunction = new EmitEphemeralRecordFunction();
+                emitEphemeralRecordFunction.Table = table;
+                emitEphemeralRecordFunction.Key = key;
+                emitEphemeralRecordFunction.Data = data;
+            
+             return ContractHandler.SendRequestAndWaitForReceiptAsync(emitEphemeralRecordFunction, cancellationToken);
+        }
+
         public Task<byte[]> GetFieldQueryAsync(GetFieldFunction getFieldFunction, BlockParameter blockParameter = null)
         {
             return ContractHandler.QueryAsync<GetFieldFunction, byte[]>(getFieldFunction, blockParameter);
@@ -84,6 +120,42 @@ namespace mud.Network.IStore
                 getFieldFunction.SchemaIndex = schemaIndex;
             
             return ContractHandler.QueryAsync<GetFieldFunction, byte[]>(getFieldFunction, blockParameter);
+        }
+
+        public Task<BigInteger> GetFieldLengthQueryAsync(GetFieldLengthFunction getFieldLengthFunction, BlockParameter blockParameter = null)
+        {
+            return ContractHandler.QueryAsync<GetFieldLengthFunction, BigInteger>(getFieldLengthFunction, blockParameter);
+        }
+
+        
+        public Task<BigInteger> GetFieldLengthQueryAsync(byte[] table, List<byte[]> key, byte schemaIndex, byte[] schema, BlockParameter blockParameter = null)
+        {
+            var getFieldLengthFunction = new GetFieldLengthFunction();
+                getFieldLengthFunction.Table = table;
+                getFieldLengthFunction.Key = key;
+                getFieldLengthFunction.SchemaIndex = schemaIndex;
+                getFieldLengthFunction.Schema = schema;
+            
+            return ContractHandler.QueryAsync<GetFieldLengthFunction, BigInteger>(getFieldLengthFunction, blockParameter);
+        }
+
+        public Task<byte[]> GetFieldSliceQueryAsync(GetFieldSliceFunction getFieldSliceFunction, BlockParameter blockParameter = null)
+        {
+            return ContractHandler.QueryAsync<GetFieldSliceFunction, byte[]>(getFieldSliceFunction, blockParameter);
+        }
+
+        
+        public Task<byte[]> GetFieldSliceQueryAsync(byte[] table, List<byte[]> key, byte schemaIndex, byte[] schema, BigInteger start, BigInteger end, BlockParameter blockParameter = null)
+        {
+            var getFieldSliceFunction = new GetFieldSliceFunction();
+                getFieldSliceFunction.Table = table;
+                getFieldSliceFunction.Key = key;
+                getFieldSliceFunction.SchemaIndex = schemaIndex;
+                getFieldSliceFunction.Schema = schema;
+                getFieldSliceFunction.Start = start;
+                getFieldSliceFunction.End = end;
+            
+            return ContractHandler.QueryAsync<GetFieldSliceFunction, byte[]>(getFieldSliceFunction, blockParameter);
         }
 
         public Task<byte[]> GetKeySchemaQueryAsync(GetKeySchemaFunction getKeySchemaFunction, BlockParameter blockParameter = null)
@@ -146,6 +218,38 @@ namespace mud.Network.IStore
         }
 
 
+
+        public Task<string> PopFromFieldRequestAsync(PopFromFieldFunction popFromFieldFunction)
+        {
+             return ContractHandler.SendRequestAsync(popFromFieldFunction);
+        }
+
+        public Task<TransactionReceipt> PopFromFieldRequestAndWaitForReceiptAsync(PopFromFieldFunction popFromFieldFunction, CancellationTokenSource cancellationToken = null)
+        {
+             return ContractHandler.SendRequestAndWaitForReceiptAsync(popFromFieldFunction, cancellationToken);
+        }
+
+        public Task<string> PopFromFieldRequestAsync(byte[] table, List<byte[]> key, byte schemaIndex, BigInteger byteLengthToPop)
+        {
+            var popFromFieldFunction = new PopFromFieldFunction();
+                popFromFieldFunction.Table = table;
+                popFromFieldFunction.Key = key;
+                popFromFieldFunction.SchemaIndex = schemaIndex;
+                popFromFieldFunction.ByteLengthToPop = byteLengthToPop;
+            
+             return ContractHandler.SendRequestAsync(popFromFieldFunction);
+        }
+
+        public Task<TransactionReceipt> PopFromFieldRequestAndWaitForReceiptAsync(byte[] table, List<byte[]> key, byte schemaIndex, BigInteger byteLengthToPop, CancellationTokenSource cancellationToken = null)
+        {
+            var popFromFieldFunction = new PopFromFieldFunction();
+                popFromFieldFunction.Table = table;
+                popFromFieldFunction.Key = key;
+                popFromFieldFunction.SchemaIndex = schemaIndex;
+                popFromFieldFunction.ByteLengthToPop = byteLengthToPop;
+            
+             return ContractHandler.SendRequestAndWaitForReceiptAsync(popFromFieldFunction, cancellationToken);
+        }
 
         public Task<string> PushToFieldRequestAsync(PushToFieldFunction pushToFieldFunction)
         {

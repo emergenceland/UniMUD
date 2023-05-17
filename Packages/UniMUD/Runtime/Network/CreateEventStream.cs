@@ -26,6 +26,7 @@ namespace mud.Network
                 store.ContractHandler.GetEvent<StoreSetFieldEventDTO>(),
                 store.ContractHandler.GetEvent<StoreSetRecordEventDTO>(),
                 store.ContractHandler.GetEvent<StoreDeleteRecordEventDTO>(),
+                store.ContractHandler.GetEvent<StoreEphemeralRecordEventDTO>()
             };
 
             return storeEvents.Select((e) => e.CreateFilterInput()).ToList();

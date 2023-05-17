@@ -1,7 +1,13 @@
+using System;
+using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.Numerics;
+using Nethereum.Hex.HexTypes;
 using Nethereum.ABI.FunctionEncoding.Attributes;
+using Nethereum.RPC.Eth.DTOs;
+using Nethereum.Contracts.CQS;
 using Nethereum.Contracts;
+using System.Threading;
 
 namespace mud.Network.IStore.ContractDefinition
 {
@@ -32,6 +38,19 @@ namespace mud.Network.IStore.ContractDefinition
         public virtual List<byte[]> Key { get; set; }
     }
 
+    public partial class EmitEphemeralRecordFunction : EmitEphemeralRecordFunctionBase { }
+
+    [Function("emitEphemeralRecord")]
+    public class EmitEphemeralRecordFunctionBase : FunctionMessage
+    {
+        [Parameter("bytes32", "table", 1)]
+        public virtual byte[] Table { get; set; }
+        [Parameter("bytes32[]", "key", 2)]
+        public virtual List<byte[]> Key { get; set; }
+        [Parameter("bytes", "data", 3)]
+        public virtual byte[] Data { get; set; }
+    }
+
     public partial class GetFieldFunction : GetFieldFunctionBase { }
 
     [Function("getField", "bytes")]
@@ -43,6 +62,40 @@ namespace mud.Network.IStore.ContractDefinition
         public virtual List<byte[]> Key { get; set; }
         [Parameter("uint8", "schemaIndex", 3)]
         public virtual byte SchemaIndex { get; set; }
+    }
+
+    public partial class GetFieldLengthFunction : GetFieldLengthFunctionBase { }
+
+    [Function("getFieldLength", "uint256")]
+    public class GetFieldLengthFunctionBase : FunctionMessage
+    {
+        [Parameter("bytes32", "table", 1)]
+        public virtual byte[] Table { get; set; }
+        [Parameter("bytes32[]", "key", 2)]
+        public virtual List<byte[]> Key { get; set; }
+        [Parameter("uint8", "schemaIndex", 3)]
+        public virtual byte SchemaIndex { get; set; }
+        [Parameter("bytes32", "schema", 4)]
+        public virtual byte[] Schema { get; set; }
+    }
+
+    public partial class GetFieldSliceFunction : GetFieldSliceFunctionBase { }
+
+    [Function("getFieldSlice", "bytes")]
+    public class GetFieldSliceFunctionBase : FunctionMessage
+    {
+        [Parameter("bytes32", "table", 1)]
+        public virtual byte[] Table { get; set; }
+        [Parameter("bytes32[]", "key", 2)]
+        public virtual List<byte[]> Key { get; set; }
+        [Parameter("uint8", "schemaIndex", 3)]
+        public virtual byte SchemaIndex { get; set; }
+        [Parameter("bytes32", "schema", 4)]
+        public virtual byte[] Schema { get; set; }
+        [Parameter("uint256", "start", 5)]
+        public virtual BigInteger Start { get; set; }
+        [Parameter("uint256", "end", 6)]
+        public virtual BigInteger End { get; set; }
     }
 
     public partial class GetKeySchemaFunction : GetKeySchemaFunctionBase { }
@@ -93,6 +146,21 @@ namespace mud.Network.IStore.ContractDefinition
     public class IsStoreFunctionBase : FunctionMessage
     {
 
+    }
+
+    public partial class PopFromFieldFunction : PopFromFieldFunctionBase { }
+
+    [Function("popFromField")]
+    public class PopFromFieldFunctionBase : FunctionMessage
+    {
+        [Parameter("bytes32", "table", 1)]
+        public virtual byte[] Table { get; set; }
+        [Parameter("bytes32[]", "key", 2)]
+        public virtual List<byte[]> Key { get; set; }
+        [Parameter("uint8", "schemaIndex", 3)]
+        public virtual byte SchemaIndex { get; set; }
+        [Parameter("uint256", "byteLengthToPop", 4)]
+        public virtual BigInteger ByteLengthToPop { get; set; }
     }
 
     public partial class PushToFieldFunction : PushToFieldFunctionBase { }
@@ -203,6 +271,19 @@ namespace mud.Network.IStore.ContractDefinition
         public virtual List<byte[]> Key { get; set; }
     }
 
+    public partial class StoreEphemeralRecordEventDTO : StoreEphemeralRecordEventDTOBase { }
+
+    [Event("StoreEphemeralRecord")]
+    public class StoreEphemeralRecordEventDTOBase : IEventDTO
+    {
+        [Parameter("bytes32", "table", 1, false )]
+        public virtual byte[] Table { get; set; }
+        [Parameter("bytes32[]", "key", 2, false )]
+        public virtual List<byte[]> Key { get; set; }
+        [Parameter("bytes", "data", 3, false )]
+        public virtual byte[] Data { get; set; }
+    }
+
     public partial class StoreSetFieldEventDTO : StoreSetFieldEventDTOBase { }
 
     [Event("StoreSetField")]
@@ -231,12 +312,99 @@ namespace mud.Network.IStore.ContractDefinition
         public virtual byte[] Data { get; set; }
     }
 
+    public partial class StorecoreDataindexoverflowError : StorecoreDataindexoverflowErrorBase { }
+
+    [Error("StoreCore_DataIndexOverflow")]
+    public class StorecoreDataindexoverflowErrorBase : IErrorDTO
+    {
+        [Parameter("uint256", "length", 1)]
+        public virtual BigInteger Length { get; set; }
+        [Parameter("uint256", "received", 2)]
+        public virtual BigInteger Received { get; set; }
+    }
+
+    public partial class StorecoreInvaliddatalengthError : StorecoreInvaliddatalengthErrorBase { }
+
+    [Error("StoreCore_InvalidDataLength")]
+    public class StorecoreInvaliddatalengthErrorBase : IErrorDTO
+    {
+        [Parameter("uint256", "expected", 1)]
+        public virtual BigInteger Expected { get; set; }
+        [Parameter("uint256", "received", 2)]
+        public virtual BigInteger Received { get; set; }
+    }
+
+    public partial class StorecoreInvalidfieldnameslengthError : StorecoreInvalidfieldnameslengthErrorBase { }
+
+    [Error("StoreCore_InvalidFieldNamesLength")]
+    public class StorecoreInvalidfieldnameslengthErrorBase : IErrorDTO
+    {
+        [Parameter("uint256", "expected", 1)]
+        public virtual BigInteger Expected { get; set; }
+        [Parameter("uint256", "received", 2)]
+        public virtual BigInteger Received { get; set; }
+    }
+
+    public partial class StorecoreNotdynamicfieldError : StorecoreNotdynamicfieldErrorBase { }
+    [Error("StoreCore_NotDynamicField")]
+    public class StorecoreNotdynamicfieldErrorBase : IErrorDTO
+    {
+    }
+
+    public partial class StorecoreNotimplementedError : StorecoreNotimplementedErrorBase { }
+    [Error("StoreCore_NotImplemented")]
+    public class StorecoreNotimplementedErrorBase : IErrorDTO
+    {
+    }
+
+    public partial class StorecoreTablealreadyexistsError : StorecoreTablealreadyexistsErrorBase { }
+
+    [Error("StoreCore_TableAlreadyExists")]
+    public class StorecoreTablealreadyexistsErrorBase : IErrorDTO
+    {
+        [Parameter("bytes32", "tableId", 1)]
+        public virtual byte[] TableId { get; set; }
+        [Parameter("string", "tableIdString", 2)]
+        public virtual string TableIdString { get; set; }
+    }
+
+    public partial class StorecoreTablenotfoundError : StorecoreTablenotfoundErrorBase { }
+
+    [Error("StoreCore_TableNotFound")]
+    public class StorecoreTablenotfoundErrorBase : IErrorDTO
+    {
+        [Parameter("bytes32", "tableId", 1)]
+        public virtual byte[] TableId { get; set; }
+        [Parameter("string", "tableIdString", 2)]
+        public virtual string TableIdString { get; set; }
+    }
+
+
+
 
 
     public partial class GetFieldOutputDTO : GetFieldOutputDTOBase { }
 
     [FunctionOutput]
     public class GetFieldOutputDTOBase : IFunctionOutputDTO 
+    {
+        [Parameter("bytes", "data", 1)]
+        public virtual byte[] Data { get; set; }
+    }
+
+    public partial class GetFieldLengthOutputDTO : GetFieldLengthOutputDTOBase { }
+
+    [FunctionOutput]
+    public class GetFieldLengthOutputDTOBase : IFunctionOutputDTO 
+    {
+        [Parameter("uint256", "", 1)]
+        public virtual BigInteger ReturnValue1 { get; set; }
+    }
+
+    public partial class GetFieldSliceOutputDTO : GetFieldSliceOutputDTOBase { }
+
+    [FunctionOutput]
+    public class GetFieldSliceOutputDTOBase : IFunctionOutputDTO 
     {
         [Parameter("bytes", "data", 1)]
         public virtual byte[] Data { get; set; }
@@ -277,6 +445,8 @@ namespace mud.Network.IStore.ContractDefinition
         [Parameter("bytes32", "schema", 1)]
         public virtual byte[] Schema { get; set; }
     }
+
+
 
 
 

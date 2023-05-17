@@ -24,6 +24,8 @@ namespace mud.Network
 					store.ContractHandler.GetEvent<StoreSetRecordEventDTO>().EventABI.Sha3Signature;
 			var storeDeleteRecordSignature =
 					store.ContractHandler.GetEvent<StoreDeleteRecordEventDTO>().EventABI.Sha3Signature;
+			var storeEphemeralRecordSignature =
+				store.ContractHandler.GetEvent<StoreEphemeralRecordEventDTO>().EventABI.Sha3Signature;
 
 			var ecsEvent = new Types.NetworkTableUpdate
 			{
@@ -51,6 +53,24 @@ namespace mud.Network
 				ecsEvent.Value = value;
 
 				return ecsEvent;
+			}
+			
+			if (eventSig == storeEphemeralRecordSignature)
+			{
+				var decoded = Event<StoreEphemeralRecordEventDTO>.DecodeEvent(log);
+				var tableId = TableId.FromBytes32(decoded.Event.Table);
+				var component = tableId.ToString();
+				var entity = EntityIdUtil.KeyTupleToEntityID(decoded.Event.Key);
+				var entityTuple = EntityIdUtil.BytesToStringArray(decoded.Event.Key);
+				var data = ByteArrayToHexString(decoded.Event.Data);
+
+				var value = await DecodeStore.DecodeStoreSetRecord(store, tableId, entityTuple, data);
+				Debug.Log($"StoreEphemeralRecord: {tableId}, {component}, {entity}");
+
+				ecsEvent.Component = component;
+				ecsEvent.Entity = new Types.EntityID { Value = entity };
+				ecsEvent.Value = value;
+				ecsEvent.Ephemeral = true;
 			}
 
 			if (eventSig == storeSetFieldSignature)

@@ -64,6 +64,7 @@ namespace mud.Client
             public TxMetadata TxMetadata { get; set; }
             public BigInteger BlockNumber { get; set; }
             public BigInteger? LogIndex { get; set; }
+            public bool? Ephemeral { get; set; }
         }
 
         public enum NetworkEvents

@@ -58,9 +58,10 @@ namespace mud.Network
                 {
                     properties[i].SetValue(functionMessage, functionParameters[i]);
                 }
-            } 
-            
-            var gasLimit = await _provider.Eth.GetContractTransactionHandler<TFunction>().EstimateGasAsync(_contractAddress, functionMessage);
+            }
+
+            var gasLimit = await _provider.Eth.GetContractTransactionHandler<TFunction>()
+                .EstimateGasAsync(_contractAddress, functionMessage);
 
             functionMessage.TransactionType = TransactionType.EIP1559.AsByte();
             functionMessage.MaxPriorityFeePerGas = new HexBigInteger(GasConfig.MaxPriorityFeePerGas);
@@ -71,32 +72,32 @@ namespace mud.Network
 
             Debug.Log($"executing transaction with nonce {_currentNonce}");
 
-            try
-            {
-                var txHash = await _provider.Eth.GetContractTransactionHandler<TFunction>()
-                    .SendRequestAsync(_contractAddress, functionMessage);
+            // try
+            // {
+            var txHash = await _provider.Eth.GetContractTransactionHandler<TFunction>()
+                .SendRequestAsync(_contractAddress, functionMessage);
 
-                Debug.Log("TxRequest: " + txHash);
-                var pollingService = new TransactionReceiptPollingService(_provider.TransactionManager);
-                var transactionReceipt = await pollingService.PollForReceiptAsync(txHash);
-                Debug.Log("Tx receipt: " + JsonConvert.SerializeObject(transactionReceipt));
+            Debug.Log("TxRequest: " + txHash);
+            var pollingService = new TransactionReceiptPollingService(_provider.TransactionManager);
+            var transactionReceipt = await pollingService.PollForReceiptAsync(txHash);
+            Debug.Log("Tx receipt: " + JsonConvert.SerializeObject(transactionReceipt));
 
-                _currentNonce = new HexBigInteger(BigInteger.Add(BigInteger.One, _currentNonce.Value));
-            }
-            catch (Exception error)
-            {
-                if (error.Message.Contains("transaction already imported"))
-                {
-                    // if (options.retryCount == 0) TODO
-                    {
-                        // UpdateFeePerGas(globalOptions.priorityFeeMultiplier * 1.1);
-                        // return fastTxExecute(contract, func, args,  {
-                        //     retryCount:
-                        //     options.retryCount++
-                        // });
-                    }
-                }
-            }
+            _currentNonce = new HexBigInteger(BigInteger.Add(BigInteger.One, _currentNonce.Value));
+            // }
+            // catch (Exception error)
+            // {
+            //     if (error.Message.Contains("transaction already imported"))
+            //     {
+            //         // if (options.retryCount == 0) TODO
+            //         {
+            //             // UpdateFeePerGas(globalOptions.priorityFeeMultiplier * 1.1);
+            //             // return fastTxExecute(contract, func, args,  {
+            //             //     retryCount:
+            //             //     options.retryCount++
+            //             // });
+            //         }
+            //     }
+            // }
         }
 
         private async Task<(BigInteger, BigInteger)> UpdateFeePerGas(int multiplier)
