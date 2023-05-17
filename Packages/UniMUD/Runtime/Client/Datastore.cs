@@ -9,55 +9,6 @@ namespace mud.Client
 {
     using Property = Dictionary<string, object>;
 
-    public class Record
-    {
-        protected bool Equals(Record other)
-        {
-            return table == other.table && key == other.key && attribute == other.attribute &&
-                   value.Equals(other.value);
-        }
-
-        public override bool Equals(object? obj)
-        {
-            if (ReferenceEquals(null, obj)) return false;
-            if (ReferenceEquals(this, obj)) return true;
-            if (obj.GetType() != this.GetType()) return false;
-            return Equals((Record)obj);
-        }
-
-        public override int GetHashCode()
-        {
-            return HashCode.Combine(table, key, attribute, value);
-        }
-
-        public string table;
-        public string key;
-        public string attribute;
-        public object value;
-
-        public Record(string table, string key, string attribute, object value)
-        {
-            this.table = table;
-            this.key = key;
-            this.attribute = attribute;
-            this.value = value;
-        }
-    }
-
-    public class RecordUpdate
-    {
-        public string TableId { get; set; }
-        public string TableName { get; set; }
-        public string Key { get; set; }
-        public Tuple<Property?, Property?> Value { get; set; }
-    }
-    
-    
-    public class TypedRecordUpdate<T> : RecordUpdate
-    {
-        public T TypedValue { get; set; }
-    }
-
     public class Datastore
     {
         private HashSet<Record> _store;
@@ -126,8 +77,10 @@ namespace mud.Client
                     var existingRecord =
                         _store.First(r => r.table == table && r.key == index && r.attribute == propertyName);
                     existingRecord.value = propertyValue;
+                    UpdateStream(UpdateType.SetField, table, index, value);
+                    return;
                 }
-                UpdateStream(table, index, value);
+                UpdateStream(UpdateType.SetRecord, table, index, value);
             }
         }
 
@@ -146,7 +99,7 @@ namespace mud.Client
                     .ForEach(r =>
                     {
                         r.value = value;
-                        UpdateStream(table, key, value);
+                        UpdateStream(UpdateType.SetField, table, key, value);
                     });
             }
         }
@@ -162,7 +115,7 @@ namespace mud.Client
                     _store.Remove(record);
                     _tableIndex[record.table].Remove(record);
                     _attributeIndex[record.attribute].Remove(record);
-                    UpdateStream(table, key, null, recordProperty);
+                    UpdateStream(UpdateType.DeleteRecord, table, key, null, recordProperty);
                 });
         }
 
@@ -238,10 +191,11 @@ namespace mud.Client
             return bindingsList;
         }
 
-        private void UpdateStream(string tableId, string keyIndex, Property? value, Property? previousValue = null)
+        private void UpdateStream(UpdateType type, string tableId, string keyIndex, Property? value, Property? previousValue = null)
         {
             _onDataStoreUpdate.OnNext(new RecordUpdate
             {
+                Type = type,
                 TableId = tableId,
                 TableName = _tableIdToName[tableId],
                 Key = keyIndex,
