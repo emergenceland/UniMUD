@@ -10,10 +10,9 @@ namespace mud.Client
 		public static void ApplyNetworkUpdates(Types.NetworkTableUpdate update, Datastore dataStore)
 		{
 			// TODO: handle LastEventInTx
-			var tableExists =
-					dataStore.Query(new Query().Find("?table").Where("TableId<datastore:DSMetadata>", "?key", "?table", update.Component)).Count > 0;
-
-			if (!tableExists)
+			var tableQuery = new Query().Find("?key").Where("TableId<datastore:DSMetadata>", "?key", "?table", update.Component);
+			using var tableExistsResult = dataStore.Query(tableQuery).GetEnumerator();
+			if (!tableExistsResult.MoveNext())
 			{
 				Debug.LogWarning($"Unknown component: {JsonConvert.SerializeObject(update.Component)}");
 				return;

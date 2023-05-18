@@ -24,11 +24,12 @@ namespace mud.Client
             return this;
         }
 
-        public List<Property> RunQuery(List<string> query, HashSet<Record> records,
+        public IEnumerable<Property> RunQuery(List<string> query, HashSet<Record> records,
             Property? bindings = null)
         {
             bindings ??= new Property();
-            return records.Where(record => MatchPattern(query, record, new Property(bindings)) != null).Select(
+            var filteredRecords = records.Where(record => MatchPattern(query, record, new Property(bindings)) != null);
+            return filteredRecords.Select(
                 matched =>
                 {
                     var newBindings = new Property(bindings);
@@ -39,7 +40,7 @@ namespace mud.Client
                         .ToList()
                         .ForEach(collect => newBindings[collect.queryPart] = GetValue(matched, collect.i));
                     return newBindings;
-                }).ToList();
+                });
         }
 
         private Property? MatchPattern(List<string> pattern, Record record, Property bindings)
@@ -50,6 +51,7 @@ namespace mud.Client
                 ? bindings
                 : null;
         }
+        
 
         private Property? MatchPart(string patternPart, object triplePart, Property bindings)
         {

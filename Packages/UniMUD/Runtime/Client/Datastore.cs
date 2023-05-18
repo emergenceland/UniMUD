@@ -2,8 +2,9 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reactive.Subjects;
+using System.Reactive.Linq;
 using UnityEngine;
+using ObservableExtensions = System.ObservableExtensions;
 
 namespace mud.Client
 {
@@ -21,7 +22,7 @@ namespace mud.Client
         private readonly Dictionary<string, string> _tableIdToName;
         private readonly Dictionary<string, string> _tableNameToId;
 
-        private readonly ReplaySubject<RecordUpdate> _onDataStoreUpdate = new();
+        private readonly System.Reactive.Subjects.ReplaySubject<RecordUpdate> _onDataStoreUpdate = new();
         public IObservable<RecordUpdate> OnDataStoreUpdate => _onDataStoreUpdate;
 
         public Datastore(IDataStorage? dataStorage = null)
@@ -64,12 +65,13 @@ namespace mud.Client
                     }
 
                     tableIndexSet.Add(newRecord);
-                    
+
                     if (!_attributeIndex.TryGetValue(propertyName, out var attributeIndexSet))
                     {
                         attributeIndexSet = new HashSet<Record>();
                         _attributeIndex[propertyName] = attributeIndexSet;
                     }
+
                     attributeIndexSet.Add(newRecord);
                 }
                 else
@@ -77,10 +79,11 @@ namespace mud.Client
                     var existingRecord =
                         _store.First(r => r.table == table && r.key == index && r.attribute == propertyName);
                     existingRecord.value = propertyValue;
-                    UpdateStream(UpdateType.SetField, table, index, value);
+                    EmitUpdate(UpdateType.SetField, table, index, value);
                     return;
                 }
-                UpdateStream(UpdateType.SetRecord, table, index, value);
+
+                EmitUpdate(UpdateType.SetRecord, table, index, value);
             }
         }
 
@@ -99,7 +102,7 @@ namespace mud.Client
                     .ForEach(r =>
                     {
                         r.value = value;
-                        UpdateStream(UpdateType.SetField, table, key, value);
+                        EmitUpdate(UpdateType.SetField, table, key, value);
                     });
             }
         }
@@ -115,7 +118,7 @@ namespace mud.Client
                     _store.Remove(record);
                     _tableIndex[record.table].Remove(record);
                     _attributeIndex[record.attribute].Remove(record);
-                    UpdateStream(UpdateType.DeleteRecord, table, key, null, recordProperty);
+                    EmitUpdate(UpdateType.DeleteRecord, table, key, null, recordProperty);
                 });
         }
 
@@ -166,7 +169,7 @@ namespace mud.Client
             return _store;
         }
 
-        public List<Property> Query(Query query)
+        public IEnumerable<Property> Query(Query query)
         {
             var bindingsList = query.whereVars.Aggregate(new List<Property> { new() }, (bindings, pattern) =>
             {
@@ -176,22 +179,47 @@ namespace mud.Client
 
             if (query.findVars.Any())
             {
-                bindingsList = bindingsList.Where(b => query.findVars.All(b.ContainsKey)).ToList().Select(prop =>
+                foreach (var binding in bindingsList)
                 {
-                    var result = new Property();
-                    foreach (var key in query.findVars)
+                    if (query.findVars.All(binding.ContainsKey))
                     {
-                        result[key.Replace("?", "")] = prop[key];
+                        var result = new Property();
+                        foreach (var key in query.findVars)
+                        {
+                            result[key.Replace("?", "")] = binding[key];
+                        }
+
+                        yield return result;
                     }
-
-                    return result;
-                }).ToList();
+                }
             }
-
-            return bindingsList;
+            else
+            {
+                foreach (var binding in bindingsList)
+                {
+                    yield return new Property(binding);
+                }
+            }
         }
 
-        private void UpdateStream(UpdateType type, string tableId, string keyIndex, Property? value, Property? previousValue = null)
+        // public IObservable<List<Property>> SubQuery(Query query)
+        // {
+        //     return Observable.Create<List<Property>>(observer =>
+        //     {
+        //         var initialResult = Query(query);
+        //         observer.OnNext(initialResult);
+        //
+        //         var updateSubscription = _onDataStoreUpdate.Subscribe((update) =>
+        //         {
+        //             var updated = Query(query);
+        //             observer.OnNext(updated);
+        //         });
+        //         return updateSubscription;
+        //     });
+        // }
+
+        private void EmitUpdate(UpdateType type, string tableId, string keyIndex, Property? value,
+            Property? previousValue = null)
         {
             _onDataStoreUpdate.OnNext(new RecordUpdate
             {

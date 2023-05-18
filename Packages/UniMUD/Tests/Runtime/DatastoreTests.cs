@@ -1,8 +1,10 @@
 using System.Collections.Generic;
+using System.Diagnostics;
 using mud.Client;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.TestTools;
+using Debug = UnityEngine.Debug;
 using Types = mud.Client.Types;
 
 public class DatastoreTests
@@ -35,11 +37,15 @@ public class DatastoreTests
         var tableQuery = new Query().Find("?x", "?y")
             .Where("TableId<:Position>", "123", "x", "?x")
             .Where("TableId<:Position>", "123", "y", "?y");
-        var q = _ds.Query(tableQuery);
+        using var q = _ds.Query(tableQuery).GetEnumerator();
+        Assert.IsTrue(q.MoveNext()); 
 
-        Assert.IsNotEmpty(q);
-        Assert.AreEqual(1, q[0]["x"]);
-        Assert.AreEqual(2, q[0]["y"]);
+        var firstResult = q.Current;
+        Assert.IsNotNull(firstResult);
+        Assert.AreEqual(1, firstResult["x"]);
+        Assert.AreEqual(2, firstResult["y"]);
+
+        Assert.IsFalse(q.MoveNext()); // verify there are no more results
     }
 
     [Test]
@@ -90,8 +96,77 @@ public class DatastoreTests
             .Where("TableId<:Movies>", "?movieId", "title", "Jaws")
             .Where("TableId<:Movies>", "?movieId", "directorID", "?directorId")
             .Where("TableId<:Director>", "?directorId", "name", "?directorName");
-        var result = _ds.Query(queryWhere2);
-        Assert.AreEqual("Steven Spielberg", result[0]["directorName"]);
+        // var result = _ds.Query(queryWhere2);
+        using var result = _ds.Query(queryWhere2).GetEnumerator();
+        Assert.IsTrue(result.MoveNext());
+        var firstResult = result.Current;
+        Assert.AreEqual("Steven Spielberg", firstResult["directorName"]);
     }
-}
+    
+    [Test]
+    public void Benchmark()
+    {
+        var random = new System.Random();
+        var stopwatch = new Stopwatch();
+        
+        var randomWriteData = new List<string>(1000);
+        for (var i = 0; i < 1000; i++)
+        {
+            randomWriteData.Add(random.Next().ToString());
+        }
+        
+        var randomReadData = new List<string>(10000);
+        for (var i = 0; i < 10000; i++)
+        {
+            randomReadData.Add(random.Next().ToString());
+        }
 
+        // Perform 1k write operations
+        stopwatch.Start();
+        for (var i = 0; i < 1000; i++)
+        {
+            var position = ClientUtils.CreateProperty(("x", randomWriteData[i]), ("y", randomWriteData[i]));
+            _ds.SetValue("TableId<:Position>", $"Key{i}", position);
+        }
+
+        stopwatch.Stop();
+        var writeTime = stopwatch.ElapsedMilliseconds;
+        Debug.Log($"Time for 1k writes: {stopwatch.ElapsedMilliseconds} ms");
+        Debug.Log($"Average time per write op: {writeTime / 1000.0} ms");
+
+        
+        stopwatch.Restart();
+        for (var i = 0; i < 10000; i++)
+        {
+            var keyToRead = randomReadData[i];
+            var tableQuery = new Query().Find("?x", "?y")
+                .Where("TableId<:Position>", $"Key{keyToRead}", "x", "?x")
+                .Where("TableId<:Position>", $"Key{keyToRead}", "y", "?y");
+            var q = _ds.Query(tableQuery);
+            // Iterate over the query results to actually execute the query
+            foreach (var result in q)
+            {
+            }
+        }
+        
+        stopwatch.Stop();
+        var readTime = stopwatch.ElapsedMilliseconds;
+        Debug.Log($"Time for 10k reads: {stopwatch.ElapsedMilliseconds} ms");
+        Debug.Log($"Average time per read op: {readTime / 10000.0} ms");
+
+        stopwatch.Restart();
+        
+        // 1k delete ops
+        for (var i = 0; i < 1000; i++)
+        {
+            var keyToDelete = randomWriteData[i];
+            _ds.DeleteValue("TableId<:Position>", $"Key{keyToDelete}");
+        }
+        stopwatch.Stop();
+        var deleteTime = stopwatch.ElapsedMilliseconds;
+        Debug.Log($"Time for 1k deletes: {stopwatch.ElapsedMilliseconds} ms");
+        Debug.Log($"Average time per delete op: {deleteTime / 1000.0} ms");
+    }
+    
+   
+}
