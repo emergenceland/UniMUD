@@ -1,24 +1,20 @@
 {
-  "name": "com.unimud.unimud",
-  "version": "1.2.3",
-  "displayName": "UniMud",
-  "description": "This is an example package",
+  "name": "com.emergenceland.unimud",
+  "version": "0.0.1",
+  "displayName": "UniMUD",
+  "description": "Low-level networking tools for the MUD v2 framework",
   "unity": "2019.1",
   "unityRelease": "0b5",
-  "documentationUrl": "https://example.com/",
-  "changelogUrl": "https://example.com/changelog.html",
-  "licensesUrl": "https://example.com/licensing.html",
-  "dependencies": { 
-  },
- "keywords": [
-    "keyword1",
-    "keyword2",
-    "keyword3"
-  ],
+  "documentationUrl": "https://github.com/emergenceland/unimud",
+  "changelogUrl": "https://github.com/emergenceland/unimud",
+  "licensesUrl": "https://github.com/emergenceland/unimud",
+  "dependencies": {},
   "author": {
-    "name": "Unity",
+    "name": "Emergence",
     "email": "unity@example.com",
-    "url": "https://www.unity3d.com"
+    "url": "https://emergence.land"
   },
-  "testables": ["com.unimud.unimud"]
+  "testables": [
+    "com.unimud.unimud"
+  ]
 }
