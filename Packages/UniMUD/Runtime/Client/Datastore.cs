@@ -198,6 +198,11 @@ namespace mud.Client
             }
         }
 
+        public IEnumerable<Record>? GetRecordsByKey(string table, string key)
+        {
+            return _store.Where(r => r.table == table && r.key == key);
+        }
+
         // public IObservable<List<Property>> SubQuery(Query query)
         // {
         //     return Observable.Create<List<Property>>(observer =>
