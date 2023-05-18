@@ -28,8 +28,9 @@ namespace mud.Network
         private string _contractAddress;
         private GasConfig GasConfig { get; set; }
         private ContractHandler ContractHandler { get; set; }
+        private int PriorityFeeMultiplier { get; set; }
 
-        public async Task CreateTxExecutor(Account signer, Web3 provider, string contractAddress)
+        public async Task CreateTxExecutor(Account signer, Web3 provider, string contractAddress, int? priorityFeeMultiplier = null)
         {
             _provider = provider;
             _signer = signer;
@@ -37,7 +38,8 @@ namespace mud.Network
             _contractAddress = contractAddress;
             ContractHandler = contractHandler;
             GasConfig = new GasConfig();
-            var (maxPriorityFee, maxFee) = await UpdateFeePerGas(1);
+            PriorityFeeMultiplier = priorityFeeMultiplier ?? 1;
+            var (maxPriorityFee, maxFee) = await UpdateFeePerGas(PriorityFeeMultiplier);
             GasConfig.MaxPriorityFeePerGas = maxPriorityFee;
             GasConfig.MaxFeePerGas = maxFee;
         }
@@ -71,6 +73,7 @@ namespace mud.Network
             functionMessage.Nonce = _currentNonce;
 
             Debug.Log($"executing transaction with nonce {_currentNonce}");
+            Debug.Log("TxInput: " + JsonConvert.SerializeObject(functionMessage));
 
             // try
             // {
@@ -108,7 +111,7 @@ namespace mud.Network
             var baseFeePerGas = latestBlock.BaseFeePerGas.Value;
             var maxPriorityFeePerGas =
                 baseFeePerGas == 0 ? 0 : (BigInteger)Math.Floor((double)(1_500_000_000 * multiplier));
-            var maxFeePerGas = baseFeePerGas * 2 + GasConfig.MaxPriorityFeePerGas;
+            var maxFeePerGas = baseFeePerGas * 2 + maxPriorityFeePerGas;
             return (maxPriorityFeePerGas, maxFeePerGas);
         }
     }

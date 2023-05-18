@@ -58,6 +58,7 @@ namespace mud.Client
                 if (!_store.Contains(newRecord))
                 {
                     _store.Add(newRecord);
+
                     if (!_tableIndex.TryGetValue(table, out var tableIndexSet))
                     {
                         tableIndexSet = new HashSet<Record>();
@@ -156,17 +157,14 @@ namespace mud.Client
 
         private HashSet<Record> CandidateRecords(List<string> pattern)
         {
-            if (pattern.Count >= 1 && !ClientUtils.IsVar(pattern[0]) && _tableIndex.ContainsKey(pattern[0]))
+            return pattern.Count switch
             {
-                return _tableIndex.GetValueOrDefault(pattern[0], _store);
-            }
-
-            if (pattern.Count >= 3 && !ClientUtils.IsVar(pattern[2]) && _attributeIndex.ContainsKey(pattern[2]))
-            {
-                return _attributeIndex.GetValueOrDefault(pattern[2], _store);
-            }
-
-            return _store;
+                >= 1 when !ClientUtils.IsVar(pattern[0]) && _tableIndex.ContainsKey(pattern[0]) => _tableIndex
+                    .GetValueOrDefault(pattern[0], _store),
+                >= 3 when !ClientUtils.IsVar(pattern[2]) && _attributeIndex.ContainsKey(pattern[2]) => _attributeIndex
+                    .GetValueOrDefault(pattern[2], _store),
+                _ => _store
+            };
         }
 
         public IEnumerable<Property> Query(Query query)
@@ -181,16 +179,14 @@ namespace mud.Client
             {
                 foreach (var binding in bindingsList)
                 {
-                    if (query.findVars.All(binding.ContainsKey))
+                    if (!query.findVars.All(binding.ContainsKey)) continue;
+                    var result = new Property();
+                    foreach (var key in query.findVars)
                     {
-                        var result = new Property();
-                        foreach (var key in query.findVars)
-                        {
-                            result[key.Replace("?", "")] = binding[key];
-                        }
-
-                        yield return result;
+                        result[key.Replace("?", "")] = binding[key];
                     }
+
+                    yield return result;
                 }
             }
             else

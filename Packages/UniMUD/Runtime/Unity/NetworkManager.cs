@@ -91,6 +91,7 @@ namespace mud.Unity
 				if (!string.IsNullOrWhiteSpace(savedBurnerWallet))
 				{
 					account = new Account(savedBurnerWallet, chainId);
+					Debug.Log("Loaded burner wallet: " + account.Address);
 				}
 				else
 				{
