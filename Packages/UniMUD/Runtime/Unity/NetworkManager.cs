@@ -134,6 +134,7 @@ namespace mud.Unity
 				var data = JsonUtility.FromJson<LocalDeploy>(jsonFile.text);
 				contractAddress = data.worldAddress;
 				startingBlockNumber = data.blockNumber;
+				Debug.Log("Loaded local deploy: " + contractAddress + " at block " + startingBlockNumber);
 			}
 
 			if (startingBlockNumber < 0)

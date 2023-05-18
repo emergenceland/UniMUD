@@ -64,6 +64,7 @@ namespace mud.Network
 
             var gasLimit = await _provider.Eth.GetContractTransactionHandler<TFunction>()
                 .EstimateGasAsync(_contractAddress, functionMessage);
+            Debug.Log("Gas limit: " + gasLimit.Value);
 
             functionMessage.TransactionType = TransactionType.EIP1559.AsByte();
             functionMessage.MaxPriorityFeePerGas = new HexBigInteger(GasConfig.MaxPriorityFeePerGas);

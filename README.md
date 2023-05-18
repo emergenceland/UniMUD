@@ -2,7 +2,8 @@
 
 Low-level networking utilities for interacting with the [MUD v2](https://v2.mud.dev) framework in [Unity](https://unity3d.com).
 
-> ⚠️ If your goal is to just make a game, **you should not use UniMUD directly.** Instead, use the higher-level abstractions from (add link here).
+⚠️ If your goal is to just make a game, **you should not use UniMUD directly.**
+Instead, use the higher-level abstractions from [MUD Template Unity](https://github.com/emergenceland/mud-template-unity).
 
 ## Getting Started
 
