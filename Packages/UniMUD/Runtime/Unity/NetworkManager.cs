@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 using System.Threading.Tasks;
-// using Cysharp.Threading.Tasks;
 using mud.Client;
 using mud.Network;
 using mud.Network.IStore;
@@ -70,7 +69,7 @@ namespace mud.Unity
 				Debug.LogError("Already have a NetworkManager instance");
 				return;
 			}
-			
+
 			Instance = this;
 
 			var config = new NetworkConfig(jsonRpcUrl, wsRpcUrl, pk, chainId, contractAddress, disableCache);

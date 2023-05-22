@@ -1,5 +1,6 @@
 using System;
 using System.Numerics;
+using System.Threading;
 using System.Threading.Tasks;
 using Nethereum.Contracts;
 using Nethereum.Contracts.ContractHandlers;
@@ -29,8 +30,11 @@ namespace mud.Network
         private GasConfig GasConfig { get; set; }
         private ContractHandler ContractHandler { get; set; }
         private int PriorityFeeMultiplier { get; set; }
+        private readonly SemaphoreSlim _semaphore = new (1, 1);
 
-        public async Task CreateTxExecutor(Account signer, Web3 provider, string contractAddress, int? priorityFeeMultiplier = null)
+
+        public async Task CreateTxExecutor(Account signer, Web3 provider, string contractAddress,
+            int? priorityFeeMultiplier = null)
         {
             _provider = provider;
             _signer = signer;
@@ -47,6 +51,7 @@ namespace mud.Network
         public async Task TxExecute<TFunction>(params object[] functionParameters)
             where TFunction : FunctionMessage, new()
         {
+            await _semaphore.WaitAsync();
             if (_currentNonce == new HexBigInteger(0))
             {
                 _currentNonce = await _provider.Eth.Transactions.GetTransactionCount.SendRequestAsync(_signer.Address);
@@ -102,6 +107,7 @@ namespace mud.Network
             //         }
             //     }
             // }
+            _semaphore.Release();
         }
 
         private async Task<(BigInteger, BigInteger)> UpdateFeePerGas(int multiplier)
