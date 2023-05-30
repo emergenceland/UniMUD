@@ -1,6 +1,7 @@
+#nullable enable
 using System;
+using System.Threading;
 using System.Threading.Tasks;
-using JetBrains.Annotations;
 using Nethereum.JsonRpc.WebSocketStreamingClient;
 using Nethereum.Web3;
 
@@ -8,10 +9,12 @@ namespace mud.Network
 {
     public class ProviderUtils
     {
-        public static async Task EnsureNetworkIsUp(Web3 provider, [CanBeNull] StreamingWebSocketClient wsClient)
+        public static async Task EnsureNetworkIsUp(Web3 provider, StreamingWebSocketClient? wsClient,
+            CancellationToken cancellationToken)
         {
             async Task NetworkInfoPromise()
             {
+                if (cancellationToken.IsCancellationRequested) return;
                 var providerBlockNumberTask = provider.Eth.Blocks.GetBlockNumber.SendRequestAsync();
                 // TODO: kinda weird 
                 var wssProviderBlockNumberTask = wsClient != null
@@ -20,14 +23,16 @@ namespace mud.Network
                 await Task.WhenAll(providerBlockNumberTask, wssProviderBlockNumberTask);
             }
 
-            await CallWithRetry(NetworkInfoPromise, 10, 1000);
+            await CallWithRetry(NetworkInfoPromise, 10, 1000, cancellationToken);
         }
 
-        public static async Task CallWithRetry(Func<Task> action, int maxRetries, int delay)
+        public static async Task CallWithRetry(Func<Task> action, int maxRetries, int delay,
+            CancellationToken cancellationToken)
         {
             var retries = 0;
             while (true)
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 try
                 {
                     await action();
@@ -41,7 +46,7 @@ namespace mud.Network
                         throw;
                     }
 
-                    await Task.Delay(delay);
+                    await Task.Delay(delay, cancellationToken);
                 }
             }
         }

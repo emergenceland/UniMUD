@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
+using System.Threading;
 using System.Threading.Tasks;
 using mud.Client;
 using mud.Network;
@@ -61,6 +62,7 @@ namespace mud.Unity
 		public static NetworkManager Instance { get; private set; }
 		[NonSerialized] public bool isNetworkInitialized = false;
 		[NonSerialized] public Dictionary<GameObject, string> gameObjectToKey = new();
+		private CancellationTokenSource _cts;
 
 		protected async void Awake()
 		{
@@ -114,8 +116,10 @@ namespace mud.Unity
 				JsonRpcUrl = jsonRpcUrl,
 				WsRpcUrl = wsRpcUrl
 			};
-
-			var (prov, wsClient) = await Providers.CreateReconnectingProviders(account, providerConfig);
+			
+			_cts = new CancellationTokenSource();
+			
+			var (prov, wsClient) = await Providers.CreateReconnectingProviders(account, providerConfig, _cts.Token);
 			_provider = prov;
 			_client = wsClient;
 
@@ -199,6 +203,7 @@ namespace mud.Unity
 			_syncWorker?.Dispose();
 			_client?.Dispose();
 			_disposables?.Dispose();
+			_cts.Cancel();
 		}
 	}
 }

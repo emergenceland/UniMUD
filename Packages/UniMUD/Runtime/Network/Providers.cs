@@ -1,4 +1,5 @@
 #nullable enable
+using System.Threading;
 using System.Threading.Tasks;
 using Nethereum.JsonRpc.WebSocketStreamingClient;
 using Nethereum.Web3;
@@ -29,7 +30,7 @@ namespace mud.Network
 
     public static class Providers
     {
-        public static async Task<ProviderPair> CreateReconnectingProviders(Account account, ProviderConfig config)
+        public static async Task<ProviderPair> CreateReconnectingProviders(Account account, ProviderConfig config, CancellationToken cancellationToken)
         {
             var jsonProvider = new Web3(account, config.JsonRpcUrl);
             StreamingWebSocketClient? wsClient = null;
@@ -45,9 +46,9 @@ namespace mud.Network
             {
                 if (config.SkipNetworkCheck is false or null)
                 {
-                    await EnsureNetworkIsUp(jsonProvider, wsClient);
+                    await EnsureNetworkIsUp(jsonProvider, wsClient, cancellationToken);
                 }
-            }, 10, 1000);
+            }, 10, 1000, cancellationToken);
 
             return new ProviderPair
             {
