@@ -14,196 +14,205 @@ using Nethereum.JsonRpc.WebSocketStreamingClient;
 using Nethereum.RPC.Eth.Blocks;
 using Nethereum.Web3;
 using Nethereum.Web3.Accounts;
+using NLog;
+using NLog.Targets;
 using UniRx;
 using UnityEngine;
 
 
 namespace mud.Unity
 {
-	public class LocalDeploy
-	{
-		public string worldAddress;
-		public int blockNumber;
-	}
+    public class LocalDeploy
+    {
+        public string worldAddress;
+        public int blockNumber;
+    }
 
-	public record NetworkConfig(string JsonRpcUrl, string WsRpcUrl, string Pk, int ChainId, string WorldAddress,
-			bool DisableCache)
-	{
-		public string JsonRpcUrl { get; set; } = JsonRpcUrl;
-		public string WsRpcUrl { get; set; } = WsRpcUrl;
-		public string Pk { get; set; } = Pk;
-		public int ChainId { get; set; } = ChainId;
-		public string WorldAddress { get; set; } = WorldAddress;
-		public bool DisableCache { get; set; } = DisableCache;
-	}
+    public record NetworkConfig(string JsonRpcUrl, string WsRpcUrl, string Pk, int ChainId, string WorldAddress,
+        bool DisableCache)
+    {
+        public string JsonRpcUrl { get; set; } = JsonRpcUrl;
+        public string WsRpcUrl { get; set; } = WsRpcUrl;
+        public string Pk { get; set; } = Pk;
+        public int ChainId { get; set; } = ChainId;
+        public string WorldAddress { get; set; } = WorldAddress;
+        public bool DisableCache { get; set; } = DisableCache;
+    }
 
-	public class NetworkManager : MonoBehaviour
-	{
-		public string jsonRpcUrl = "http://localhost:8545";
-		public string wsRpcUrl = "ws://localhost:8545";
+    public class NetworkManager : MonoBehaviour
+    {
+        public string jsonRpcUrl = "http://localhost:8545";
+        public string wsRpcUrl = "ws://localhost:8545";
 
-		public string pk;
-		public int chainId;
-		public string contractAddress;
-		public bool disableCache = true;
+        public string pk;
+        public int chainId;
+        public string contractAddress;
+        public bool writeLogs = true;
+        public bool disableCache = true;
 
-		public readonly TxExecutor worldSend = new();
-		public Datastore ds;
-		private SyncWorker _syncWorker;
-		private Web3 _provider;
-		public Account account;
-		[NonSerialized] public string address;
-		[NonSerialized] public string addressKey;
+        public readonly TxExecutor worldSend = new();
+        public Datastore ds;
+        private SyncWorker _syncWorker;
+        private Web3 _provider;
+        public Account account;
+        [NonSerialized] public string address;
+        [NonSerialized] public string addressKey;
 
-		private StreamingWebSocketClient _client;
+        private StreamingWebSocketClient _client;
 
-		private readonly CompositeDisposable _disposables = new();
-		public event Action<NetworkManager> OnNetworkInitialized = delegate { };
-		public static NetworkManager Instance { get; private set; }
-		[NonSerialized] public bool isNetworkInitialized = false;
-		[NonSerialized] public Dictionary<GameObject, string> gameObjectToKey = new();
-		private CancellationTokenSource _cts;
+        private readonly CompositeDisposable _disposables = new();
+        public event Action<NetworkManager> OnNetworkInitialized = delegate { };
+        public static NetworkManager Instance { get; private set; }
+        [NonSerialized] public bool isNetworkInitialized = false;
+        [NonSerialized] public Dictionary<GameObject, string> gameObjectToKey = new();
+        private CancellationTokenSource _cts;
+        private static readonly NLog.Logger Logger = LogManager.GetCurrentClassLogger();
 
-		protected async void Awake()
-		{
-			if (Instance != null)
-			{
-				Debug.LogError("Already have a NetworkManager instance");
-				return;
-			}
 
-			Instance = this;
+        protected async void Awake()
+        {
+            if (Instance != null)
+            {
+                Debug.LogError("Already have a NetworkManager instance");
+                return;
+            }
 
-			var config = new NetworkConfig(jsonRpcUrl, wsRpcUrl, pk, chainId, contractAddress, disableCache);
+            Instance = this;
 
-			await SetupNetwork(config);
-		}
+            var config = new NetworkConfig(jsonRpcUrl, wsRpcUrl, pk, chainId, contractAddress, disableCache);
+            var logUnity = new UnityLogger { Layout = "${message} ${exception:format=tostring}" };
+            LogManager.Setup().SetupExtensions(s => s.RegisterTarget<UnityLogger>("UnityLogger"))
+                .LoadConfiguration(builder => builder.ForLogger().FilterMinLevel(LogLevel.Debug).WriteTo(logUnity));
 
-		private async Task SetupNetwork(NetworkConfig config)
-		{
-			var (jsonRpcUrl, wsRpcUrl, pk, chainId, contractAddress, disableCache) = config;
-			if (!string.IsNullOrWhiteSpace(pk))
-			{
-				account = new Account(pk, chainId);
-			}
-			else
-			{
-				var savedBurnerWallet = PlayerPrefs.GetString("burnerWallet");
-				if (!string.IsNullOrWhiteSpace(savedBurnerWallet))
-				{
-					account = new Account(savedBurnerWallet, chainId);
-					Debug.Log("Loaded burner wallet: " + account.Address);
-				}
-				else
-				{
-					var ecKey = Nethereum.Signer.EthECKey.GenerateKey();
-					var privateKey = ecKey.GetPrivateKeyAsBytes().ToHex();
-					account = new Account(privateKey, chainId);
-					Debug.Log("New burner wallet created: " + account.Address);
-					// TODO: Insecure.
-					// We can use Nethereum's KeyStoreScryptService
-					// However, this requires user to set a password
-					PlayerPrefs.SetString("burnerWallet", privateKey);
-					PlayerPrefs.Save();
-				}
+            await SetupNetwork(config);
+        }
 
-				address = account.Address;
-				addressKey = "0x" + address.Replace("0x", "").PadLeft(64, '0').ToLower();
-			}
+        private async Task SetupNetwork(NetworkConfig config)
+        {
+            var (jsonRpcUrl, wsRpcUrl, pk, chainId, contractAddress, disableCache) = config;
+            if (!string.IsNullOrWhiteSpace(pk))
+            {
+                account = new Account(pk, chainId);
+            }
+            else
+            {
+                var savedBurnerWallet = PlayerPrefs.GetString("burnerWallet");
+                if (!string.IsNullOrWhiteSpace(savedBurnerWallet))
+                {
+                    account = new Account(savedBurnerWallet, chainId);
+                    Debug.Log("Loaded burner wallet: " + account.Address);
+                }
+                else
+                {
+                    var ecKey = Nethereum.Signer.EthECKey.GenerateKey();
+                    var privateKey = ecKey.GetPrivateKeyAsBytes().ToHex();
+                    account = new Account(privateKey, chainId);
+                    Debug.Log("New burner wallet created: " + account.Address);
+                    // TODO: Insecure.
+                    // We can use Nethereum's KeyStoreScryptService
+                    // However, this requires user to set a password
+                    PlayerPrefs.SetString("burnerWallet", privateKey);
+                    PlayerPrefs.Save();
+                }
 
-			var providerConfig = new ProviderConfig
-			{
-				JsonRpcUrl = jsonRpcUrl,
-				WsRpcUrl = wsRpcUrl
-			};
-			
-			_cts = new CancellationTokenSource();
-			
-			var (prov, wsClient) = await Providers.CreateReconnectingProviders(account, providerConfig, _cts.Token);
-			_provider = prov;
-			_client = wsClient;
+                address = account.Address;
+                addressKey = "0x" + address.Replace("0x", "").PadLeft(64, '0').ToLower();
+            }
 
-			var startingBlockNumber = -1;
+            var providerConfig = new ProviderConfig
+            {
+                JsonRpcUrl = jsonRpcUrl,
+                WsRpcUrl = wsRpcUrl
+            };
 
-			if (string.IsNullOrEmpty(contractAddress))
-			{
-				var jsonFile = Resources.Load<TextAsset>("latest");
+            _cts = new CancellationTokenSource();
 
-				if (jsonFile == null)
-				{
-					throw new ArgumentException("Contract address must be provided.");
-				}
+            var (prov, wsClient) = await Providers.CreateReconnectingProviders(account, providerConfig, _cts.Token);
+            _provider = prov;
+            _client = wsClient;
 
-				var data = JsonUtility.FromJson<LocalDeploy>(jsonFile.text);
-				contractAddress = data.worldAddress;
-				startingBlockNumber = data.blockNumber;
-				Debug.Log("Loaded local deploy: " + contractAddress + " at block " + startingBlockNumber);
-			}
+            var startingBlockNumber = -1;
 
-			if (startingBlockNumber < 0)
-			{
-				startingBlockNumber = (int)await GetCurrentBlockNumberAsync(_provider);
-			}
+            if (string.IsNullOrEmpty(contractAddress))
+            {
+                var jsonFile = Resources.Load<TextAsset>("latest");
 
-			Debug.Log("Starting sync from block " + startingBlockNumber + "...");
+                if (jsonFile == null)
+                {
+                    throw new ArgumentException("Contract address must be provided.");
+                }
 
-			var storeContract = new IStoreService(_provider, contractAddress);
+                var data = JsonUtility.FromJson<LocalDeploy>(jsonFile.text);
+                contractAddress = data.worldAddress;
+                startingBlockNumber = data.blockNumber;
+                Debug.Log("Loaded local deploy: " + contractAddress + " at block " + startingBlockNumber);
+            }
 
-			var jsonStore = new JsonDataStorage(Application.persistentDataPath + contractAddress + ".json");
-			ds = new Datastore(jsonStore);
+            if (startingBlockNumber < 0)
+            {
+                startingBlockNumber = (int)await GetCurrentBlockNumberAsync(_provider);
+            }
 
-			var types = AppDomain.CurrentDomain.GetAssemblies()
-					.SelectMany(s => s.GetTypes())
-					.Where(p => typeof(IMudTable).IsAssignableFrom(p) && p.IsClass);
-			foreach (var t in types)
-			{
-				Debug.Log($"Registering table: {t.Name}");
-				if (t.GetField("TableId").GetValue(null) is not TableId tableId) return;
-				ds.RegisterTable(tableId.ToString(), tableId.name);
-			}
+            Debug.Log("Starting sync from block " + startingBlockNumber + "...");
 
-			WorldDefinitions.DefineDataStoreConfig(ds);
-			StoreDefinitions.DefineDataStoreConfig(ds);
+            var storeContract = new IStoreService(_provider, contractAddress);
 
-			ds.RegisterTable(new TableId("mudstore", "schema").ToString(), "Schema");
+            var jsonStore = new JsonDataStorage(Application.persistentDataPath + contractAddress + ".json");
+            ds = new Datastore(jsonStore);
 
-			if (!disableCache)
-			{
-				ds.LoadCache(); // TODO: this does not update the components
-				startingBlockNumber = ds.GetCachedBlockNumber() ?? startingBlockNumber;
-			}
+            var types = AppDomain.CurrentDomain.GetAssemblies()
+                .SelectMany(s => s.GetTypes())
+                .Where(p => typeof(IMudTable).IsAssignableFrom(p) && p.IsClass);
+            foreach (var t in types)
+            {
+                Debug.Log($"Registering table: {t.Name}");
+                if (t.GetField("TableId").GetValue(null) is not TableId tableId) return;
+                ds.RegisterTable(tableId.ToString(), tableId.name);
+            }
 
-			await worldSend.CreateTxExecutor(account, _provider, contractAddress);
+            WorldDefinitions.DefineDataStoreConfig(ds);
+            StoreDefinitions.DefineDataStoreConfig(ds);
 
-			_syncWorker = new SyncWorker();
-			var currentBlockNumber = (int)await GetCurrentBlockNumberAsync(_provider);
-			await _syncWorker.StartSync(storeContract, _client, startingBlockNumber, currentBlockNumber);
+            ds.RegisterTable(new TableId("mudstore", "schema").ToString(), "Schema");
 
-			UniRx.ObservableExtensions
-					.Subscribe(_syncWorker.OutputStream, (update) => { NetworkUpdates.ApplyNetworkUpdates(update, ds); })
-					.AddTo(_disposables);
-			OnNetworkInitialized(this);
-			isNetworkInitialized = true;
-		}
+            if (!disableCache)
+            {
+                ds.LoadCache(); // TODO: this does not update the components
+                startingBlockNumber = ds.GetCachedBlockNumber() ?? startingBlockNumber;
+            }
 
-		private static async Task<BigInteger> GetCurrentBlockNumberAsync(Web3 provider)
-		{
-			EthBlockNumber ethBlockNumber = new EthBlockNumber(provider.Client);
-			var blockNumber = await ethBlockNumber.SendRequestAsync();
-			return blockNumber.Value;
-		}
+            await worldSend.CreateTxExecutor(account, _provider, contractAddress);
 
-		public void RegisterGameObject(GameObject gameObject, string key)
-		{
-			gameObjectToKey[gameObject] = key;
-		}
+            _syncWorker = new SyncWorker();
+            var currentBlockNumber = (int)await GetCurrentBlockNumberAsync(_provider);
+            await _syncWorker.StartSync(storeContract, _client, startingBlockNumber, currentBlockNumber);
 
-		private void OnDestroy()
-		{
-			_syncWorker?.Dispose();
-			_client?.Dispose();
-			_disposables?.Dispose();
-			_cts.Cancel();
-		}
-	}
+            UniRx.ObservableExtensions
+                .Subscribe(_syncWorker.OutputStream, (update) => { NetworkUpdates.ApplyNetworkUpdates(update, ds); })
+                .AddTo(_disposables);
+            OnNetworkInitialized(this);
+            isNetworkInitialized = true;
+        }
+
+        private static async Task<BigInteger> GetCurrentBlockNumberAsync(Web3 provider)
+        {
+            EthBlockNumber ethBlockNumber = new EthBlockNumber(provider.Client);
+            var blockNumber = await ethBlockNumber.SendRequestAsync();
+            return blockNumber.Value;
+        }
+
+        public void RegisterGameObject(GameObject gameObject, string key)
+        {
+            gameObjectToKey[gameObject] = key;
+        }
+
+        private void OnDestroy()
+        {
+            _syncWorker?.Dispose();
+            _client?.Dispose();
+            _disposables?.Dispose();
+            _cts.Cancel();
+            LogManager.Shutdown();
+        }
+    }
 }

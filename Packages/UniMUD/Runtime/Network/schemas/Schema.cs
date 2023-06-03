@@ -1,13 +1,13 @@
+#nullable enable
 using System;
 using System.Buffers.Binary;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using JetBrains.Annotations;
 using mud.Network.IStore;
 using mud.Network.IStore.ContractDefinition;
-using UnityEngine;
+using NLog;
 using static mud.Network.schemas.SchemaTypes;
 using static mud.Network.schemas.Common;
 
@@ -15,6 +15,7 @@ namespace mud.Network.schemas
 {
     public class Schema
     {
+        private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
         private static ConcurrentDictionary<string, Lazy<TableSchema>> _schemaCache =
             new();
 
@@ -25,7 +26,7 @@ namespace mud.Network.schemas
         }
 
         public static async Task<TableSchema> RegisterSchema(IStoreService store, TableId table,
-            [CanBeNull] string rawSchema = null)
+            string? rawSchema = null)
         {
             var cacheKey = $"{store.ContractHandler.ContractAddress}:{table.ToHexString()}";
             var existingSchema = _schemaCache.ContainsKey(cacheKey);
@@ -36,7 +37,7 @@ namespace mud.Network.schemas
                     var schema = _schemaCache[cacheKey];
                     if (ByteArrayToHexString(schema.Value.RawSchema) != rawSchema)
                     {
-                        Debug.LogWarning("A different schema was already registered for this table");
+                        Logger.Warn("A different schema was already registered for this table");
                     }
                 }
 
@@ -45,7 +46,7 @@ namespace mud.Network.schemas
 
             if (rawSchema != null)
             {
-                Debug.Log("Registering schema for table... " + table);
+                Logger.Debug("Registering schema for table... " + table);
                 var schema = DecodeSchema(HexStringToByteArray(rawSchema));
                 _schemaCache.AddOrUpdate(cacheKey, new Lazy<TableSchema>(() => schema), (key, oldValue) =>
                     new Lazy<TableSchema>(
@@ -60,7 +61,7 @@ namespace mud.Network.schemas
             var decodedSchema = DecodeSchema(schemaResult);
             if (decodedSchema.IsEmpty)
             {
-                Debug.LogWarning($"Schema not found for table: {table}");
+                Logger.Warn($"Schema not found for table: {table}");
             }
 
             _schemaCache.AddOrUpdate(cacheKey, new Lazy<TableSchema>(() => decodedSchema), (key, oldValue) =>
@@ -73,7 +74,7 @@ namespace mud.Network.schemas
 
         private static async Task<byte[]> FetchSchema(IStoreService store, TableId table)
         {
-            Debug.Log($"Fetching schema for table: {table}, world: {store.ContractHandler.ContractAddress}");
+            Logger.Debug($"Fetching schema for table: {table}, world: {store.ContractHandler.ContractAddress}");
             var getSchema = new GetSchemaFunction
             {
                 Table = table.ToBytes()
@@ -107,7 +108,7 @@ namespace mud.Network.schemas
 
             if (actualStaticDataLength != staticDataLength)
             {
-                Debug.LogError(
+                Logger.Error(
                     $"Schema static data length mismatch! Is `GetStaticByteLength` outdated? schemaStaticDataLength: {staticDataLength}, actualStaticDataLength: {actualStaticDataLength}, rawSchema: {rawSchema}");
                 throw new InvalidOperationException(
                     "Schema static data length mismatch! Is `GetStaticByteLength` outdated?");

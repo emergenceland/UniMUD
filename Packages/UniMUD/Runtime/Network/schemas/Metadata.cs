@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using mud.Network.IStore;
 using mud.Network.IStore.ContractDefinition;
 using Newtonsoft.Json;
-using UnityEngine;
+using NLog;
 using static mud.Network.schemas.Common;
 
 namespace mud.Network.schemas
@@ -20,6 +20,7 @@ namespace mud.Network.schemas
     public static class Metadata
     {
         private static readonly Dictionary<string, TableMetadata> MetadataCache = new();
+        private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
         public static async Task<TableMetadata?> RegisterMetadata(IStoreService store, TableId table,
             TableMetadata? metadata = null)
@@ -32,7 +33,7 @@ namespace mud.Network.schemas
                 if (metadata == null) return cachedMetadata;
                 if (JsonConvert.SerializeObject(cachedMetadata) != JsonConvert.SerializeObject(metadata))
                 {
-                    Debug.LogWarning($"Different metadata already registered for this table, {table}");
+                    Logger.Warn($"Different metadata already registered for this table, {table}");
                 }
 
                 return cachedMetadata;
@@ -40,7 +41,7 @@ namespace mud.Network.schemas
 
             if (metadata != null)
             {
-                Debug.Log($"Registering medata for table {table}");
+                Logger.Debug($"Registering medata for table {table}");
                 MetadataCache[cacheKey] = metadata;
                 return metadata;
             }
@@ -55,7 +56,7 @@ namespace mud.Network.schemas
 
             if (metadataSchema.IsEmpty)
             {
-                Debug.LogWarning(
+                Logger.Warn(
                     $"Metadata schema not found: {DecodeStore.MetadataTableId}, {store.ContractHandler.ContractAddress}");
             }
 
@@ -63,7 +64,7 @@ namespace mud.Network.schemas
 
             if (metadataRecord == null || ByteArrayToHexString(metadataRecord) == "0x")
             {
-                Debug.LogWarning(
+                Logger.Warn(
                     $"Metadata not found for table: {table}, {store.ContractHandler.ContractAddress}");
             }
 
@@ -73,7 +74,7 @@ namespace mud.Network.schemas
 
             if (tableName != table.name)
             {
-                Debug.LogWarning(
+                Logger.Warn(
                     $"Metadata table name: {tableName} does not match ID {table.name}");
             }
 
@@ -89,7 +90,7 @@ namespace mud.Network.schemas
 
         private static async Task<byte[]?> FetchMetadata(IStoreService store, TableId table)
         {
-            Debug.Log($"Fetching metadata for table {table}, world: {store.ContractHandler.ContractAddress}");
+            Logger.Debug($"Fetching metadata for table {table}, world: {store.ContractHandler.ContractAddress}");
             var getMetadata = new GetRecordFunction
             {
                 Table = DecodeStore.MetadataTableId.ToBytes(),

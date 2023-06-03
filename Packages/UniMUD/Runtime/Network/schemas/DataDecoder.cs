@@ -5,7 +5,7 @@ using System.Linq;
 using System.Numerics;
 using System.Text;
 using Nethereum.Util;
-using UnityEngine;
+using NLog;
 using static mud.Network.schemas.SchemaTypes;
 using static mud.Network.schemas.Common;
 
@@ -14,6 +14,8 @@ namespace mud.Network.schemas
 {
     public static class DataDecoder
     {
+        private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+
         public static Dictionary<int, object> DecodeData(TableSchema schema, string hexData)
         {
             var data = new Dictionary<int, object>();
@@ -32,7 +34,7 @@ namespace mud.Network.schemas
             var actualStaticDataLength = bytesOffset;
             if (actualStaticDataLength != schema.StaticDataLength)
             {
-                Debug.LogWarning(
+                Logger.Warn(
                     $"Static data length mismatch. Expected {schema.StaticDataLength}, got {actualStaticDataLength}");
             }
 
@@ -65,7 +67,7 @@ namespace mud.Network.schemas
                 var actualDynamicDataLength = bytesOffset - 32 - schema.StaticDataLength;
                 if ((BigInteger)actualDynamicDataLength != dynamicDataLength)
                 {
-                    Debug.LogWarning(
+                    Logger.Warn(
                         "Decoded dynamic data length does not match data layout's expected data length. Data may get corrupted. Did the data layout change?");
                 }
             }

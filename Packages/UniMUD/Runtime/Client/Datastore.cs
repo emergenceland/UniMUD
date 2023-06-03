@@ -2,7 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using UnityEngine;
+using NLog;
 
 namespace mud.Client
 {
@@ -22,6 +22,7 @@ namespace mud.Client
 
         private readonly System.Reactive.Subjects.ReplaySubject<RecordUpdate> _onDataStoreUpdate = new();
         public IObservable<RecordUpdate> OnDataStoreUpdate => _onDataStoreUpdate;
+        private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
         public Datastore(IDataStorage? dataStorage = null)
         {
@@ -253,7 +254,7 @@ namespace mud.Client
                 //     // UpdateStream(record.table, record.key, record.attribute, record.value));
                 // }
                 if (data != null) _store = updates;
-                Debug.Log($"Got {updates?.Count()} items from cache");
+                Logger.Debug($"Got {updates?.Count()} items from cache");
             }
         }
     }

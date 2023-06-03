@@ -5,15 +5,16 @@ using mud.Network.IStore.ContractDefinition;
 using mud.Network.schemas;
 using Nethereum.Contracts;
 using Nethereum.RPC.Eth.DTOs;
+using NLog;
 using static mud.Network.schemas.Common;
 using DecodeStore = mud.Network.schemas.DecodeStore;
 using Types = mud.Client.Types;
-using UnityEngine;
 
 namespace mud.Network
 {
 	public static partial class Sync
 	{
+		private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 		public static async Task<Types.NetworkTableUpdate?> EcsEventFromLog(FilterLog log,
 				IStoreService store, bool lastEventInTx)
 		{
@@ -46,7 +47,7 @@ namespace mud.Network
 				var data = ByteArrayToHexString(decoded.Event.Data);
 
 				var value = await DecodeStore.DecodeStoreSetRecord(store, tableId, entityTuple, data);
-				Debug.Log($"StoreSetRecord: {tableId}, {component}, {entity}");
+				Logger.Debug($"StoreSetRecord: {tableId}, {component}, {entity}");
 
 				ecsEvent.Component = component;
 				ecsEvent.Entity = new Types.EntityID { Value = entity };
@@ -65,7 +66,7 @@ namespace mud.Network
 				var data = ByteArrayToHexString(decoded.Event.Data);
 
 				var value = await DecodeStore.DecodeStoreSetRecord(store, tableId, entityTuple, data);
-				Debug.Log($"StoreEphemeralRecord: {tableId}, {component}, {entity}");
+				Logger.Debug($"StoreEphemeralRecord: {tableId}, {component}, {entity}");
 
 				ecsEvent.Component = component;
 				ecsEvent.Entity = new Types.EntityID { Value = entity };
@@ -83,7 +84,7 @@ namespace mud.Network
 
 				var (schema, value, initialValue) = await DecodeStore.DecodeStoreSetField(store, tableId, decoded.Event.SchemaIndex, data);
 
-				Debug.Log($"StoreSetField: {tableId}, {component}, {entity}");
+				Logger.Debug($"StoreSetField: {tableId}, {component}, {entity}");
 
 				ecsEvent.Component = component;
 				ecsEvent.Entity = new Types.EntityID { Value = entity };
@@ -103,7 +104,7 @@ namespace mud.Network
 				ecsEvent.Component = component;
 				ecsEvent.Entity = new Types.EntityID { Value = entity };
 				ecsEvent.Value = null;
-				Debug.Log($"StoreDeleteRecord: {tableId}, {component}, {entity}");
+				Logger.Debug($"StoreDeleteRecord: {tableId}, {component}, {entity}");
 				return ecsEvent;
 			}
 			

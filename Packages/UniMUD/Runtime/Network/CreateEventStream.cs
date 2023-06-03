@@ -12,7 +12,6 @@ using Nethereum.JsonRpc.WebSocketStreamingClient;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.RPC.Eth.Filters;
 using Nethereum.RPC.Reactive.Eth.Subscriptions;
-using UnityEngine;
 using Types = mud.Client.Types;
 
 namespace mud.Network
@@ -116,7 +115,6 @@ namespace mud.Network
             var mergeSubscriptionDisposable = mergedObservable.Subscribe(txStream.OnNext);
             disposables.Add(mergeSubscriptionDisposable);
 
-            Debug.Log("Client is subscribing");
             return (txStream, disposables);
         }
     }

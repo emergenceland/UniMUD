@@ -10,7 +10,7 @@ using Nethereum.RPC.TransactionReceipts;
 using Nethereum.RPC.TransactionTypes;
 using Nethereum.Web3;
 using Newtonsoft.Json;
-using UnityEngine;
+using NLog;
 using Account = Nethereum.Web3.Accounts.Account;
 
 namespace mud.Network
@@ -31,6 +31,7 @@ namespace mud.Network
         private ContractHandler ContractHandler { get; set; }
         private int PriorityFeeMultiplier { get; set; }
         private readonly SemaphoreSlim _semaphore = new (1, 1);
+        private static readonly NLog.Logger Logger = LogManager.GetCurrentClassLogger();
 
 
         public async Task CreateTxExecutor(Account signer, Web3 provider, string contractAddress,
@@ -69,7 +70,7 @@ namespace mud.Network
 
             var gasLimit = await _provider.Eth.GetContractTransactionHandler<TFunction>()
                 .EstimateGasAsync(_contractAddress, functionMessage);
-            Debug.Log("Gas limit: " + gasLimit.Value);
+            Logger.Debug("Gas limit: " + gasLimit.Value);
 
             functionMessage.TransactionType = TransactionType.EIP1559.AsByte();
             functionMessage.MaxPriorityFeePerGas = new HexBigInteger(GasConfig.MaxPriorityFeePerGas);
@@ -78,18 +79,18 @@ namespace mud.Network
             functionMessage.FromAddress = _signer.Address;
             functionMessage.Nonce = _currentNonce;
 
-            Debug.Log($"executing transaction with nonce {_currentNonce}");
-            Debug.Log("TxInput: " + JsonConvert.SerializeObject(functionMessage));
+            Logger.Debug($"executing transaction with nonce {_currentNonce}");
+            Logger.Debug("TxInput: " + JsonConvert.SerializeObject(functionMessage));
 
             // try
             // {
             var txHash = await _provider.Eth.GetContractTransactionHandler<TFunction>()
                 .SendRequestAsync(_contractAddress, functionMessage);
 
-            Debug.Log("TxRequest: " + txHash);
+            Logger.Debug("TxRequest: " + txHash);
             var pollingService = new TransactionReceiptPollingService(_provider.TransactionManager);
             var transactionReceipt = await pollingService.PollForReceiptAsync(txHash);
-            Debug.Log("Tx receipt: " + JsonConvert.SerializeObject(transactionReceipt));
+            Logger.Debug("Tx receipt: " + JsonConvert.SerializeObject(transactionReceipt));
 
             _currentNonce = new HexBigInteger(BigInteger.Add(BigInteger.One, _currentNonce.Value));
             // }

@@ -1,6 +1,6 @@
 {
   "dependencies": {
-    "com.unimud.unimud": {
+    "com.emergenceland.unimud": {
       "version": "file:UniMUD",
       "depth": 0,
       "source": "embedded",

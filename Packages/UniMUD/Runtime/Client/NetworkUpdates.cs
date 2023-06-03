@@ -1,12 +1,11 @@
-using System;
-using System.Net;
 using Newtonsoft.Json;
-using UnityEngine;
+using NLog;
 
 namespace mud.Client
 {
 	public static class NetworkUpdates
 	{
+		private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 		public static void ApplyNetworkUpdates(Types.NetworkTableUpdate update, Datastore dataStore)
 		{
 			// TODO: handle LastEventInTx
@@ -14,23 +13,23 @@ namespace mud.Client
 			using var tableExistsResult = dataStore.Query(tableQuery).GetEnumerator();
 			if (!tableExistsResult.MoveNext())
 			{
-				Debug.LogWarning($"Unknown component: {JsonConvert.SerializeObject(update.Component)}");
+				Logger.Warn($"Unknown component: {JsonConvert.SerializeObject(update.Component)}");
 				return;
 			}
 
 			if (update.PartialValue != null)
 			{
-				Debug.Log("UpdateValue " + JsonConvert.SerializeObject(update));
+				Logger.Debug("UpdateValue " + JsonConvert.SerializeObject(update));
 				dataStore.UpdateValue(update.Component, update.Entity.Value, update.PartialValue, update.InitialValue);
 			}
 			else if (update.Value == null)
 			{
-				Debug.Log("DeleteValue " + update.Component);
+				Logger.Debug("DeleteValue " + update.Component);
 				dataStore.DeleteValue(update.Component, update.Entity.Value);
 			}
 			else
 			{
-				Debug.Log("Set value " + JsonConvert.SerializeObject(update));
+				Logger.Debug("Set value " + JsonConvert.SerializeObject(update));
 				dataStore.SetValue(update.Component, update.Entity.Value, update.Value);
 			}
 
