@@ -6,7 +6,7 @@ namespace mud.Client
 	public static class NetworkUpdates
 	{
 		private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
-		public static void ApplyNetworkUpdates(Types.NetworkTableUpdate update, Datastore dataStore)
+		public static void ApplyNetworkUpdates(Network.Types.NetworkTableUpdate update, Datastore dataStore)
 		{
 			// TODO: handle LastEventInTx
 			var tableQuery = new Query().Find("?key").Where("TableId<datastore:DSMetadata>", "?key", "?table", update.Component);

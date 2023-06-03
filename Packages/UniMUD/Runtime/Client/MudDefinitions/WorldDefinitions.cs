@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using mud.Client;
 using mud.Network.schemas;
 
-namespace mud.Network.MudDefinitions
+namespace mud.Client.MudDefinitions
 {
     public class WorldDefinitions
     {

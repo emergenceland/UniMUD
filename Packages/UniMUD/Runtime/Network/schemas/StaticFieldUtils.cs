@@ -4,7 +4,6 @@ using System.Linq;
 using System.Numerics;
 using static mud.Network.schemas.SchemaTypes;
 
-
 namespace mud.Network.schemas
 {
     public static class StaticFieldUtils

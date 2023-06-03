@@ -4,7 +4,6 @@ using System.Linq;
 using System.Reactive.Disposables;
 using System.Reactive.Subjects;
 using System.Threading.Tasks;
-using mud.Client;
 using mud.Network.IStore;
 using Nethereum.JsonRpc.WebSocketStreamingClient;
 

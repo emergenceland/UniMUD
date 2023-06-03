@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using mud.Client;
+using mud.Network;
 using NUnit.Framework;
 using Debug = UnityEngine.Debug;
 using Types = mud.Client.Types;
@@ -29,7 +30,7 @@ public class DatastoreTests
     [Test]
     public void DatastoreSetValue()
     {
-        var position = ClientUtils.CreateProperty(("x", 1), ("y", 2));
+        var position = Utils.CreateProperty(("x", 1), ("y", 2));
         _ds.SetValue("TableId<:Position>", "123", position);
 
         var tableQuery = new Query().Find("?x", "?y")
@@ -49,7 +50,7 @@ public class DatastoreTests
     [Test]
     public void DatastoreRemoveKey()
     {
-        var position = ClientUtils.CreateProperty(("x", 1), ("y", 2));
+        var position = Utils.CreateProperty(("x", 1), ("y", 2));
 
         _ds.SetValue("TableId<:Position>", "123", position);
         _ds.DeleteValue("TableId<:Position>", "123");
@@ -72,9 +73,9 @@ public class DatastoreTests
         };
 
         _ds.RegisterTable("TableId<:Movies>", "Movies", schema);
-        var movie1 = ClientUtils.CreateProperty(("directorID", 1), ("title", "Avatar"));
-        var movie2 = ClientUtils.CreateProperty(("directorID", 1), ("title", "Titanic"));
-        var movie3 = ClientUtils.CreateProperty(("directorID", 2), ("title", "Jaws"));
+        var movie1 = Utils.CreateProperty(("directorID", 1), ("title", "Avatar"));
+        var movie2 = Utils.CreateProperty(("directorID", 1), ("title", "Titanic"));
+        var movie3 = Utils.CreateProperty(("directorID", 2), ("title", "Jaws"));
 
         _ds.RegisterTable("TableId<:Director>", "Director", dirSchema);
 
@@ -82,8 +83,8 @@ public class DatastoreTests
         _ds.SetValue("TableId<:Movies>", "456", movie2);
         _ds.SetValue("TableId<:Movies>", "789", movie3);
 
-        var dir1 = ClientUtils.CreateProperty(("name", "James Cameron"));
-        var dir2 = ClientUtils.CreateProperty(("name", "Steven Spielberg"));
+        var dir1 = Utils.CreateProperty(("name", "James Cameron"));
+        var dir2 = Utils.CreateProperty(("name", "Steven Spielberg"));
 
         _ds.SetValue("TableId<:Director>", "1", dir1);
         _ds.SetValue("TableId<:Director>", "2", dir2);
@@ -123,7 +124,7 @@ public class DatastoreTests
         stopwatch.Start();
         for (var i = 0; i < 1000; i++)
         {
-            var position = ClientUtils.CreateProperty(("x", randomWriteData[i]), ("y", randomWriteData[i]));
+            var position = Utils.CreateProperty(("x", randomWriteData[i]), ("y", randomWriteData[i]));
             _ds.SetValue("TableId<:Position>", $"Key{i}", position);
         }
 

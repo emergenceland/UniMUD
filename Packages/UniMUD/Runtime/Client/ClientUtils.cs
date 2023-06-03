@@ -15,16 +15,6 @@ namespace mud.Client
 
     public static class ClientUtils
     {
-        public static Dictionary<string, object> CreateProperty(
-            params (string Key, object Value)[] keyValuePairs
-        )
-        {
-            return keyValuePairs.ToDictionary(
-                keyValuePair => keyValuePair.Key,
-                keyValuePair => keyValuePair.Value
-            );
-        }
-        
         public static bool IsVar(string str)
         {
             return str.StartsWith("?");

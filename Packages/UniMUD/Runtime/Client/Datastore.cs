@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using mud.Network;
 using NLog;
 
 namespace mud.Client
@@ -42,8 +43,8 @@ namespace mud.Client
         public void RegisterTable(string tableId, string tableName, Dictionary<string, Types.Type>? schema = null,
             string? key = null)
         {
-            SetValue("TableId<datastore:DSMetadata>", key, ClientUtils.CreateProperty(("tableName", tableName)));
-            SetValue("TableId<datastore:DSMetadata>", key, ClientUtils.CreateProperty(("tableId", tableId)));
+            SetValue("TableId<datastore:DSMetadata>", key, Utils.CreateProperty(("tableName", tableName)));
+            SetValue("TableId<datastore:DSMetadata>", key, Utils.CreateProperty(("tableId", tableId)));
             _tableIdToName[tableId] = tableName;
             _tableNameToId[tableName] = tableId;
         }
@@ -114,7 +115,7 @@ namespace mud.Client
                 .ToList()
                 .ForEach(record =>
                 {
-                    var recordProperty = ClientUtils.CreateProperty((record.attribute, record.key));
+                    var recordProperty = Utils.CreateProperty((record.attribute, record.key));
                     _store.Remove(record);
                     _tableIndex[record.table].Remove(record);
                     _attributeIndex[record.attribute].Remove(record);

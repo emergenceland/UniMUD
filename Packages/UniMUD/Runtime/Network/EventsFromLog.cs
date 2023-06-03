@@ -8,7 +8,6 @@ using Nethereum.RPC.Eth.DTOs;
 using NLog;
 using static mud.Network.schemas.Common;
 using DecodeStore = mud.Network.schemas.DecodeStore;
-using Types = mud.Client.Types;
 
 namespace mud.Network
 {

@@ -12,7 +12,6 @@ using Nethereum.JsonRpc.WebSocketStreamingClient;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.RPC.Eth.Filters;
 using Nethereum.RPC.Reactive.Eth.Subscriptions;
-using Types = mud.Client.Types;
 
 namespace mud.Network
 {
