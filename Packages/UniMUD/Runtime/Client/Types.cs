@@ -1,7 +1,20 @@
 #nullable enable
 
+using System.Collections.Generic;
+
 namespace mud.Client
 {
+
+    public class Table
+    {
+        public Dictionary<string, Record> Records { get; set; }
+        
+        public Table()
+        {
+            Records = new Dictionary<string, Record>();
+        }
+    }
+    
     public class Types
     {
         public enum Type

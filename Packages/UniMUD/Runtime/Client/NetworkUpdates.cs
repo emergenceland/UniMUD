@@ -3,40 +3,40 @@ using NLog;
 
 namespace mud.Client
 {
-	public static class NetworkUpdates
-	{
-		private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
-		public static void ApplyNetworkUpdates(Network.Types.NetworkTableUpdate update, Datastore dataStore)
-		{
-			// TODO: handle LastEventInTx
-			var tableQuery = new Query().Find("?key").Where("TableId<datastore:DSMetadata>", "?key", "?table", update.Component);
-			using var tableExistsResult = dataStore.Query(tableQuery).GetEnumerator();
-			if (!tableExistsResult.MoveNext())
-			{
-				Logger.Warn($"Unknown component: {JsonConvert.SerializeObject(update.Component)}");
-				return;
-			}
+    public static class NetworkUpdates
+    {
+        private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
-			if (update.PartialValue != null)
-			{
-				Logger.Debug("UpdateValue " + JsonConvert.SerializeObject(update));
-				dataStore.UpdateValue(update.Component, update.Entity.Value, update.PartialValue, update.InitialValue);
-			}
-			else if (update.Value == null)
-			{
-				Logger.Debug("DeleteValue " + update.Component);
-				dataStore.DeleteValue(update.Component, update.Entity.Value);
-			}
-			else
-			{
-				Logger.Debug("Set value " + JsonConvert.SerializeObject(update));
-				dataStore.SetValue(update.Component, update.Entity.Value, update.Value);
-			}
+        public static void ApplyNetworkUpdates(Network.Types.NetworkTableUpdate update, Datastore dataStore)
+        {
+            // TODO: handle LastEventInTx
+            if (!dataStore.tableIds.TryGetValue(update.Component, out var componentTableId))
+            {
+                Logger.Warn($"Unknown component: {JsonConvert.SerializeObject(update.Component)}");
+                return;
+            }
+            
 
-			if (update.BlockNumber % 100 == 0)
-			{
-				dataStore.Save();
-			}
-		}
-	}
+            if (update.PartialValue != null)
+            {
+                Logger.Debug("UpdateValue " + JsonConvert.SerializeObject(update));
+                dataStore.Update(componentTableId, update.Entity.Value, update.PartialValue, update.InitialValue);
+            }
+            else if (update.Value == null)
+            {
+                Logger.Debug("DeleteValue " + update.Component);
+                dataStore.Delete(componentTableId, update.Entity.Value);
+            }
+            else
+            {
+                Logger.Debug("Set value " + JsonConvert.SerializeObject(update));
+                dataStore.Set(componentTableId, update.Entity.Value, update.Value);
+            }
+
+            // if (update.BlockNumber % 100 == 0)
+            // {
+            // 	dataStore.Save();
+            // }
+        }
+    }
 }
