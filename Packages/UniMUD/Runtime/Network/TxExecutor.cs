@@ -52,7 +52,7 @@ namespace mud.Network
         public async Task TxExecute<TFunction>(params object[] functionParameters)
             where TFunction : FunctionMessage, new()
         {
-            await _semaphore.WaitAsync();
+            // await _semaphore.WaitAsync();
             if (_currentNonce == new HexBigInteger(0))
             {
                 _currentNonce = await _provider.Eth.Transactions.GetTransactionCount.SendRequestAsync(_signer.Address);
@@ -108,7 +108,7 @@ namespace mud.Network
             //         }
             //     }
             // }
-            _semaphore.Release();
+            // _semaphore.Release();
         }
 
         private async Task<(BigInteger, BigInteger)> UpdateFeePerGas(int multiplier)
