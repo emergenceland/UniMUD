@@ -8,10 +8,10 @@ namespace mud.Client
 {
     public abstract class IMudTable {
         public IMudTable(){}
-        public abstract void SetValues(params object[] functionParameters);
         public abstract object[] GetValues();
         public abstract IMudTable? GetTableValue(string key);
-        public readonly TableId TableId;
+        public TableId TableId {get{return GetTableId();}}
+        public abstract TableId GetTableId();
 
         public static IMudTable? GetValue<T>(string key) where T : IMudTable, new()
         {
@@ -25,6 +25,7 @@ namespace mud.Client
 
         }
 
+        public abstract void SetValues(params object[] values);
         public abstract bool SetValues(IEnumerable<Property> result);
         
         // {

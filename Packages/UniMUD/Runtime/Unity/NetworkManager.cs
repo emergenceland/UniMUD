@@ -172,7 +172,7 @@ namespace mud.Unity
                 }
 
                 Debug.Log($"Registering table: {t.Name}");
-                if (t.GetField("TableId").GetValue(null) is not TableId tableId) return;
+                if (t.GetField("ID").GetValue(null) is not TableId tableId) return;
                 ds.RegisterTable(tableId.ToString(), tableId.name);
             }
 
