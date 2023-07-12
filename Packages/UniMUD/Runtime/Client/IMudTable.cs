@@ -8,12 +8,13 @@ namespace mud.Client
 {
     public abstract class IMudTable {
         public IMudTable(){}
-        public abstract object[] GetValues();
-        public abstract IMudTable? GetTableValue(string key);
         public TableId TableId {get{return GetTableId();}}
         public abstract TableId GetTableId();
 
-        public static IMudTable? GetValue<T>(string key) where T : IMudTable, new()
+
+        public abstract IMudTable GetTableValue(string key);
+        
+        public static IMudTable? GetTable<T>(string key) where T : IMudTable, new()
         {
             var table = new T();
             var query = new Query()
@@ -28,8 +29,10 @@ namespace mud.Client
         public abstract void SetValues(params object[] values);
         public abstract bool SetValues(IEnumerable<Property> result);
         
-        // {
 
+        //example of autogenerate setvalue from PositionTable
+        //notice how you can get a table update but some values might still be null
+        // {
         //     var hasValues = false;
 
         //     foreach (var record in result)
