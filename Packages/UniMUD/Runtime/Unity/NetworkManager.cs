@@ -165,6 +165,12 @@ namespace mud.Unity
                 .Where(p => typeof(IMudTable).IsAssignableFrom(p) && p.IsClass);
             foreach (var t in types)
             {
+
+                //ignore exact IMudTable class
+                if(t == typeof(IMudTable)) {
+                    continue;
+                }
+
                 Debug.Log($"Registering table: {t.Name}");
                 if (t.GetField("TableId").GetValue(null) is not TableId tableId) return;
                 ds.RegisterTable(tableId.ToString(), tableId.name);
