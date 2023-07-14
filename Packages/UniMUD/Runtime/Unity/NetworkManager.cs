@@ -22,6 +22,7 @@ using UnityEngine;
 
 namespace mud.Unity
 {
+    public enum NetworkType {Local,Testnet,Mainnet}
     public class LocalDeploy
     {
         public string worldAddress;
@@ -41,11 +42,12 @@ namespace mud.Unity
 
     public class NetworkManager : MonoBehaviour
     {
-        public string jsonRpcUrl = "http://localhost:8545";
-        public string wsRpcUrl = "ws://localhost:8545";
+        public NetworkType networkType;
+        public NetworkData local;
+        public NetworkData testnet;
+        public NetworkData mainnet;
 
-        public string pk;
-        public int chainId;
+
         public string contractAddress;
         public bool writeLogs = true;
         public bool disableCache = true;
@@ -79,7 +81,21 @@ namespace mud.Unity
 
             Instance = this;
 
-            var config = new NetworkConfig(jsonRpcUrl, wsRpcUrl, pk, chainId, contractAddress, disableCache);
+            NetworkData networkData = null;
+
+            if(networkType == NetworkType.Local) {
+                networkData = local;
+            } else if(networkType == NetworkType.Testnet) {
+                networkData = testnet;
+            } else if(networkType == NetworkType.Mainnet) {
+                networkData = mainnet;
+            }
+
+            if(networkData == null) {
+                Debug.LogError("No network data", this);
+            }
+
+            var config = new NetworkConfig(networkData.jsonRpcUrl, networkData.wsRpcUrl, networkData.pk, networkData.chainId, networkData.contractAddress, networkData.disableCache);
             var logUnity = new UnityLogger { Layout = "${message} ${exception:format=tostring}" };
             LogManager.Setup().SetupExtensions(s => s.RegisterTarget<UnityLogger>("UnityLogger"))
                 .LoadConfiguration(builder => builder.ForLogger().FilterMinLevel(LogLevel.Debug).WriteTo(logUnity));
@@ -89,7 +105,9 @@ namespace mud.Unity
 
         private async Task SetupNetwork(NetworkConfig config)
         {
+
             var (jsonRpcUrl, wsRpcUrl, pk, chainId, contractAddress, disableCache) = config;
+
             if (!string.IsNullOrWhiteSpace(pk))
             {
                 account = new Account(pk, chainId);
@@ -132,6 +150,7 @@ namespace mud.Unity
             _client = wsClient;
 
             var startingBlockNumber = -1;
+
 
             if (string.IsNullOrEmpty(contractAddress))
             {
