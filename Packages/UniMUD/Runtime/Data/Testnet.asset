@@ -12,9 +12,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 14fa04022fa7a524a934fef3a55e299a, type: 3}
   m_Name: Testnet
   m_EditorClassIdentifier: 
-  jsonRpcUrl: https://follower.testnet-chain.linfra.xyz:8545
-  wsRpcUrl: ws://follower.testnet-chain.linfra.xyz:8545
+  jsonRpcUrl: https://follower.testnet-chain.linfra.xyz
+  wsRpcUrl: wss://follower.testnet-chain.linfra.xyz
   contractAddress: 0x24B36920076aF3d7d2eCFBD76F5Cb84f0466CBAf
   pk: 
   chainId: 4242
-  disableCache: 0
+  disableCache: 1
