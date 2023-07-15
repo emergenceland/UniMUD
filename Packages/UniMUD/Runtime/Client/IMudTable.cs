@@ -45,7 +45,7 @@ namespace mud.Client {
 
         public bool SpawnTableType(string path, string assemblyName) {
 
-            string fileName = path + this.GetType().ToString().Replace(assemblyName + ".", "") + "Data.asset";
+            string fileName = path + this.GetType().ToString().Replace(assemblyName + ".", "") + ".asset";
 
 
             MUDTableObject typeFile = (MUDTableObject)AssetDatabase.LoadAssetAtPath(fileName, typeof(MUDTableObject));
@@ -65,7 +65,7 @@ namespace mud.Client {
 
         public bool DeleteTableType(string path, string assemblyName) {
 
-            string fileName = path + this.GetType().ToString().Replace(assemblyName + ".", "") + "Data.asset";
+            string fileName = path + this.GetType().ToString().Replace(assemblyName + ".", "") + ".asset";
 
             MUDTableObject typeFile = (MUDTableObject)AssetDatabase.LoadAssetAtPath(fileName, this.GetType());
 

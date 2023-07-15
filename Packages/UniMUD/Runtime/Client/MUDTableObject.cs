@@ -11,8 +11,11 @@ namespace mud.Client {
 
     public class MUDTableObject : ScriptableObject {
         public IMudTable Table { get { return table; } }
-        public Type TableType { get { return tableType; } }
-        public Type UpdateType { get { return updateType; } }
+        public string TableType { get { return tableName; } }
+        public string UpdateType { get { return tableUpdateName; } }
+        
+        // public Type TableType { get { return tableType; } }
+        // public Type UpdateType { get { return updateType; } }
         public void SetTable(Type newTableType) {
 
             table = (IMudTable)System.Activator.CreateInstance(newTableType);
