@@ -10,30 +10,31 @@ using UnityEditor;
 namespace mud.Client {
 
     public class MUDTableObject : ScriptableObject {
-        public IMudTable Table { get { return table; } }
-        public string TableType { get { return tableName; } }
-        public string UpdateType { get { return tableUpdateName; } }
-        
-        // public Type TableType { get { return tableType; } }
-        // public Type UpdateType { get { return updateType; } }
-        public void SetTable(Type newTableType) {
+        public string TableName { get { return tableName; } }
+        public string TableUpdateName { get { return tableUpdateName; } }
+        public Type Table { get { return tableType; } }
+        public Type TableUpdate { get { return tableUpdate; } }
+        public void SetTable(Type newtable) {
 
-            table = (IMudTable)System.Activator.CreateInstance(newTableType);
+            IMudTable table = (IMudTable)System.Activator.CreateInstance(newtable);
+            
+            tableName = table.TableType().FullName;
+            tableUpdateName = table.TableUpdateType().FullName;
 
-            tableType = table.GetType();
-            updateType = table.TableUpdateType();
+            tableType = table.TableType();
+            tableUpdate = table.TableUpdateType();
 
-            tableName = tableType.ToString();
-            tableUpdateName = updateType.ToString();
+            Debug.Log(tableType.ToString());
+            Debug.Log(tableUpdate.ToString());
 
         }
 
         [Header("Table")]
         [SerializeField] string tableName;
         [SerializeField] string tableUpdateName;
-        [SerializeField] IMudTable table;
         [SerializeField] Type tableType;
-        [SerializeField] Type updateType;
+        [SerializeField] Type tableUpdate;
+
 
     }
 
