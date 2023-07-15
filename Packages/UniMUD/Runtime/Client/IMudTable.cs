@@ -1,21 +1,29 @@
 #nullable enable
+using System;
+using System.Collections.Generic;
+
 using mud.Network.schemas;
 using mud.Unity;
 using Property = System.Collections.Generic.Dictionary<string, object>;
-using System.Collections.Generic;
+using UnityEngine;
 
-namespace mud.Client
-{
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
+
+namespace mud.Client {
+    
+    [System.Serializable]
     public abstract class IMudTable {
-        public IMudTable(){}
-        public TableId TableId {get{return GetTableId();}}
+        public TableId TableId { get { return GetTableId(); } }
         public abstract TableId GetTableId();
 
 
+        public abstract Type TableType();
+        public abstract Type TableUpdateType();
         public abstract IMudTable GetTableValue(string key);
-        
-        public static IMudTable? GetTable<T>(string key) where T : IMudTable, new()
-        {
+
+        public static T? GetValueFromTable<T>(string key) where T : IMudTable, new() {
             var table = new T();
             var query = new Query()
                 .Find("?value", "?attribute")
@@ -28,34 +36,51 @@ namespace mud.Client
 
         public abstract void SetValues(params object[] values);
         public abstract bool SetValues(IEnumerable<Property> result);
-        
+        public abstract RecordUpdate CreateTypedRecord(RecordUpdate newUpdate);
+        public abstract IMudTable RecordUpdateToTable(RecordUpdate tableUpdate);
 
-        //example of autogenerate setvalue from PositionTable
-        //notice how you can get a table update but some values might still be null
-        // {
-        //     var hasValues = false;
 
-        //     foreach (var record in result)
-        //     {
-        //         var attribute = record["attribute"].ToString();
-        //         var value = record["value"];
 
-        //         switch (attribute)
-        //         {
-        //             case "x":
-        //                 var xValue = (long)value;
-        //                 table.x = xValue;
-        //                 hasValues = true;
-        //                 break;
-        //             case "y":
-        //                 var yValue = (long)value;
-        //                 table.y = yValue;
-        //                 hasValues = true;
-        //                 break;
-        //         }
-        //     }
+#if UNITY_EDITOR
 
-        // }
+        public bool SpawnTableType(string path, string assemblyName) {
+
+            string fileName = path + this.GetType().ToString().Replace(assemblyName + ".", "") + "Data.asset";
+
+
+            MUDTableObject typeFile = (MUDTableObject)AssetDatabase.LoadAssetAtPath(fileName, typeof(MUDTableObject));
+
+            if (typeFile != null) {
+                return false;
+            }
+
+            MUDTableObject asset = (MUDTableObject)ScriptableObject.CreateInstance(typeof(MUDTableObject));
+            asset.SetTable(this.GetType());
+
+            AssetDatabase.CreateAsset(asset, fileName);
+            AssetDatabase.SaveAssets();
+
+            return true;
+        }
+
+        public bool DeleteTableType(string path, string assemblyName) {
+
+            string fileName = path + this.GetType().ToString().Replace(assemblyName + ".", "") + "Data.asset";
+
+            MUDTableObject typeFile = (MUDTableObject)AssetDatabase.LoadAssetAtPath(fileName, this.GetType());
+
+            if (typeFile == null) {
+                return false;
+            }
+
+            AssetDatabase.DeleteAsset(fileName);
+            AssetDatabase.SaveAssets();
+
+            return true;
+        }
+
+#endif
+
 
     }
 }
