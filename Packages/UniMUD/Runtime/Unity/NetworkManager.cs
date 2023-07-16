@@ -65,7 +65,8 @@ namespace mud.Unity
         private readonly CompositeDisposable _disposables = new();
         public event Action<NetworkManager> OnNetworkInitialized = delegate { };
         public static NetworkManager Instance { get; private set; }
-        [NonSerialized] public bool isNetworkInitialized = false;
+        public static bool NetworkInitialized {get{return m_NetworkInitialized;}}
+        private static bool m_NetworkInitialized = false;
         [NonSerialized] public Dictionary<GameObject, string> gameObjectToKey = new();
         private CancellationTokenSource _cts;
         private static readonly NLog.Logger Logger = LogManager.GetCurrentClassLogger();
@@ -216,7 +217,7 @@ namespace mud.Unity
                 .Subscribe(_syncWorker.OutputStream, (update) => { NetworkUpdates.ApplyNetworkUpdates(update, ds); })
                 .AddTo(_disposables);
             OnNetworkInitialized(this);
-            isNetworkInitialized = true;
+            m_NetworkInitialized = true;
         }
 
         private static async Task<BigInteger> GetCurrentBlockNumberAsync(Web3 provider)
