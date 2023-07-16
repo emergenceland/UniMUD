@@ -12,8 +12,18 @@ namespace mud.Client {
     public class MUDTableObject : ScriptableObject {
         public string TableName { get { return tableName; } }
         public string TableUpdateName { get { return tableUpdateName; } }
+        public GameObject DefaultPrefab {get {return defaultPrefab;}}
         public Type Table { get { return tableType; } }
         public Type TableUpdate { get { return tableUpdate; } }
+
+        [Header("Table")]
+        [SerializeField] string tableName;
+        [SerializeField] string tableUpdateName;
+        [SerializeField] GameObject defaultPrefab;
+        [SerializeField] Type tableType;
+        [SerializeField] Type tableUpdate;
+
+
         public void SetTable(Type newtable) {
 
             IMudTable table = (IMudTable)System.Activator.CreateInstance(newtable);
@@ -29,11 +39,6 @@ namespace mud.Client {
 
         }
 
-        [Header("Table")]
-        [SerializeField] string tableName;
-        [SerializeField] string tableUpdateName;
-        [SerializeField] Type tableType;
-        [SerializeField] Type tableUpdate;
 
 
     }
