@@ -16,7 +16,6 @@ namespace mud.Client
                 return;
             }
             
-
             if (update.PartialValue != null)
             {
                 Logger.Debug("UpdateValue " + JsonConvert.SerializeObject(update));

@@ -146,7 +146,6 @@ namespace mud.Client
                 context.RemoveWhere(record => !_queryVariables.All(record.table.Contains));
             }
 
-            // Debug.Log("FINAL RESULT: " + JsonConvert.SerializeObject(context));
             return context ?? new HashSet<Record>();
         }
     }

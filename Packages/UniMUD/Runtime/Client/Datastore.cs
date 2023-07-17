@@ -11,6 +11,20 @@ using Logger = NLog.Logger;
 namespace mud.Client
 {
     using Property = Dictionary<string, object>;
+    
+    // public class ConfigTables
+    // {
+    //     public Table CounterTable { get; } = new();
+    //     public Table SomethingTable { get; } = new();
+    //     public Table OtherTable { get; } = new();
+    // }
+    //
+    // public class Config
+    // {
+    //     public string Namespace { get; } = "asd";
+    //     public ConfigTables Tables;
+    // }
+    
 
     public class Datastore
     {
@@ -93,22 +107,33 @@ namespace mud.Client
             return query.Run(store);
         }
 
-        public IObservable<List<Record>> RxQuery(Query query)
+        public IObservable<(List<Record> SetRecords, List<Record>RemovedRecords)> RxQuery(Query query)
         {
             var queryTables = query.GetTableFilters().Select(f => f.Table);
             var tableSubjects =
                 queryTables.Select(t => _onDataStoreUpdate.Where(update => update.TableId == t.ToString()));
             var tableUpdates = tableSubjects.Merge();
-            
-            return Observable.Create<List<Record>>(observer =>
+
+            return Observable.Create<(List<Record>, List<Record>)>(observer =>
             {
                 var initialResult = RunQuery(query).ToList();
-                observer.OnNext(initialResult);
+                observer.OnNext((SetRecords: initialResult, RemovedRecords: new List<Record>()));
 
-                var updateSubscription = tableUpdates.Subscribe((update) =>
+                var updateSubscription = tableUpdates.Subscribe(update =>
                 {
                     var updated = RunQuery(query).ToList();
-                    observer.OnNext(updated);
+                    switch (update.Type)
+                    {
+                        case UpdateType.SetField:
+                        case UpdateType.SetRecord:
+                            observer.OnNext((SetRecords: updated, RemovedRecords: new List<Record>()));
+                            break;
+                        case UpdateType.DeleteRecord:
+                            observer.OnNext((new List<Record>(), updated));
+                            break;
+                        default:
+                            throw new ArgumentOutOfRangeException();
+                    }
                 });
                 return updateSubscription;
             });

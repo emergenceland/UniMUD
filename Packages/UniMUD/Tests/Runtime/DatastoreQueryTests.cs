@@ -134,11 +134,14 @@ namespace Tests.Runtime
 
             var fullHealth = new Query().Select(Health).In(Position).In(Health, new[] { Condition.Has("value", 100) });
 
-            var lastReactionResult = new List<Record>();
+            var set = new List<Record>();
+            var removed = new List<Record>();
             var disposer = _ds.RxQuery(fullHealth).Subscribe(list =>
             {
-                lastReactionResult.AddRange(list);
-                Debug.Log(JsonConvert.SerializeObject(list));
+                var (setRecords, removedRecords) = list;
+                set.AddRange(setRecords);
+                removed.AddRange(removedRecords);
+                Debug.Log("REACTION: " + JsonConvert.SerializeObject(list));
             });
 
             _ds.Set(Position, "a", position);
@@ -146,18 +149,17 @@ namespace Tests.Runtime
             _ds.Set(Health, "a", h1);
             _ds.Set(Health, "b", h2);
 
-            Assert.IsNotEmpty(lastReactionResult);
-            Debug.Log("Length: " + lastReactionResult.Count);
-            Debug.Log("Last: " + JsonConvert.SerializeObject(lastReactionResult));
-            var length = lastReactionResult.Count;
+            Assert.IsNotEmpty(set);
+            Debug.Log("Length: " + set.Count);
+            Debug.Log("Last: " + JsonConvert.SerializeObject(set));
             
             // make sure we only have 2 records
-            Assert.AreEqual(2, lastReactionResult.Count);
+            Assert.AreEqual(2, set.Count);
             
             // delete 1 health record 
             _ds.Delete(Health, "a");
             
-            Assert.AreEqual(length - 1, lastReactionResult.Count);
+            Assert.AreEqual(1, removed.Count);
             disposer.Dispose();
         }
     }

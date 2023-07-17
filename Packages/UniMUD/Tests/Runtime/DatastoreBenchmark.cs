@@ -87,7 +87,7 @@ namespace Tests.Runtime
         {
             var result = new List<Record>();
             var query = new Query().In(Position);
-            var disposer = _ds.RxQuery(query).Subscribe(res => result.AddRange(res));
+            var disposer = _ds.RxQuery(query).Subscribe(res => result.AddRange(res.SetRecords));
             var queryTime = MeasureTime(() =>
             {
                 for (var i = 0; i < 10000; i++)
