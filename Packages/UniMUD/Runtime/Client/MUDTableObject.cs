@@ -22,11 +22,11 @@ namespace mud.Client {
         [SerializeField] GameObject defaultPrefab;
         [SerializeField] Type tableType;
         [SerializeField] Type tableUpdate;
-
+        [SerializeField] IMudTable table;
 
         public void SetTable(Type newtable) {
 
-            IMudTable table = (IMudTable)System.Activator.CreateInstance(newtable);
+            table = (IMudTable)System.Activator.CreateInstance(newtable);
             
             tableName = table.TableType().FullName;
             tableUpdateName = table.TableUpdateType().FullName;
@@ -38,9 +38,6 @@ namespace mud.Client {
             Debug.Log(tableUpdate.ToString());
 
         }
-
-
-
     }
 
 }
