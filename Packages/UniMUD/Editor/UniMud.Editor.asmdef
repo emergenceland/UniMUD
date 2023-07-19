@@ -2,8 +2,8 @@
     "name": "UniMud.Editor",
     "rootNamespace": "",
     "references": [
-        "GUID:889267958525f42d7b5a3b028f42ca57",
-        "GUID:c21ea7f9233b322458e34c3e55d99b6b"
+        "UniMud",
+        "DefaultNamespace"
     ],
     "includePlatforms": [
         "Editor"
