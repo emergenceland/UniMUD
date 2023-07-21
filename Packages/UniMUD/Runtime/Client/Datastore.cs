@@ -12,20 +12,6 @@ namespace mud.Client
 {
     using Property = Dictionary<string, object>;
     
-    // public class ConfigTables
-    // {
-    //     public Table CounterTable { get; } = new();
-    //     public Table SomethingTable { get; } = new();
-    //     public Table OtherTable { get; } = new();
-    // }
-    //
-    // public class Config
-    // {
-    //     public string Namespace { get; } = "asd";
-    //     public ConfigTables Tables;
-    // }
-    
-
     public class Datastore
     {
         // tableId -> table -> records

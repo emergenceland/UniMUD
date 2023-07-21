@@ -136,12 +136,11 @@ namespace Tests.Runtime
 
             var set = new List<Record>();
             var removed = new List<Record>();
-            var disposer = _ds.RxQuery(fullHealth).Subscribe(list =>
+            var disposer = _ds.RxQuery(fullHealth).Subscribe(((List<Record> set, List<Record> removed) updates )=>
             {
-                var (setRecords, removedRecords) = list;
-                set.AddRange(setRecords);
-                removed.AddRange(removedRecords);
-                Debug.Log("REACTION: " + JsonConvert.SerializeObject(list));
+                set.AddRange(set);
+                removed.AddRange(removed);
+                Debug.Log("REACTION: " + JsonConvert.SerializeObject(updates));
             });
 
             _ds.Set(Position, "a", position);

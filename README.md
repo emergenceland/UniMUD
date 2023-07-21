@@ -55,7 +55,7 @@ async void Move(int x, int y)
 
 ### Representing State
 
-UniMUD caches MUD v2 events in the client for you in a "datastore." You can access the datastore via the NetworkManager instance. The datastore keeps a collection of Records:
+UniMUD caches MUD v2 events in the client for you in a "datastore." You can access the datastore via the NetworkManager instance. The datastore keeps a multilevel index of tableId -> table -> records
 
 ```csharp
 class Record {
@@ -98,6 +98,21 @@ Record? GetMonstersWithKey(string monsterKey) {
 	var monstersTable = new TableId("", "Monsters");
 
 	return ds.GetValue(monstersTable, monsterKey);
+}
+```
+
+### Setting a value
+
+Use the `Set` method on the datastore:
+
+```csharp
+void SetMonsterName(string monsterKey, string name) {
+  var ds = NetworkManager.Instance.ds;
+  var monstersTable = new TableId("", "Monsters");
+
+  ds.Set(monstersTable, monsterKey, new Dictionary<string, object> {
+    { "name", name }
+  });
 }
 ```
 
@@ -167,19 +182,23 @@ public class Health : MonoBehaviour
 {
     private IDisposable _disposable = new();
 
+    private int m_CurrentHealth = 0;
+
     private void Awake()
     {
+      // get the health table value from all entities that have health, initialHealth, and a position.
       var healthValues = new Query().Select(Health).In(InitialHealth).In(Health).In(TilePosition);
+
       _disposable = NetworkManager.Instance.ds
+      	// RxQuery returns a tuple of 2 lists: (added, removed)
         .RxQuery(healthValues).ObserveOnMainThread()
         .Subscribe(OnHealthChange);
     }
 
-    private void OnHealthChange(RecordUpdate update)
+    private void OnHealthChange((List<Record> SetRecords, List<Record> RemovedRecords) update)
     {
-      // update.Value is a tuple of (currentValue, previousValue)
-      var currentValue = update.Value.Item1;
-      var previousValue = update.Value.Item2;
+      var setValues = update.Item1;
+      var removedvalues = update.Item2;
 
       // Values are Dictionaries mapping string attributes to their values.
       // For example, if your mud config defines Health as:
@@ -188,10 +207,23 @@ public class Health : MonoBehaviour
       //      myHealthValue: "uint32",
       //      },
       //    }
+      // The value will be a Dictionary<string, object> with a single key named "myHealthValue".
 
-      // Then the value will be a Dictionary<string, object> with a single key named "myHealthValue".
-      m_CurrentHealth = Convert.ToSingle(currentValue.myHealthValue);
-      SetHealthUI();
+       foreach (var record in setValues)
+       {
+            var currentValue = record.value;
+            if (currentValue == null) return;
+
+            m_CurrentHealth = Convert.ToSingle(currentValue["myHealthValue"]);
+            SetHealthUI();
+      }
+
+      foreach (var record in removedValues)
+      {
+        // if health has been removed, then the entity has died.
+        var entityKey = record.key;
+        KillEntity(entityKey);
+      }
   }
 
   private void OnDestroy()
