@@ -124,6 +124,46 @@ namespace Tests.Runtime
             Assert.AreEqual("a", firstResult.key);
             Assert.IsFalse(q2.MoveNext());
         }
+        
+                [Test]
+        public void RxQuerySimple()
+        {
+            var position = Utils.CreateProperty(("x", 1), ("y", 2));
+            var position2 = Utils.CreateProperty(("x", 1), ("y", 1));
+            var h1 = Utils.CreateProperty(("value", 100));
+            var h2 = Utils.CreateProperty(("value", 50));
+            
+            _ds.Set(Position, "a", position);
+            _ds.Set(Position, "b", position);
+
+            var fullHealth = new Query().In(Position);
+
+            var set = new List<Record>();
+            var removed = new List<Record>();
+            var disposer = _ds.RxQuery(fullHealth, false).Subscribe(((List<Record> set, List<Record> removed) updates )=>
+            {
+                set.AddRange(updates.set);
+                removed.AddRange(updates.removed);
+                Debug.Log("REACTION: " + JsonConvert.SerializeObject(updates));
+            });
+            
+            // change position of entity A 
+            _ds.Update(Position, "a", position2);
+            // change position of entity B
+            _ds.Update(Position, "b", position2); // should not update because it doesn't have full health
+
+            Debug.Log("Length: " + set.Count);
+            Debug.Log("Last: " + JsonConvert.SerializeObject(set));
+            
+            // make sure we only have 2 updates
+            Assert.AreEqual(2, set.Count);
+            
+            // delete 1 position record 
+            _ds.Delete(Position, "a");
+            
+            Assert.AreEqual(1, removed.Count);
+            disposer.Dispose();
+        }
 
         [Test]
         public void RxQueryWithCondition()

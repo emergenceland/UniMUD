@@ -97,7 +97,7 @@ namespace mud.Client
             return query.Run(store);
         }
 
-        public IObservable<(List<Record> SetRecords, List<Record>RemovedRecords)> RxQuery(Query query,
+        public IObservable<(List<Record> SetRecords, List<Record> RemovedRecords)> RxQuery(Query query,
             bool pushInitialResults = true)
         {
             var queryTables = query.GetTableFilters().Select(f => f.Table);
@@ -105,7 +105,7 @@ namespace mud.Client
                 queryTables.Select(t => _onRxDataStoreUpdate.Where(update => update.TableId == t.ToString()));
             var tableUpdates = tableSubjects.Merge();
 
-            return Observable.Create<(List<Record>, List<Record>)>(observer =>
+            return Observable.Create<(List<Record> SetRecords, List<Record> RemovedRecords)>(observer =>
             {
                 var initialResult = RunQuery(query).ToList();
                 if (pushInitialResults)
@@ -132,7 +132,6 @@ namespace mud.Client
                                 observer.OnNext((SetRecords: new List<Record> { setRecord },
                                     RemovedRecords: new List<Record>()));
                             }
-
                             break;
                         case UpdateType.DeleteRecord:
                             observer.OnNext((SetRecords: new List<Record>(),
