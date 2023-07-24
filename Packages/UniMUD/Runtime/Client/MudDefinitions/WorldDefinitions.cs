@@ -17,8 +17,7 @@ namespace mud.Client.MudDefinitions
             TableId funcSelectorId = new TableId("", "funcSelectors");
 
             dataStore.RegisterTable(
-                nsOwnerId.ToString(),
-                "NamespaceOwner",
+                nsOwnerId,
                 new Dictionary<string, Types.Type>
                 {
                     { "owner", Types.Type.String }
@@ -26,8 +25,7 @@ namespace mud.Client.MudDefinitions
             );
 
             dataStore.RegisterTable(
-                resourceAccessId.ToString(),
-                "ResourceAccess",
+                resourceAccessId,
                 new Dictionary<string, Types.Type>
                 {
                     { "access", Types.Type.Boolean }
@@ -35,8 +33,7 @@ namespace mud.Client.MudDefinitions
             );
 
             dataStore.RegisterTable(
-                installedModulesId.ToString(),
-                "InstalledModules",
+                installedModulesId,
                 new Dictionary<string, Types.Type>
                 {
                     { "moduleAddress", Types.Type.String }
@@ -44,8 +41,7 @@ namespace mud.Client.MudDefinitions
             );
 
             dataStore.RegisterTable(
-                systemsId.ToString(),
-                "Systems",
+                systemsId,
                 new Dictionary<string, Types.Type>
                 {
                     { "system", Types.Type.String },
@@ -54,8 +50,7 @@ namespace mud.Client.MudDefinitions
             );
 
             dataStore.RegisterTable(
-                systemRegistryId.ToString(),
-                "SystemRegistry",
+                systemRegistryId,
                 new Dictionary<string, Types.Type>
                 {
                     { "resourceSelector", Types.Type.String }
@@ -63,8 +58,7 @@ namespace mud.Client.MudDefinitions
             );
 
             dataStore.RegisterTable(
-                resourceTypeId.ToString(),
-                "ResourceType",
+                resourceTypeId,
                 new Dictionary<string, Types.Type>
                 {
                     { "resourceType", Types.Type.Number },
@@ -72,8 +66,7 @@ namespace mud.Client.MudDefinitions
             );
 
             dataStore.RegisterTable(
-                funcSelectorId.ToString(),
-                "funcSelectors",
+                funcSelectorId,
                 new Dictionary<string, Types.Type>
                 {
                     { "namespace", Types.Type.String },

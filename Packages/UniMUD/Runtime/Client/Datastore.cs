@@ -2,222 +2,132 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using mud.Network;
+using System.Reactive.Linq;
+using System.Reactive.Subjects;
+using mud.Network.schemas;
 using NLog;
+using Logger = NLog.Logger;
 
 namespace mud.Client
 {
     using Property = Dictionary<string, object>;
-
+    
     public class Datastore
     {
-        private HashSet<Record> _store;
-        public readonly IDataStorage? dataStorage;
+        // tableId -> table -> records
+        public readonly Dictionary<string, Table> store;
+        public Dictionary<string, TableId> tableIds;
 
-        // indexing
-        private readonly Dictionary<string, HashSet<Record>> _tableIndex;
-        private readonly Dictionary<string, HashSet<Record>> _attributeIndex;
-        private readonly Dictionary<string, string> _nextTableKeys;
-        private readonly Dictionary<string, string> _tableIdToName;
-        private readonly Dictionary<string, string> _tableNameToId;
-
-        private readonly System.Reactive.Subjects.ReplaySubject<RecordUpdate> _onDataStoreUpdate = new();
+        private readonly ReplaySubject<RecordUpdate> _onDataStoreUpdate = new();
+        private readonly Subject<RecordUpdate> _onRxDataStoreUpdate = new(); // bit of a hack rn
         public IObservable<RecordUpdate> OnDataStoreUpdate => _onDataStoreUpdate;
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
-        public Datastore(IDataStorage? dataStorage = null)
+        public Datastore()
         {
-            _store = new HashSet<Record>();
-            _tableIndex = _store.GroupBy(r => r.table).ToDictionary(g => g.Key, g => g.ToHashSet());
-            _attributeIndex = _store.GroupBy(r => r.attribute).ToDictionary(g => g.Key, g => g.ToHashSet());
-            _nextTableKeys = new Dictionary<string, string>();
-            _tableIdToName = new Dictionary<string, string>();
-            _tableNameToId = new Dictionary<string, string>();
-
-            if (dataStorage != null) this.dataStorage = dataStorage;
-
-            _tableIdToName["TableId<datastore:DSMetadata>"] = "datastore:DSMetadata";
-            _tableNameToId["datastore:DSMetadata"] = "TableId<datastore:DSMetadata>";
+            store = new Dictionary<string, Table>();
+            tableIds = new Dictionary<string, TableId>();
         }
 
-        public void RegisterTable(string tableId, string tableName, Dictionary<string, Types.Type>? schema = null,
+        public void RegisterTable(TableId table, Dictionary<string, Types.Type>? schema = null,
             string? key = null)
         {
-            SetValue("TableId<datastore:DSMetadata>", key, Utils.CreateProperty(("tableName", tableName)));
-            SetValue("TableId<datastore:DSMetadata>", key, Utils.CreateProperty(("tableId", tableId)));
-            _tableIdToName[tableId] = tableName;
-            _tableNameToId[tableName] = tableId;
+            store.TryAdd(table.ToString(), new Table());
+            tableIds.TryAdd(table.ToString(), table);
         }
 
-        public void SetValue(string table, string? key, Property value)
+        public void Set(TableId tableId, string? entity, Property value)
         {
-            var index = key ?? GetKey(table);
-            foreach (var (propertyName, propertyValue) in value)
+            var tableKey = tableId.ToString();
+            var index = entity ?? GetKey(tableKey);
+            var hasTable = store.TryGetValue(tableKey, out var table);
+            var record = new Record(tableKey, entity, value);
+            if (table != null && hasTable && table.Records.ContainsKey(index))
             {
-                var newRecord = new Record(table, index, propertyName, propertyValue);
-                if (!_store.Contains(newRecord))
-                {
-                    _store.Add(newRecord);
-
-                    if (!_tableIndex.TryGetValue(table, out var tableIndexSet))
-                    {
-                        tableIndexSet = new HashSet<Record>();
-                        _tableIndex[table] = tableIndexSet;
-                    }
-
-                    tableIndexSet.Add(newRecord);
-
-                    if (!_attributeIndex.TryGetValue(propertyName, out var attributeIndexSet))
-                    {
-                        attributeIndexSet = new HashSet<Record>();
-                        _attributeIndex[propertyName] = attributeIndexSet;
-                    }
-
-                    attributeIndexSet.Add(newRecord);
-                }
-                else
-                {
-                    var existingRecord =
-                        _store.First(r => r.table == table && r.key == index && r.attribute == propertyName);
-                    existingRecord.value = propertyValue;
-                    EmitUpdate(UpdateType.SetField, table, index, value);
-                    return;
-                }
-
-                EmitUpdate(UpdateType.SetRecord, table, index, value);
+                store[tableKey].Records[index] = record;
+                EmitUpdate(UpdateType.SetField, tableKey, index, record.value);
+                return;
             }
+
+            store[tableKey].Records[index] = record;
+            EmitUpdate(UpdateType.SetRecord, tableKey, index, record.value);
         }
 
-        public void UpdateValue(string table, string key, Property value, Property? initialValue)
+        public void Update(TableId tableId, string? entity, Property value, Property? initialValue = null)
         {
-            var existingRecord = _store.FirstOrDefault(r => r.table == table && r.key == key);
-            if (existingRecord == null)
+            var tableKey = tableId.ToString();
+            var index = entity ?? GetKey(tableKey);
+            if (!store[tableKey].Records.ContainsKey(index))
             {
-                SetValue(table, key, value);
+                Set(tableId, index, value);
             }
             else
             {
-                _store
-                    .Where(r => r.table == table && r.key == key)
-                    .ToList()
-                    .ForEach(r =>
-                    {
-                        r.value = value;
-                        EmitUpdate(UpdateType.SetField, table, key, value);
-                    });
+                var record = new Record(tableKey, entity, value);
+                store[tableKey].Records[index] = record;
+                EmitUpdate(UpdateType.SetField, tableKey, index, record.value, initialValue);
             }
         }
 
-        public void DeleteValue(string table, string key)
+        public void Delete(TableId tableId, string key)
         {
-            _store
-                .Where(r => r.table == table && r.key == key)
-                .ToList()
-                .ForEach(record =>
+            var tableKey = tableId.ToString();
+            if (!store[tableKey].Records.ContainsKey(key)) return;
+            EmitUpdate(UpdateType.DeleteRecord, tableKey, key, null, store[tableKey].Records[key].value);
+            store[tableKey].Records.Remove(key);
+        }
+
+        public Record? GetValue(TableId tableId, string key)
+        {
+            var tableKey = tableId.ToString();
+            var hasTable = store.TryGetValue(tableKey, out var table);
+            if (!hasTable) return null;
+            var hasKey = store[tableKey].Records.TryGetValue(key, out var value);
+            return hasKey ? value : null;
+        }
+
+        protected string GetKey(string tableId)
+        {
+            if (!store.ContainsKey(tableId)) throw new Exception($"Table {tableId} does not exist");
+            return store[tableId].Records.Count == 0 ? "1" : (store[tableId].Records.Count + 1).ToString();
+        }
+
+        public IEnumerable<Record> RunQuery(Query query)
+        {
+            return query.Run(store);
+        }
+
+        public IObservable<(List<Record> SetRecords, List<Record>RemovedRecords)> RxQuery(Query query)
+        {
+            var queryTables = query.GetTableFilters().Select(f => f.Table);
+            var tableSubjects =
+                queryTables.Select(t => _onRxDataStoreUpdate.Where(update => update.TableId == t.ToString()));
+            var tableUpdates = tableSubjects.Merge();
+
+            return Observable.Create<(List<Record>, List<Record>)>(observer =>
+            {
+                var initialResult = RunQuery(query).ToList();
+                observer.OnNext((SetRecords: initialResult, RemovedRecords: new List<Record>()));
+
+                var updateSubscription = tableUpdates.Subscribe(update =>
                 {
-                    var recordProperty = Utils.CreateProperty((record.attribute, record.key));
-                    _store.Remove(record);
-                    _tableIndex[record.table].Remove(record);
-                    _attributeIndex[record.attribute].Remove(record);
-                    EmitUpdate(UpdateType.DeleteRecord, table, key, null, recordProperty);
+                    var updated = RunQuery(query).ToList();
+                    switch (update.Type)
+                    {
+                        case UpdateType.SetField:
+                        case UpdateType.SetRecord:
+                            observer.OnNext((SetRecords: updated, RemovedRecords: new List<Record>()));
+                            break;
+                        case UpdateType.DeleteRecord:
+                            observer.OnNext((new List<Record>(), updated));
+                            break;
+                        default:
+                            throw new ArgumentOutOfRangeException();
+                    }
                 });
-        }
-
-        protected string GetKey(string table)
-        {
-            if (_nextTableKeys.TryGetValue(table, out string nextKey))
-            {
-                var key = nextKey;
-                _nextTableKeys[table] = GenerateNextKey(nextKey);
-                return key;
-            }
-            else
-            {
-                var key = "1";
-                _nextTableKeys[table] = GenerateNextKey(key);
-                return key;
-            }
-        }
-
-        private string GenerateNextKey(string currentKey)
-        {
-            int nextKey = int.Parse(currentKey) + 1;
-            return nextKey.ToString();
-        }
-
-        public string? GetTableName(string tableId)
-        {
-            return _tableIdToName.TryGetValue(tableId, out var tableName) ? tableName : null;
-        }
-
-        public string? GetTableId(string tableName)
-        {
-            return _tableNameToId.TryGetValue(tableName, out var tableId) ? tableId : null;
-        }
-
-        private HashSet<Record> CandidateRecords(List<string> pattern)
-        {
-            return pattern.Count switch
-            {
-                >= 1 when !ClientUtils.IsVar(pattern[0]) && _tableIndex.ContainsKey(pattern[0]) => _tableIndex
-                    .GetValueOrDefault(pattern[0], _store),
-                >= 3 when !ClientUtils.IsVar(pattern[2]) && _attributeIndex.ContainsKey(pattern[2]) => _attributeIndex
-                    .GetValueOrDefault(pattern[2], _store),
-                _ => _store
-            };
-        }
-
-        public IEnumerable<Property> Query(Query query)
-        {
-            var bindingsList = query.whereVars.Aggregate(new List<Property> { new() }, (bindings, pattern) =>
-            {
-                var candidateRecords = CandidateRecords(pattern);
-                return bindings.SelectMany(b => query.RunQuery(pattern, candidateRecords, b)).ToList();
+                return updateSubscription;
             });
-
-            if (query.findVars.Any())
-            {
-                foreach (var binding in bindingsList)
-                {
-                    if (!query.findVars.All(binding.ContainsKey)) continue;
-                    var result = new Property();
-                    foreach (var key in query.findVars)
-                    {
-                        result[key.Replace("?", "")] = binding[key];
-                    }
-
-                    yield return result;
-                }
-            }
-            else
-            {
-                foreach (var binding in bindingsList)
-                {
-                    yield return new Property(binding);
-                }
-            }
         }
-
-        public IEnumerable<Record>? GetRecordsByKey(string table, string key)
-        {
-            return _store.Where(r => r.table == table && r.key == key);
-        }
-
-        // public IObservable<List<Property>> SubQuery(Query query)
-        // {
-        //     return Observable.Create<List<Property>>(observer =>
-        //     {
-        //         var initialResult = Query(query);
-        //         observer.OnNext(initialResult);
-        //
-        //         var updateSubscription = _onDataStoreUpdate.Subscribe((update) =>
-        //         {
-        //             var updated = Query(query);
-        //             observer.OnNext(updated);
-        //         });
-        //         return updateSubscription;
-        //     });
-        // }
 
         private void EmitUpdate(UpdateType type, string tableId, string keyIndex, Property? value,
             Property? previousValue = null)
@@ -226,37 +136,17 @@ namespace mud.Client
             {
                 Type = type,
                 TableId = tableId,
-                TableName = _tableIdToName[tableId],
                 Key = keyIndex,
                 Value = new Tuple<Property?, Property?>(value, previousValue)
             });
-        }
-
-        public void Save()
-        {
-            if (dataStorage != null) dataStorage.Write(_store);
-        }
-
-        public int? GetCachedBlockNumber()
-        {
-            if (dataStorage != null) return dataStorage.GetCachedBlockNumber();
-            return null;
-        }
-
-        public void LoadCache()
-        {
-            if (dataStorage != null)
+            
+            _onRxDataStoreUpdate.OnNext(new RecordUpdate
             {
-                var data = dataStorage.Load();
-                var updates = data.ToHashSet();
-                // foreach (var record in updates)
-                // {
-                //     var prop = ClientUtils.CreateProperty((record.attribute, record.value));
-                //     // UpdateStream(record.table, record.key, record.attribute, record.value));
-                // }
-                if (data != null) _store = updates;
-                Logger.Debug($"Got {updates?.Count()} items from cache");
-            }
+                Type = type,
+                TableId = tableId,
+                Key = keyIndex,
+                Value = new Tuple<Property?, Property?>(value, previousValue)
+            });
         }
     }
 }

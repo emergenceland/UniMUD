@@ -14,14 +14,12 @@ namespace mud.Client.MudDefinitions
             TableId mixedId = new TableId("mudstore", "Mixed");
 
             dataStore.RegisterTable(
-                hooksId.ToString(),
-                "Hooks",
+                hooksId,
                 new Dictionary<string, Types.Type> { { "value", Types.Type.StringArray } }
             );
 
             dataStore.RegisterTable(
-                callbacksId.ToString(),
-                "Callbacks",
+                callbacksId,
                 new Dictionary<string, Types.Type>
                 {
                     { "value", Types.Type.BigIntArray }
@@ -29,8 +27,7 @@ namespace mud.Client.MudDefinitions
             );
 
             dataStore.RegisterTable(
-                storeMetadataId.ToString(),
-                "StoreMetadata",
+                storeMetadataId,
                 new Dictionary<string, Types.Type>
                 {
                     { "tableName", Types.Type.String },
@@ -39,8 +36,7 @@ namespace mud.Client.MudDefinitions
             );
 
             dataStore.RegisterTable(
-                mixedId.ToString(),
-                "Mixed",
+                mixedId,
                 new Dictionary<string, Types.Type>
                 {
                     { "u32", Types.Type.Number },

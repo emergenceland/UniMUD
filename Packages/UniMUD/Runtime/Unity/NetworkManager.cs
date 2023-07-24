@@ -14,8 +14,8 @@ using Nethereum.JsonRpc.WebSocketStreamingClient;
 using Nethereum.RPC.Eth.Blocks;
 using Nethereum.Web3;
 using Nethereum.Web3.Accounts;
+using Newtonsoft.Json;
 using NLog;
-using NLog.Targets;
 using UniRx;
 using UnityEngine;
 
@@ -41,13 +41,16 @@ namespace mud.Unity
 
     public class NetworkManager : MonoBehaviour
     {
-        public string jsonRpcUrl = "http://localhost:8545";
+        [Header("Network settings")] public string jsonRpcUrl = "http://localhost:8545";
         public string wsRpcUrl = "ws://localhost:8545";
-
-        public string pk;
         public int chainId;
         public string contractAddress;
-        public bool writeLogs = true;
+
+        [Header("Dev settings")] public string pk;
+
+        [Tooltip("Generate new wallet every time instead of loading from PlayerPrefs")]
+        public bool uniqueWallets = true;
+
         public bool disableCache = true;
 
         public readonly TxExecutor worldSend = new();
@@ -64,7 +67,6 @@ namespace mud.Unity
         public event Action<NetworkManager> OnNetworkInitialized = delegate { };
         public static NetworkManager Instance { get; private set; }
         [NonSerialized] public bool isNetworkInitialized = false;
-        [NonSerialized] public Dictionary<GameObject, string> gameObjectToKey = new();
         private CancellationTokenSource _cts;
         private static readonly NLog.Logger Logger = LogManager.GetCurrentClassLogger();
 
@@ -97,7 +99,7 @@ namespace mud.Unity
             else
             {
                 var savedBurnerWallet = PlayerPrefs.GetString("burnerWallet");
-                if (!string.IsNullOrWhiteSpace(savedBurnerWallet))
+                if (!string.IsNullOrWhiteSpace(savedBurnerWallet) && !uniqueWallets)
                 {
                     account = new Account(savedBurnerWallet, chainId);
                     Debug.Log("Loaded burner wallet: " + account.Address);
@@ -111,8 +113,11 @@ namespace mud.Unity
                     // TODO: Insecure.
                     // We can use Nethereum's KeyStoreScryptService
                     // However, this requires user to set a password
-                    PlayerPrefs.SetString("burnerWallet", privateKey);
-                    PlayerPrefs.Save();
+                    if (!uniqueWallets)
+                    {
+                        PlayerPrefs.SetString("burnerWallet", privateKey);
+                        PlayerPrefs.Save();
+                    }
                 }
 
                 address = account.Address;
@@ -158,7 +163,8 @@ namespace mud.Unity
             var storeContract = new IStoreService(_provider, contractAddress);
 
             var jsonStore = new JsonDataStorage(Application.persistentDataPath + contractAddress + ".json");
-            ds = new Datastore(jsonStore);
+            // ds = new Datastore(jsonStore);
+            ds = new Datastore(); // TODO: add persistence
 
             var types = AppDomain.CurrentDomain.GetAssemblies()
                 .SelectMany(s => s.GetTypes())
@@ -167,19 +173,20 @@ namespace mud.Unity
             {
                 Debug.Log($"Registering table: {t.Name}");
                 if (t.GetField("TableId").GetValue(null) is not TableId tableId) return;
-                ds.RegisterTable(tableId.ToString(), tableId.name);
+                ds.RegisterTable(tableId);
             }
 
             WorldDefinitions.DefineDataStoreConfig(ds);
             StoreDefinitions.DefineDataStoreConfig(ds);
 
-            ds.RegisterTable(new TableId("mudstore", "schema").ToString(), "Schema");
+            ds.RegisterTable(new TableId("mudstore", "schema"));
 
-            if (!disableCache)
-            {
-                ds.LoadCache(); // TODO: this does not update the components
-                startingBlockNumber = ds.GetCachedBlockNumber() ?? startingBlockNumber;
-            }
+            // TODO
+            // if (!disableCache)
+            // {
+            //     ds.LoadCache(); // TODO: this does not update the components
+            //     startingBlockNumber = ds.GetCachedBlockNumber() ?? startingBlockNumber;
+            // }
 
             await worldSend.CreateTxExecutor(account, _provider, contractAddress);
 
@@ -199,11 +206,6 @@ namespace mud.Unity
             EthBlockNumber ethBlockNumber = new EthBlockNumber(provider.Client);
             var blockNumber = await ethBlockNumber.SendRequestAsync();
             return blockNumber.Value;
-        }
-
-        public void RegisterGameObject(GameObject gameObject, string key)
-        {
-            gameObjectToKey[gameObject] = key;
         }
 
         private void OnDestroy()

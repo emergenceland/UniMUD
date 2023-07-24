@@ -1,16 +1,39 @@
 using System;
 using System.Collections.Generic;
+using mud.Network;
 
 namespace mud.Client
 {
     using Property = Dictionary<string, object>;
 
+
     public class Record
     {
+        public string table;
+        public string key;
+        public Property value;
+
+        private static bool PropEquals(Property x, Property y)
+        {
+            // If the dictionaries have different counts, they're not equal
+            if (x.Count != y.Count)
+                return false;
+
+            // If any key-value pair is not equal, the dictionaries are not equal
+            foreach (var pair in x)
+            {
+                if (!y.TryGetValue(pair.Key, out var value) || !value.Equals(pair.Value))
+                    return false;
+            }
+
+            // All key-value pairs are equal
+            return true;
+        }
+
         public bool Equals(Record other)
         {
-            return table == other.table && key == other.key && attribute == other.attribute &&
-                   value.Equals(other.value);
+            var valueEquals = PropEquals(value, other.value);
+            return table == other.table && key == other.key && valueEquals;
         }
 
         public override bool Equals(object? obj)
@@ -23,19 +46,13 @@ namespace mud.Client
 
         public override int GetHashCode()
         {
-            return HashCode.Combine(table, key, attribute, value);
+            return HashCode.Combine(table, key, value);
         }
 
-        public string table;
-        public string key;
-        public string attribute;
-        public object value;
-
-        public Record(string table, string key, string attribute, object value)
+        public Record(string table, string key, Property value)
         {
             this.table = table;
             this.key = key;
-            this.attribute = attribute;
             this.value = value;
         }
     }
