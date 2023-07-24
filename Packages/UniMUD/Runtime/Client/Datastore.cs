@@ -11,7 +11,7 @@ using Logger = NLog.Logger;
 namespace mud.Client
 {
     using Property = Dictionary<string, object>;
-    
+
     public class Datastore
     {
         // tableId -> table -> records
@@ -19,7 +19,7 @@ namespace mud.Client
         public Dictionary<string, TableId> tableIds;
 
         private readonly ReplaySubject<RecordUpdate> _onDataStoreUpdate = new();
-        private readonly Subject<RecordUpdate> _onRxDataStoreUpdate = new(); // bit of a hack rn
+        private readonly Subject<RecordUpdate> _onRxDataStoreUpdate = new();
         public IObservable<RecordUpdate> OnDataStoreUpdate => _onDataStoreUpdate;
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
@@ -97,7 +97,8 @@ namespace mud.Client
             return query.Run(store);
         }
 
-        public IObservable<(List<Record> SetRecords, List<Record>RemovedRecords)> RxQuery(Query query)
+        public IObservable<(List<Record> SetRecords, List<Record>RemovedRecords)> RxQuery(Query query,
+            bool pushInitialResults = true)
         {
             var queryTables = query.GetTableFilters().Select(f => f.Table);
             var tableSubjects =
@@ -107,19 +108,35 @@ namespace mud.Client
             return Observable.Create<(List<Record>, List<Record>)>(observer =>
             {
                 var initialResult = RunQuery(query).ToList();
-                observer.OnNext((SetRecords: initialResult, RemovedRecords: new List<Record>()));
+                if (pushInitialResults)
+                {
+                    observer.OnNext((SetRecords: initialResult, RemovedRecords: new List<Record>()));
+                }
 
                 var updateSubscription = tableUpdates.Subscribe(update =>
                 {
-                    var updated = RunQuery(query).ToList();
+                    var affectedRecordKey = update.Key;
+                    var affectedTableKey = update.TableId;
+                    var recordFromStore = store[affectedTableKey].Records[affectedRecordKey];
+
                     switch (update.Type)
                     {
                         case UpdateType.SetField:
                         case UpdateType.SetRecord:
-                            observer.OnNext((SetRecords: updated, RemovedRecords: new List<Record>()));
+                            // first, run query on the record
+                            var setRecordQuery = RunQuery(query).ToList();
+                            // is the record in the query result?
+                            var setRecord = setRecordQuery.SingleOrDefault(r => r.key == affectedRecordKey);
+                            if (setRecord != null)
+                            {
+                                observer.OnNext((SetRecords: new List<Record> { setRecord },
+                                    RemovedRecords: new List<Record>()));
+                            }
+
                             break;
                         case UpdateType.DeleteRecord:
-                            observer.OnNext((new List<Record>(), updated));
+                            observer.OnNext((SetRecords: new List<Record>(),
+                                RemovedRecords: new List<Record> { recordFromStore }));
                             break;
                         default:
                             throw new ArgumentOutOfRangeException();
@@ -139,7 +156,7 @@ namespace mud.Client
                 Key = keyIndex,
                 Value = new Tuple<Property?, Property?>(value, previousValue)
             });
-            
+
             _onRxDataStoreUpdate.OnNext(new RecordUpdate
             {
                 Type = type,

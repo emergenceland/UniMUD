@@ -126,33 +126,41 @@ namespace Tests.Runtime
         }
 
         [Test]
-        public void RxQuery()
+        public void RxQueryWithCondition()
         {
             var position = Utils.CreateProperty(("x", 1), ("y", 2));
+            var position2 = Utils.CreateProperty(("x", 1), ("y", 1));
             var h1 = Utils.CreateProperty(("value", 100));
             var h2 = Utils.CreateProperty(("value", 50));
+            
+            _ds.Set(Position, "a", position);
+            _ds.Set(Position, "b", position);
+            _ds.Set(Health, "a", h1); // A has full health, we should only get updates for A
+            _ds.Set(Health, "b", h2); // B should not trigger updates
 
             var fullHealth = new Query().Select(Health).In(Position).In(Health, new[] { Condition.Has("value", 100) });
 
             var set = new List<Record>();
             var removed = new List<Record>();
-            var disposer = _ds.RxQuery(fullHealth).Subscribe(((List<Record> set, List<Record> removed) updates )=>
+            // every time something with full health changes either health of position, we get a reaction (health value)
+            var disposer = _ds.RxQuery(fullHealth, false).Subscribe(((List<Record> set, List<Record> removed) updates )=>
             {
-                set.AddRange(set);
-                removed.AddRange(removed);
+                set.AddRange(updates.set);
+                removed.AddRange(updates.removed);
                 Debug.Log("REACTION: " + JsonConvert.SerializeObject(updates));
             });
+            
+            // change position of entity A 
+            _ds.Update(Position, "a", position2);
+            // change position of entity B
+            _ds.Update(Position, "b", position2); // should not update because it doesn't have full health
+            // change position of entity A back to original
+            _ds.Update(Position, "a", position); // should update
 
-            _ds.Set(Position, "a", position);
-            _ds.Set(Position, "b", position);
-            _ds.Set(Health, "a", h1);
-            _ds.Set(Health, "b", h2);
-
-            Assert.IsNotEmpty(set);
             Debug.Log("Length: " + set.Count);
             Debug.Log("Last: " + JsonConvert.SerializeObject(set));
             
-            // make sure we only have 2 records
+            // make sure we only have 2 updates
             Assert.AreEqual(2, set.Count);
             
             // delete 1 health record 
@@ -161,5 +169,54 @@ namespace Tests.Runtime
             Assert.AreEqual(1, removed.Count);
             disposer.Dispose();
         }
+
+  [Test]
+        public void RxQueryNoCondition()
+        {
+            var position = Utils.CreateProperty(("x", 1), ("y", 2));
+            var position2 = Utils.CreateProperty(("x", 1), ("y", 1));
+            var h1 = Utils.CreateProperty(("value", 100));
+            var h2 = Utils.CreateProperty(("value", 50));
+            
+            _ds.Set(Position, "a", position);
+            _ds.Set(Position, "b", position);
+            _ds.Set(Health, "a", h1); // A has full health, we should only get updates for A
+            _ds.Set(Health, "b", h2); // B should not trigger updates
+
+            var fullHealth = new Query().Select(Health).In(Position).In(Health);
+
+            var set = new List<Record>();
+            var removed = new List<Record>();
+            // every time something with full health changes either health of position, we get a reaction (health value)
+            var disposer = _ds.RxQuery(fullHealth, false).Subscribe(((List<Record> set, List<Record> removed) updates )=>
+            {
+                set.AddRange(updates.set);
+                removed.AddRange(updates.removed);
+                Debug.Log("REACTION: " + JsonConvert.SerializeObject(updates));
+            });
+            
+            // change position of entity A 
+            _ds.Update(Position, "a", position2);
+            // change position of entity B
+            _ds.Update(Position, "b", position2); 
+            // change position of entity A back to original
+            _ds.Update(Position, "a", position); // should update
+
+            Debug.Log("Length: " + set.Count);
+            Debug.Log("Last: " + JsonConvert.SerializeObject(set));
+            
+            // make sure we only have 3 updates
+            Assert.AreEqual(3, set.Count);
+            
+            // delete 1 health record 
+            _ds.Delete(Health, "a");
+            
+            Assert.AreEqual(1, removed.Count);
+            disposer.Dispose();
+        }
+
+
     }
+    
+    
 }
