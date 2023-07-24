@@ -19,6 +19,7 @@ namespace mud.Client
         public Dictionary<string, TableId> tableIds;
 
         private readonly ReplaySubject<RecordUpdate> _onDataStoreUpdate = new();
+        private readonly Subject<RecordUpdate> _onRxDataStoreUpdate = new(); // bit of a hack rn
         public IObservable<RecordUpdate> OnDataStoreUpdate => _onDataStoreUpdate;
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
@@ -78,7 +79,10 @@ namespace mud.Client
 
         public Record? GetValue(TableId tableId, string key)
         {
-            var hasKey = store[tableId.ToString()].Records.TryGetValue(key, out var value);
+            var tableKey = tableId.ToString();
+            var hasTable = store.TryGetValue(tableKey, out var table);
+            if (!hasTable) return null;
+            var hasKey = store[tableKey].Records.TryGetValue(key, out var value);
             return hasKey ? value : null;
         }
 
@@ -97,7 +101,7 @@ namespace mud.Client
         {
             var queryTables = query.GetTableFilters().Select(f => f.Table);
             var tableSubjects =
-                queryTables.Select(t => _onDataStoreUpdate.Where(update => update.TableId == t.ToString()));
+                queryTables.Select(t => _onRxDataStoreUpdate.Where(update => update.TableId == t.ToString()));
             var tableUpdates = tableSubjects.Merge();
 
             return Observable.Create<(List<Record>, List<Record>)>(observer =>
@@ -129,6 +133,14 @@ namespace mud.Client
             Property? previousValue = null)
         {
             _onDataStoreUpdate.OnNext(new RecordUpdate
+            {
+                Type = type,
+                TableId = tableId,
+                Key = keyIndex,
+                Value = new Tuple<Property?, Property?>(value, previousValue)
+            });
+            
+            _onRxDataStoreUpdate.OnNext(new RecordUpdate
             {
                 Type = type,
                 TableId = tableId,

@@ -14,6 +14,7 @@ using Nethereum.JsonRpc.WebSocketStreamingClient;
 using Nethereum.RPC.Eth.Blocks;
 using Nethereum.Web3;
 using Nethereum.Web3.Accounts;
+using Newtonsoft.Json;
 using NLog;
 using UniRx;
 using UnityEngine;
@@ -40,13 +41,16 @@ namespace mud.Unity
 
     public class NetworkManager : MonoBehaviour
     {
-        public string jsonRpcUrl = "http://localhost:8545";
+        [Header("Network settings")] public string jsonRpcUrl = "http://localhost:8545";
         public string wsRpcUrl = "ws://localhost:8545";
-
-        public string pk;
         public int chainId;
         public string contractAddress;
-        public bool writeLogs = true;
+
+        [Header("Dev settings")] public string pk;
+
+        [Tooltip("Generate new wallet every time instead of loading from PlayerPrefs")]
+        public bool uniqueWallets = true;
+
         public bool disableCache = true;
 
         public readonly TxExecutor worldSend = new();
@@ -95,7 +99,7 @@ namespace mud.Unity
             else
             {
                 var savedBurnerWallet = PlayerPrefs.GetString("burnerWallet");
-                if (!string.IsNullOrWhiteSpace(savedBurnerWallet))
+                if (!string.IsNullOrWhiteSpace(savedBurnerWallet) && !uniqueWallets)
                 {
                     account = new Account(savedBurnerWallet, chainId);
                     Debug.Log("Loaded burner wallet: " + account.Address);
@@ -109,8 +113,11 @@ namespace mud.Unity
                     // TODO: Insecure.
                     // We can use Nethereum's KeyStoreScryptService
                     // However, this requires user to set a password
-                    PlayerPrefs.SetString("burnerWallet", privateKey);
-                    PlayerPrefs.Save();
+                    if (!uniqueWallets)
+                    {
+                        PlayerPrefs.SetString("burnerWallet", privateKey);
+                        PlayerPrefs.Save();
+                    }
                 }
 
                 address = account.Address;
