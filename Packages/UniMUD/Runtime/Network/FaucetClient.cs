@@ -9,12 +9,13 @@ namespace Network
 {
     public class FaucetClient
     {
-        public string host = "http://faucet.testnet-mud-services.linfra.xyz";
+        public readonly string host;
         private GrpcChannel channel;
         private FaucetService.FaucetServiceClient client;
 
-        public FaucetClient()
+        public FaucetClient(string hostUrl)
         {
+            host = hostUrl;
             var options = new GrpcChannelOptions();
             var handler = new GrpcWebHandler(GrpcWebMode.GrpcWeb, new HttpClientHandler());
             options.HttpHandler = handler;

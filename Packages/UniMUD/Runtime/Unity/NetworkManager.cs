@@ -47,7 +47,7 @@ namespace mud.Unity
         public string wsRpcUrl = "ws://localhost:8545";
         public int chainId;
         public string contractAddress;
-        public bool useFaucet = false;
+        public string faucetUrl;
 
         [Header("Dev settings")] public string pk;
 
@@ -140,10 +140,10 @@ namespace mud.Unity
             _provider = prov;
             _client = wsClient;
 
-            if (useFaucet)
+            if (!string.IsNullOrWhiteSpace(faucetUrl))
             {
                 Debug.Log("[Dev Faucet]: Player address -> " + address);
-                var faucet = new FaucetClient();
+                var faucet = new FaucetClient(faucetUrl);
                 var balance = await _provider.Eth.GetBalance.SendRequestAsync(address);
                 Debug.Log(JsonConvert.SerializeObject(balance));
                 Debug.Log("Current balance: " + balance.Value);
