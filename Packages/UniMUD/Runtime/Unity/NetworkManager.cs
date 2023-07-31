@@ -42,6 +42,8 @@ namespace mud.Unity
 
     public class NetworkManager : MonoBehaviour
     {
+        public static Action OnInitialized;
+        public static string LocalAddress {get{return Instance.addressKey;}}
         public NetworkType networkType;
         public NetworkData local;
         public NetworkData testnet;
@@ -216,8 +218,11 @@ namespace mud.Unity
             UniRx.ObservableExtensions
                 .Subscribe(_syncWorker.OutputStream, (update) => { NetworkUpdates.ApplyNetworkUpdates(update, ds); })
                 .AddTo(_disposables);
-            OnNetworkInitialized(this);
+
             m_NetworkInitialized = true;
+
+            OnNetworkInitialized(this);
+            OnInitialized?.Invoke();
         }
 
         private static async Task<BigInteger> GetCurrentBlockNumberAsync(Web3 provider)
