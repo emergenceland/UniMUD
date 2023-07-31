@@ -1,9 +1,9 @@
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 using System.Threading;
 using System.Threading.Tasks;
+using Faucet;
 using mud.Client;
 using mud.Client.MudDefinitions;
 using mud.Network;
@@ -14,10 +14,12 @@ using Nethereum.JsonRpc.WebSocketStreamingClient;
 using Nethereum.RPC.Eth.Blocks;
 using Nethereum.Web3;
 using Nethereum.Web3.Accounts;
+using Network;
 using Newtonsoft.Json;
 using NLog;
 using UniRx;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 
 namespace mud.Unity
@@ -45,6 +47,7 @@ namespace mud.Unity
         public string wsRpcUrl = "ws://localhost:8545";
         public int chainId;
         public string contractAddress;
+        public bool useFaucet = false;
 
         [Header("Dev settings")] public string pk;
 
@@ -124,6 +127,7 @@ namespace mud.Unity
                 addressKey = "0x" + address.Replace("0x", "").PadLeft(64, '0').ToLower();
             }
 
+
             var providerConfig = new ProviderConfig
             {
                 JsonRpcUrl = jsonRpcUrl,
@@ -135,6 +139,26 @@ namespace mud.Unity
             var (prov, wsClient) = await Providers.CreateReconnectingProviders(account, providerConfig, _cts.Token);
             _provider = prov;
             _client = wsClient;
+
+            if (useFaucet)
+            {
+                Debug.Log("[Dev Faucet]: Player address -> " + address);
+                var faucet = new FaucetClient();
+                var balance = await _provider.Eth.GetBalance.SendRequestAsync(address);
+                Debug.Log(JsonConvert.SerializeObject(balance));
+                Debug.Log("Current balance: " + balance.Value);
+                var lowBalance = balance.Value <= BigInteger.Parse("1000000000000000000");
+                if (lowBalance)
+                {
+                    Debug.Log("[Dev Faucet]: Balance is low, dripping funds to player");
+                    var d1 = faucet.Drip(address);
+                    Debug.Log(JsonConvert.SerializeObject(d1));
+                    var newBalance = await _provider.Eth.GetBalance.SendRequestAsync(address);
+                    Debug.Log(JsonConvert.SerializeObject(newBalance));
+                    Debug.Log("[Dev Faucet]: New balance: " + newBalance.Value);
+                }
+            }
+
 
             var startingBlockNumber = -1;
 
