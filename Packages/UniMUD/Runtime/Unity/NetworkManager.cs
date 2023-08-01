@@ -144,6 +144,7 @@ namespace mud.Unity
             {
                 Debug.Log("[Dev Faucet]: Player address -> " + address);
                 var faucet = new FaucetClient(faucetUrl);
+                _disposables.Add(faucet);
                 var balance = await _provider.Eth.GetBalance.SendRequestAsync(address);
                 Debug.Log(JsonConvert.SerializeObject(balance));
                 Debug.Log("Current balance: " + balance.Value);

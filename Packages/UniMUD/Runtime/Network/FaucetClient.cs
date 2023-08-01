@@ -1,3 +1,4 @@
+using System;
 using Grpc.Core;
 using Grpc.Net.Client.Web;
 using Grpc.Net.Client;
@@ -8,7 +9,7 @@ using Faucet;
 
 namespace Network
 {
-    public class FaucetClient
+    public class FaucetClient: IDisposable
     {
         public readonly string host;
         private GrpcChannel channel;
@@ -48,7 +49,7 @@ namespace Network
             }
         }
 
-        private void OnDestroy()
+        public void Dispose()
         {
             channel.Dispose();
         }
