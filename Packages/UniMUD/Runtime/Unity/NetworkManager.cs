@@ -1,9 +1,9 @@
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 using System.Threading;
 using System.Threading.Tasks;
+using Faucet;
 using mud.Client;
 using mud.Client.MudDefinitions;
 using mud.Network;
@@ -14,10 +14,12 @@ using Nethereum.JsonRpc.WebSocketStreamingClient;
 using Nethereum.RPC.Eth.Blocks;
 using Nethereum.Web3;
 using Nethereum.Web3.Accounts;
+using Network;
+using Newtonsoft.Json;
 using NLog;
-using NLog.Targets;
 using UniRx;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 
 namespace mud.Unity
@@ -51,7 +53,13 @@ namespace mud.Unity
 
 
         public string contractAddress;
-        public bool writeLogs = true;
+        public string faucetUrl;
+
+        [Header("Dev settings")] public string pk;
+
+        [Tooltip("Generate new wallet every time instead of loading from PlayerPrefs")]
+        public bool uniqueWallets = true;
+
         public bool disableCache = true;
 
         public readonly TxExecutor worldSend = new();
@@ -69,7 +77,6 @@ namespace mud.Unity
         public static NetworkManager Instance { get; private set; }
         public static bool NetworkInitialized {get{return m_NetworkInitialized;}}
         private static bool m_NetworkInitialized = false;
-        [NonSerialized] public Dictionary<GameObject, string> gameObjectToKey = new();
         private CancellationTokenSource _cts;
         private static readonly NLog.Logger Logger = LogManager.GetCurrentClassLogger();
 
@@ -93,6 +100,8 @@ namespace mud.Unity
             } else if(networkType == NetworkType.Mainnet) {
                 networkData = mainnet;
             }
+
+            faucetUrl = networkData.faucetUrl;
 
             if(networkData == null) {
                 Debug.LogError("No network data", this);
@@ -118,7 +127,7 @@ namespace mud.Unity
             else
             {
                 var savedBurnerWallet = PlayerPrefs.GetString("burnerWallet");
-                if (!string.IsNullOrWhiteSpace(savedBurnerWallet))
+                if (!string.IsNullOrWhiteSpace(savedBurnerWallet) && !uniqueWallets)
                 {
                     account = new Account(savedBurnerWallet, chainId);
                     Debug.Log("Loaded burner wallet: " + account.Address);
@@ -132,13 +141,17 @@ namespace mud.Unity
                     // TODO: Insecure.
                     // We can use Nethereum's KeyStoreScryptService
                     // However, this requires user to set a password
-                    PlayerPrefs.SetString("burnerWallet", privateKey);
-                    PlayerPrefs.Save();
+                    if (!uniqueWallets)
+                    {
+                        PlayerPrefs.SetString("burnerWallet", privateKey);
+                        PlayerPrefs.Save();
+                    }
                 }
 
                 address = account.Address;
                 addressKey = "0x" + address.Replace("0x", "").PadLeft(64, '0').ToLower();
             }
+
 
             var providerConfig = new ProviderConfig
             {
@@ -151,6 +164,26 @@ namespace mud.Unity
             var (prov, wsClient) = await Providers.CreateReconnectingProviders(account, providerConfig, _cts.Token);
             _provider = prov;
             _client = wsClient;
+
+            if (!string.IsNullOrWhiteSpace(faucetUrl))
+            {
+                Debug.Log("[Dev Faucet]: Player address -> " + address);
+                var faucet = new FaucetClient(faucetUrl);
+                var balance = await _provider.Eth.GetBalance.SendRequestAsync(address);
+                Debug.Log(JsonConvert.SerializeObject(balance));
+                Debug.Log("Current balance: " + balance.Value);
+                var lowBalance = balance.Value <= BigInteger.Parse("1000000000000000000");
+                if (lowBalance)
+                {
+                    Debug.Log("[Dev Faucet]: Balance is low, dripping funds to player");
+                    var d1 = faucet.Drip(address);
+                    Debug.Log(JsonConvert.SerializeObject(d1));
+                    var newBalance = await _provider.Eth.GetBalance.SendRequestAsync(address);
+                    Debug.Log(JsonConvert.SerializeObject(newBalance));
+                    Debug.Log("[Dev Faucet]: New balance: " + newBalance.Value);
+                }
+            }
+
 
             var startingBlockNumber = -1;
 
@@ -180,7 +213,8 @@ namespace mud.Unity
             var storeContract = new IStoreService(_provider, contractAddress);
 
             var jsonStore = new JsonDataStorage(Application.persistentDataPath + contractAddress + ".json");
-            ds = new Datastore(jsonStore);
+            // ds = new Datastore(jsonStore);
+            ds = new Datastore(); // TODO: add persistence
 
             var types = AppDomain.CurrentDomain.GetAssemblies()
                 .SelectMany(s => s.GetTypes())
@@ -203,11 +237,12 @@ namespace mud.Unity
 
             ds.RegisterTable(new TableId("mudstore", "schema").ToString(), "Schema");
 
-            if (!disableCache)
-            {
-                ds.LoadCache(); // TODO: this does not update the components
-                startingBlockNumber = ds.GetCachedBlockNumber() ?? startingBlockNumber;
-            }
+            // TODO
+            // if (!disableCache)
+            // {
+            //     ds.LoadCache(); // TODO: this does not update the components
+            //     startingBlockNumber = ds.GetCachedBlockNumber() ?? startingBlockNumber;
+            // }
 
             await worldSend.CreateTxExecutor(account, _provider, contractAddress);
 
@@ -230,11 +265,6 @@ namespace mud.Unity
             EthBlockNumber ethBlockNumber = new EthBlockNumber(provider.Client);
             var blockNumber = await ethBlockNumber.SendRequestAsync();
             return blockNumber.Value;
-        }
-
-        public void RegisterGameObject(GameObject gameObject, string key)
-        {
-            gameObjectToKey[gameObject] = key;
         }
 
         private void OnDestroy()

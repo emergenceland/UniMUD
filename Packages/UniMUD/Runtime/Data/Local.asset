@@ -14,6 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   jsonRpcUrl: http://localhost:8545
   wsRpcUrl: ws://localhost:8545
+  faucetUrl: 
   contractAddress: 
   pk: 
   chainId: 31337

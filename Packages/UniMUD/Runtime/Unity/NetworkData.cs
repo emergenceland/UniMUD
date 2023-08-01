@@ -7,6 +7,7 @@ public class NetworkData : ScriptableObject
 {
     public string jsonRpcUrl = "http://localhost:8545";
     public string wsRpcUrl = "ws://localhost:8545";
+    public string faucetUrl;
     public string contractAddress;
     public string pk;
     public int chainId = 31337;
