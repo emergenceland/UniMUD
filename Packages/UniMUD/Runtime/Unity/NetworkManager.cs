@@ -151,8 +151,8 @@ namespace mud.Unity
                 if (lowBalance)
                 {
                     Debug.Log("[Dev Faucet]: Balance is low, dripping funds to player");
-                    var d1 = faucet.Drip(address);
-                    Debug.Log(JsonConvert.SerializeObject(d1));
+                    var d = await faucet.Drip(address);
+                    Debug.Log(JsonConvert.SerializeObject(d));
                     var newBalance = await _provider.Eth.GetBalance.SendRequestAsync(address);
                     Debug.Log(JsonConvert.SerializeObject(newBalance));
                     Debug.Log("[Dev Faucet]: New balance: " + newBalance.Value);
