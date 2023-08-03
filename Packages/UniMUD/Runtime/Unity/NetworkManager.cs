@@ -46,29 +46,35 @@ namespace mud.Unity
     {
         public static Action OnInitialized;
         public static string LocalAddress {get{return Instance.addressKey;}}
+        public static string LocalAddressNotKey {get{return Instance.address;}}
+        public static string WorldAddress {get{return Instance.worldAddress;}}
+        public static NetworkData Network {get{return Instance.activeNetwork;}}
         public NetworkType networkType;
         public NetworkData local;
         public NetworkData testnet;
         public NetworkData mainnet;
 
 
-        public string contractAddress;
+        public string worldAddress;
         public string faucetUrl;
 
-        [Header("Dev settings")] public string pk;
+        [Header("Dev settings")] 
+        public string pk;
 
         [Tooltip("Generate new wallet every time instead of loading from PlayerPrefs")]
         public bool uniqueWallets = true;
-
         public bool disableCache = true;
+
+        [Header("Debug")]
+        public string address;
+        public string addressKey;
 
         public readonly TxExecutor worldSend = new();
         public Datastore ds;
         private SyncWorker _syncWorker;
         private Web3 _provider;
         public Account account;
-        [NonSerialized] public string address;
-        [NonSerialized] public string addressKey;
+
 
         private StreamingWebSocketClient _client;
 
@@ -79,7 +85,7 @@ namespace mud.Unity
         private static bool m_NetworkInitialized = false;
         private CancellationTokenSource _cts;
         private static readonly NLog.Logger Logger = LogManager.GetCurrentClassLogger();
-
+        private NetworkData activeNetwork;
 
         protected async void Awake()
         {
@@ -91,23 +97,21 @@ namespace mud.Unity
 
             Instance = this;
 
-            NetworkData networkData = null;
-
             if(networkType == NetworkType.Local) {
-                networkData = local;
+                activeNetwork = local;
             } else if(networkType == NetworkType.Testnet) {
-                networkData = testnet;
+                activeNetwork = testnet;
             } else if(networkType == NetworkType.Mainnet) {
-                networkData = mainnet;
+                activeNetwork = mainnet;
             }
 
-            faucetUrl = networkData.faucetUrl;
+            faucetUrl = activeNetwork.faucetUrl;
 
-            if(networkData == null) {
+            if(activeNetwork == null) {
                 Debug.LogError("No network data", this);
             }
 
-            var config = new NetworkConfig(networkData.jsonRpcUrl, networkData.wsRpcUrl, networkData.pk, networkData.chainId, networkData.contractAddress, networkData.disableCache);
+            var config = new NetworkConfig(activeNetwork.jsonRpcUrl, activeNetwork.wsRpcUrl, activeNetwork.pk, activeNetwork.chainId, activeNetwork.contractAddress, activeNetwork.disableCache);
             var logUnity = new UnityLogger { Layout = "${message} ${exception:format=tostring}" };
             LogManager.Setup().SetupExtensions(s => s.RegisterTarget<UnityLogger>("UnityLogger"))
                 .LoadConfiguration(builder => builder.ForLogger().FilterMinLevel(LogLevel.Debug).WriteTo(logUnity));
@@ -200,6 +204,7 @@ namespace mud.Unity
                 var data = JsonUtility.FromJson<LocalDeploy>(jsonFile.text);
                 contractAddress = data.worldAddress;
                 startingBlockNumber = data.blockNumber;
+                worldAddress = contractAddress;
                 Debug.Log("Loaded local deploy: " + contractAddress + " at block " + startingBlockNumber);
             }
 
