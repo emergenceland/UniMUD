@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
 using System.Linq;
-using DefaultNamespace;
 using Object = UnityEngine.Object;
 
 namespace mud.Client {
@@ -18,6 +17,9 @@ namespace mud.Client {
         static string TablePath = "Assets/Resources/MUD/Tables/";
 
         static void OnPostprocessAllAssets(string[] importedAssets, string[] deletedAssets, string[] movedAssets, string[] movedFromAssetPaths) {
+
+            //DISABLE
+            return;
 
             int added = 0;
             int deleted = 0;
