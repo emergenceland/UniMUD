@@ -21,23 +21,19 @@ namespace mud.Client {
 
         public abstract Type TableType();
         public abstract Type TableUpdateType();
-        public abstract IMudTable GetTableValue(string key);
+        public abstract void RecordToTable(Record record);
 
         public static T? GetValueFromTable<T>(string key) where T : IMudTable, new() {
             var table = new T();
-            var query = new Query()
-                .Find("?value", "?attribute")
-                .Where(table.TableId.ToString(), key, "?attribute", "?value");
-            var result = NetworkManager.Instance.ds.Query(query);
-            var hasValues = table.SetValues(result);
-            return hasValues ? table : null;
+            var record = NetworkManager.Instance.ds.GetValue(table.TableId, key);
 
+            if (record == null) { return null; }
+            else { table.RecordToTable(record); return table; }
         }
 
         public abstract void SetValues(params object[] values);
-        public abstract bool SetValues(IEnumerable<Property> result);
         public abstract RecordUpdate CreateTypedRecord(RecordUpdate newUpdate);
-        public abstract IMudTable RecordUpdateToTable(RecordUpdate tableUpdate);
+        public abstract IMudTable RecordUpdateToTable(RecordUpdate recordUpdate);
 
 
 

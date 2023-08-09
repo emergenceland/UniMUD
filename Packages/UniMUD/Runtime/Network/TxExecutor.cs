@@ -1,7 +1,5 @@
 using System;
 using System.Numerics;
-using System.Threading;
-using System.Threading.Tasks;
 using Nethereum.Contracts;
 using Nethereum.Contracts.ContractHandlers;
 using Nethereum.Hex.HexTypes;
@@ -12,6 +10,7 @@ using Nethereum.Web3;
 using Newtonsoft.Json;
 using NLog;
 using Account = Nethereum.Web3.Accounts.Account;
+using Cysharp.Threading.Tasks;
 
 namespace mud.Network
 {
@@ -30,11 +29,10 @@ namespace mud.Network
         private GasConfig GasConfig { get; set; }
         private ContractHandler ContractHandler { get; set; }
         private int PriorityFeeMultiplier { get; set; }
-        private readonly SemaphoreSlim _semaphore = new (1, 1);
         private static readonly NLog.Logger Logger = LogManager.GetCurrentClassLogger();
 
 
-        public async Task CreateTxExecutor(Account signer, Web3 provider, string contractAddress,
+        public async UniTask CreateTxExecutor(Account signer, Web3 provider, string contractAddress,
             int? priorityFeeMultiplier = null)
         {
             _provider = provider;
@@ -49,69 +47,88 @@ namespace mud.Network
             GasConfig.MaxFeePerGas = maxFee;
         }
 
-        public async Task TxExecute<TFunction>(params object[] functionParameters)
+        public async UniTask<bool> TxExecute<TFunction>(params object[] functionParameters)
             where TFunction : FunctionMessage, new()
         {
-            await _semaphore.WaitAsync();
-            if (_currentNonce == new HexBigInteger(0))
+            try
             {
-                _currentNonce = await _provider.Eth.Transactions.GetTransactionCount.SendRequestAsync(_signer.Address);
-            }
 
-            var functionMessage = new TFunction();
-            if (functionParameters.Length > 0)
-            {
-                var properties = typeof(TFunction).GetProperties();
-                for (var i = 0; i < properties.Length && i < functionParameters.Length; i++)
+                // await _semaphore.WaitAsync();
+                if (_currentNonce == new HexBigInteger(0))
                 {
-                    properties[i].SetValue(functionMessage, functionParameters[i]);
+                    _currentNonce = await _provider.Eth.Transactions.GetTransactionCount.SendRequestAsync(_signer.Address);
                 }
+
+                var functionMessage = new TFunction();
+                if (functionParameters.Length > 0)
+                {
+                    var properties = typeof(TFunction).GetProperties();
+                    for (var i = 0; i < properties.Length && i < functionParameters.Length; i++)
+                    {
+                        properties[i].SetValue(functionMessage, functionParameters[i]);
+                    }
+                }
+
+
+
+                var gasLimit = await _provider.Eth.GetContractTransactionHandler<TFunction>()
+                    .EstimateGasAsync(_contractAddress, functionMessage);
+
+                if(gasLimit == null) {
+                    return false;
+                }
+
+                Logger.Debug("Gas limit: " + gasLimit.Value);
+
+                functionMessage.TransactionType = TransactionType.EIP1559.AsByte();
+                functionMessage.MaxPriorityFeePerGas = new HexBigInteger(GasConfig.MaxPriorityFeePerGas);
+                functionMessage.MaxFeePerGas = new HexBigInteger(GasConfig.MaxFeePerGas);
+                functionMessage.Gas = gasLimit;
+                functionMessage.FromAddress = _signer.Address;
+                functionMessage.Nonce = _currentNonce;
+
+                Logger.Debug($"executing transaction with nonce {_currentNonce}");
+                Logger.Debug("TxInput: " + JsonConvert.SerializeObject(functionMessage));
+
+                // try
+                // {
+                var txHash = await _provider.Eth.GetContractTransactionHandler<TFunction>()
+                    .SendRequestAsync(_contractAddress, functionMessage);
+
+                Logger.Debug("TxRequest: " + txHash);
+                var pollingService = new TransactionReceiptPollingService(_provider.TransactionManager);
+                var transactionReceipt = await pollingService.PollForReceiptAsync(txHash);
+                Logger.Debug("Tx receipt: " + JsonConvert.SerializeObject(transactionReceipt));
+
+                _currentNonce = new HexBigInteger(BigInteger.Add(BigInteger.One, _currentNonce.Value));
+                // }
+                // catch (Exception error)
+                // {
+                //     if (error.Message.Contains("transaction already imported"))
+                //     {
+                //         // if (options.retryCount == 0) TODO
+                //         {
+                //             // UpdateFeePerGas(globalOptions.priorityFeeMultiplier * 1.1);
+                //             // return fastTxExecute(contract, func, args,  {
+                //             //     retryCount:
+                //             //     options.retryCount++
+                //             // });
+                //         }
+                //     }s
+                // }
+                // _semaphore.Release();
+
+                return true;
+            }
+            catch (System.Exception ex)
+            {
+                Logger.Error(ex);
+                return false;
             }
 
-            var gasLimit = await _provider.Eth.GetContractTransactionHandler<TFunction>()
-                .EstimateGasAsync(_contractAddress, functionMessage);
-            Logger.Debug("Gas limit: " + gasLimit.Value);
-
-            functionMessage.TransactionType = TransactionType.EIP1559.AsByte();
-            functionMessage.MaxPriorityFeePerGas = new HexBigInteger(GasConfig.MaxPriorityFeePerGas);
-            functionMessage.MaxFeePerGas = new HexBigInteger(GasConfig.MaxFeePerGas);
-            functionMessage.Gas = gasLimit;
-            functionMessage.FromAddress = _signer.Address;
-            functionMessage.Nonce = _currentNonce;
-
-            Logger.Debug($"executing transaction with nonce {_currentNonce}");
-            Logger.Debug("TxInput: " + JsonConvert.SerializeObject(functionMessage));
-
-            // try
-            // {
-            var txHash = await _provider.Eth.GetContractTransactionHandler<TFunction>()
-                .SendRequestAsync(_contractAddress, functionMessage);
-
-            Logger.Debug("TxRequest: " + txHash);
-            var pollingService = new TransactionReceiptPollingService(_provider.TransactionManager);
-            var transactionReceipt = await pollingService.PollForReceiptAsync(txHash);
-            Logger.Debug("Tx receipt: " + JsonConvert.SerializeObject(transactionReceipt));
-
-            _currentNonce = new HexBigInteger(BigInteger.Add(BigInteger.One, _currentNonce.Value));
-            // }
-            // catch (Exception error)
-            // {
-            //     if (error.Message.Contains("transaction already imported"))
-            //     {
-            //         // if (options.retryCount == 0) TODO
-            //         {
-            //             // UpdateFeePerGas(globalOptions.priorityFeeMultiplier * 1.1);
-            //             // return fastTxExecute(contract, func, args,  {
-            //             //     retryCount:
-            //             //     options.retryCount++
-            //             // });
-            //         }
-            //     }
-            // }
-            _semaphore.Release();
         }
 
-        private async Task<(BigInteger, BigInteger)> UpdateFeePerGas(int multiplier)
+        private async UniTask<(BigInteger, BigInteger)> UpdateFeePerGas(int multiplier)
         {
             var latestBlock =
                 await _provider.Eth.Blocks.GetBlockWithTransactionsHashesByNumber.SendRequestAsync(

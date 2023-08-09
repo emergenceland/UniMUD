@@ -169,6 +169,10 @@ namespace mud.Unity
             _provider = prov;
             _client = wsClient;
 
+            #if UNITY_STANDALONE_WIN || UNITY_EDITOR_WIN 
+            //we can't use faucets on windows atm
+            //might be a firewall problem, not sure (308 error)
+            #else
             if (!string.IsNullOrWhiteSpace(faucetUrl))
             {
                 Debug.Log("[Dev Faucet]: Player address -> " + address);
@@ -188,6 +192,7 @@ namespace mud.Unity
                     Debug.Log("[Dev Faucet]: New balance: " + newBalance.Value);
                 }
             }
+            #endif
 
 
             var startingBlockNumber = -1;
@@ -235,14 +240,14 @@ namespace mud.Unity
 
                 Debug.Log($"Registering table: {t.Name}");
                 if (t.GetField("ID").GetValue(null) is not TableId tableId) return;
-                ds.RegisterTable(tableId.ToString(), tableId.name);
+                ds.RegisterTable(tableId);
             }
 
             WorldDefinitions.DefineDataStoreConfig(ds);
             StoreDefinitions.DefineDataStoreConfig(ds);
 
-            ds.RegisterTable(new TableId("mudstore", "schema").ToString(), "Schema");
-
+            ds.RegisterTable(new TableId("mudstore", "schema"));
+            
             // TODO
             // if (!disableCache)
             // {
