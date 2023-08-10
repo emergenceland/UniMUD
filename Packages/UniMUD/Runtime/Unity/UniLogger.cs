@@ -27,7 +27,7 @@ namespace mud.Unity
                     Debug.LogError(logMessage);
                     break;
                 default:
-                    Debug.Log(logMessage);
+                    if(NetworkManager.VerboseNetwork) Debug.Log(logMessage);
                     break;
             }
         }

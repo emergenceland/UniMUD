@@ -49,6 +49,7 @@ namespace mud.Unity
         public static string LocalAddressNotKey {get{return Instance.address;}}
         public static string WorldAddress {get{return Instance.worldAddress;}}
         public static NetworkData Network {get{return Instance.activeNetwork;}}
+        public static bool VerboseNetwork = false; 
         public NetworkType networkType;
         public NetworkData local;
         public NetworkData testnet;
@@ -64,6 +65,7 @@ namespace mud.Unity
         [Tooltip("Generate new wallet every time instead of loading from PlayerPrefs")]
         public bool uniqueWallets = true;
         public bool disableCache = true;
+        public bool verbose = false; 
 
         [Header("Debug")]
         public string address;
@@ -89,6 +91,8 @@ namespace mud.Unity
 
         protected async void Awake()
         {
+            VerboseNetwork = verbose;
+
             if (Instance != null)
             {
                 Debug.LogError("Already have a NetworkManager instance");
