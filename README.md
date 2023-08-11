@@ -143,10 +143,10 @@ var allHealthRows = new Query().Select(HealthTable).In(Position).In(HealthTable)
 // -> [ { table: "Health", key: "0x1234", value: { health: 100 } } ]
 ```
 
-**Get all entities that have a value of Z for an attribute Y in component X**
+**Get all monsters that have the name Chuck**
 
 ```csharp
-var allMonstersNamedChuck = new Query().In(MonsterTable, new Conditions[]{Condition.Has("name", "Chuck")})
+var allMonstersNamedChuck = new Query().In(MonsterTable).In(MonsterTable, new Condition[]{Condition.Has("name", "Chuck")})
 // -> [ { table: "Monsters", key: "0x1234", value: { name: "Chuck", strength: 100 } } ]
 ```
 
