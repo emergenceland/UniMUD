@@ -2,7 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
+using Cysharp.Threading.Tasks;
 using mud.Network.IStore;
 using NLog;
 
@@ -14,7 +14,7 @@ namespace mud.Network.schemas
     {
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
-        public static async Task<(TableSchema, Property?, Property?)> DecodeStoreSetField(
+        public static async UniTask<(TableSchema, Property?, Property?)> DecodeStoreSetField(
             IStoreService store, TableId table,
             int schemaIndex, string data)
         {

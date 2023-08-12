@@ -4,7 +4,7 @@ using System.Linq;
 using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
-using System.Threading.Tasks;
+using Cysharp.Threading.Tasks;
 using mud.Network.IStore;
 using mud.Network.IStore.ContractDefinition;
 using Nethereum.Contracts;
@@ -30,7 +30,7 @@ namespace mud.Network
             return storeEvents.Select((e) => e.CreateFilterInput()).ToList();
         }
 
-        public static async Task<List<Types.NetworkTableUpdate>> FetchStoreEventsInRange(IStoreService store,
+        public static async UniTask<List<Types.NetworkTableUpdate>> FetchStoreEventsInRange(IStoreService store,
             int fromBlock, int toBlock)
         {
             var filterInput = CreateFilterInputs(store);
@@ -80,7 +80,7 @@ namespace mud.Network
             return allUpdates;
         }
 
-        public static async Task<(Subject<Types.NetworkTableUpdate>, IDisposable)> SubscribeToStoreEvents(
+        public static async UniTask<(Subject<Types.NetworkTableUpdate>, IDisposable)> SubscribeToStoreEvents(
             IStoreService store,
             StreamingWebSocketClient client)
         {

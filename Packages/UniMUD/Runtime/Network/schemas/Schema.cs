@@ -4,7 +4,7 @@ using System.Buffers.Binary;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
+using Cysharp.Threading.Tasks;
 using mud.Network.IStore;
 using mud.Network.IStore.ContractDefinition;
 using NLog;
@@ -25,7 +25,7 @@ namespace mud.Network.schemas
             return _schemaCache[cacheKey].Value;
         }
 
-        public static async Task<TableSchema> RegisterSchema(IStoreService store, TableId table,
+        public static async UniTask<TableSchema> RegisterSchema(IStoreService store, TableId table,
             string? rawSchema = null)
         {
             var cacheKey = $"{store.ContractHandler.ContractAddress}:{table.ToHexString()}";
@@ -72,7 +72,7 @@ namespace mud.Network.schemas
             return decodedSchema;
         }
 
-        private static async Task<byte[]> FetchSchema(IStoreService store, TableId table)
+        private static async UniTask<byte[]> FetchSchema(IStoreService store, TableId table)
         {
             Logger.Debug($"Fetching schema for table: {table}, world: {store.ContractHandler.ContractAddress}");
             var getSchema = new GetSchemaFunction

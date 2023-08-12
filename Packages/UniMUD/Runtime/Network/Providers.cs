@@ -1,6 +1,6 @@
 #nullable enable
 using System.Threading;
-using System.Threading.Tasks;
+using Cysharp.Threading.Tasks;
 using Nethereum.JsonRpc.WebSocketStreamingClient;
 using Nethereum.Web3;
 using Nethereum.Web3.Accounts;
@@ -32,7 +32,7 @@ namespace mud.Network
     {
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
-        public static async Task<ProviderPair> CreateReconnectingProviders(Account account, ProviderConfig config, CancellationToken cancellationToken)
+        public static async UniTask<ProviderPair> CreateReconnectingProviders(Account account, ProviderConfig config, CancellationToken cancellationToken)
         {
             var jsonProvider = new Web3(account, config.JsonRpcUrl);
             StreamingWebSocketClient? wsClient = null;

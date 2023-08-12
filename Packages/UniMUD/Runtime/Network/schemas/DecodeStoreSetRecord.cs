@@ -1,6 +1,6 @@
 #nullable enable
 using System.Collections.Generic;
-using System.Threading.Tasks;
+using Cysharp.Threading.Tasks;
 using mud.Network.IStore;
 
 namespace mud.Network.schemas
@@ -11,7 +11,7 @@ namespace mud.Network.schemas
         public static readonly TableId SchemaTableId = new("mudstore", "schema");
         public static readonly TableId MetadataTableId = new("mudstore", "StoreMetadata");
 
-        public static async Task<Property> DecodeStoreSetRecord(IStoreService store, TableId table,
+        public static async UniTask<Property> DecodeStoreSetRecord(IStoreService store, TableId table,
             List<string> keyTuple,
             string data)
         {

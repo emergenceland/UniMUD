@@ -2,6 +2,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Cysharp.Threading.Tasks;
 using Nethereum.JsonRpc.WebSocketStreamingClient;
 using Nethereum.Web3;
 
@@ -9,10 +10,10 @@ namespace mud.Network
 {
     public class ProviderUtils
     {
-        public static async Task EnsureNetworkIsUp(Web3 provider, StreamingWebSocketClient? wsClient,
+        public static async UniTask EnsureNetworkIsUp(Web3 provider, StreamingWebSocketClient? wsClient,
             CancellationToken cancellationToken)
         {
-            async Task NetworkInfoPromise()
+            async UniTask NetworkInfoPromise()
             {
                 if (cancellationToken.IsCancellationRequested) return;
                 var providerBlockNumberTask = provider.Eth.Blocks.GetBlockNumber.SendRequestAsync();
@@ -26,7 +27,7 @@ namespace mud.Network
             await CallWithRetry(NetworkInfoPromise, 10, 1000, cancellationToken);
         }
 
-        public static async Task CallWithRetry(Func<Task> action, int maxRetries, int delay,
+        public static async UniTask CallWithRetry(Func<UniTask> action, int maxRetries, int delay,
             CancellationToken cancellationToken)
         {
             var retries = 0;

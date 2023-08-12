@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
+using Cysharp.Threading.Tasks;
 using mud.Network.IStore;
 using mud.Network.IStore.ContractDefinition;
 using Newtonsoft.Json;
@@ -22,7 +22,7 @@ namespace mud.Network.schemas
         private static readonly Dictionary<string, TableMetadata> MetadataCache = new();
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
-        public static async Task<TableMetadata?> RegisterMetadata(IStoreService store, TableId table,
+        public static async UniTask<TableMetadata?> RegisterMetadata(IStoreService store, TableId table,
             TableMetadata? metadata = null)
         {
             var cacheKey = $"{store.ContractHandler.ContractAddress}:{table.ToHexString()}";
@@ -88,7 +88,7 @@ namespace mud.Network.schemas
             return md;
         }
 
-        private static async Task<byte[]?> FetchMetadata(IStoreService store, TableId table)
+        private static async UniTask<byte[]?> FetchMetadata(IStoreService store, TableId table)
         {
             Logger.Debug($"Fetching metadata for table {table}, world: {store.ContractHandler.ContractAddress}");
             var getMetadata = new GetRecordFunction

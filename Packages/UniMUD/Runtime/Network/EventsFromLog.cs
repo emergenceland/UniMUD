@@ -1,5 +1,5 @@
 #nullable enable
-using System.Threading.Tasks;
+using Cysharp.Threading.Tasks;
 using mud.Network.IStore;
 using mud.Network.IStore.ContractDefinition;
 using mud.Network.schemas;
@@ -14,7 +14,7 @@ namespace mud.Network
 	public static partial class Sync
 	{
 		private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
-		public static async Task<Types.NetworkTableUpdate?> EcsEventFromLog(FilterLog log,
+		public static async UniTask<Types.NetworkTableUpdate?> EcsEventFromLog(FilterLog log,
 				IStoreService store, bool lastEventInTx)
 		{
 			var eventSig = log.EventSignature().Replace("0x", "");
