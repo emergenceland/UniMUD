@@ -10,6 +10,7 @@ using Nethereum.Web3;
 using Newtonsoft.Json;
 using NLog;
 using Account = Nethereum.Web3.Accounts.Account;
+using UnityEngine;
 using Cysharp.Threading.Tasks;
 
 namespace mud.Network
@@ -20,7 +21,7 @@ namespace mud.Network
         public BigInteger MaxFeePerGas { get; set; } = 0;
     }
 
-    public class TxExecutor
+    public class TxExecutor : MonoBehaviour
     {
         private Web3 _provider;
         private Account _signer;
