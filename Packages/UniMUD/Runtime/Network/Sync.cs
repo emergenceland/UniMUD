@@ -19,10 +19,13 @@ namespace mud.Network
         public async UniTask StartSync(IStoreService store, StreamingWebSocketClient client, int initialBlockNumber, int streamStartBlockNumber)
         {
             var initialLiveEvents = new List<Types.NetworkTableUpdate>();
+            Debug.Log("Subscribing to store events..");
             var (latestEvents, disposables) = await Sync.SubscribeToStoreEvents(store, client);
             
+            Debug.Log("Subscribing to latest events...");
             var latestEventSub = latestEvents.Subscribe((e) => { initialLiveEvents.Add(e); });
 
+            Debug.Log("Fetching gap state events...");
             var gapStateEvents =
                 await Sync.FetchStoreEventsInRange(store, initialBlockNumber, streamStartBlockNumber);
             
@@ -34,6 +37,7 @@ namespace mud.Network
 
             latestEventSub.Dispose();
 
+            Debug.Log("Sending initial events...");
             foreach (var update in filteredMerged)
             {
                 _outputStream.OnNext(update);
@@ -41,6 +45,7 @@ namespace mud.Network
             
             // TODO: persist to disk?
 
+            Debug.Log("Sending live events...");
             var liveEvents = latestEvents.Subscribe((e) =>
             {
                 _outputStream.OnNext(e);

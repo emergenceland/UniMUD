@@ -5,7 +5,9 @@ using Nethereum.JsonRpc.WebSocketStreamingClient;
 using Nethereum.Web3;
 using Nethereum.Web3.Accounts;
 using NLog;
+using UnityEngine;
 using static mud.Network.ProviderUtils;
+using Logger = NLog.Logger;
 
 namespace mud.Network
 {
@@ -34,23 +36,27 @@ namespace mud.Network
 
         public static async UniTask<ProviderPair> CreateReconnectingProviders(Account account, ProviderConfig config, CancellationToken cancellationToken)
         {
+           Debug.Log("Creating JSON provider...");
             var jsonProvider = new Web3(account, config.JsonRpcUrl);
             StreamingWebSocketClient? wsClient = null;
             
+            
             if (config.WsRpcUrl != null)
             {
-                Logger.Debug("Creating websocket client...");
+                Debug.Log("Creating websocket client...");
                 wsClient = new StreamingWebSocketClient(config.WsRpcUrl);
-                Logger.Debug("Websocket client created.");
+                Debug.Log("Websocket client created.");
             }
 
-            await CallWithRetry(async () =>
-            {
-                if (config.SkipNetworkCheck is false or null)
-                {
-                    await EnsureNetworkIsUp(jsonProvider, wsClient, cancellationToken);
-                }
-            }, 10, 1000, cancellationToken);
+            // await CallWithRetry(async () =>
+            // {
+                // if (config.SkipNetworkCheck is false or null)
+                // {
+                //     await EnsureNetworkIsUp(jsonProvider, wsClient, cancellationToken);
+                // }
+            // }, 10, 1000, cancellationToken);
+            
+            Debug.Log("Connected.");
 
             return new ProviderPair
             {

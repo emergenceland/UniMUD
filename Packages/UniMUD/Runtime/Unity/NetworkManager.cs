@@ -3,7 +3,6 @@ using System.Linq;
 using System.Numerics;
 using System.Threading;
 using System.Threading.Tasks;
-using Faucet;
 using mud.Client;
 using mud.Client.MudDefinitions;
 using mud.Network;
@@ -14,7 +13,6 @@ using Nethereum.JsonRpc.WebSocketStreamingClient;
 using Nethereum.RPC.Eth.Blocks;
 using Nethereum.Web3;
 using Nethereum.Web3.Accounts;
-using Network;
 using Newtonsoft.Json;
 using NLog;
 using UniRx;
@@ -62,6 +60,8 @@ namespace mud.Unity
         [Header("Dev settings")] 
         public string pk;
 
+        public bool skipNetworkCheck;
+
         [Tooltip("Generate new wallet every time instead of loading from PlayerPrefs")]
         public bool uniqueWallets = true;
         public bool disableCache = true;
@@ -74,7 +74,7 @@ namespace mud.Unity
         public readonly TxExecutor worldSend = new();
         public Datastore ds;
         private SyncWorker _syncWorker;
-        private Web3 _provider;
+        public Web3 _provider;
         public Account account;
 
 
@@ -126,6 +126,7 @@ namespace mud.Unity
         private async Task SetupNetwork(NetworkConfig config)
         {
 
+            Debug.Log("Setting up network...");
             var (jsonRpcUrl, wsRpcUrl, pk, chainId, contractAddress, disableCache) = config;
 
             if (!string.IsNullOrWhiteSpace(pk))
@@ -164,38 +165,41 @@ namespace mud.Unity
             var providerConfig = new ProviderConfig
             {
                 JsonRpcUrl = jsonRpcUrl,
-                WsRpcUrl = wsRpcUrl
+                WsRpcUrl = wsRpcUrl,
+                SkipNetworkCheck = skipNetworkCheck
             };
 
             _cts = new CancellationTokenSource();
 
+            Debug.Log("Creating providers...");
             var (prov, wsClient) = await Providers.CreateReconnectingProviders(account, providerConfig, _cts.Token);
             _provider = prov;
             _client = wsClient;
+            Debug.Log("Created providers.");
 
             #if UNITY_STANDALONE_WIN || UNITY_EDITOR_WIN 
             //we can't use faucets on windows atm
             //might be a firewall problem, not sure (308 error)
             #else
-            if (!string.IsNullOrWhiteSpace(faucetUrl))
-            {
-                Debug.Log("[Dev Faucet]: Player address -> " + address);
-                var faucet = new FaucetClient(faucetUrl);
-                _disposables.Add(faucet);
-                var balance = await _provider.Eth.GetBalance.SendRequestAsync(address);
-                Debug.Log(JsonConvert.SerializeObject(balance));
-                Debug.Log("Current balance: " + balance.Value);
-                var lowBalance = balance.Value <= BigInteger.Parse("1000000000000000000");
-                if (lowBalance)
-                {
-                    Debug.Log("[Dev Faucet]: Balance is low, dripping funds to player");
-                    var d = await faucet.Drip(address);
-                    Debug.Log(JsonConvert.SerializeObject(d));
-                    var newBalance = await _provider.Eth.GetBalance.SendRequestAsync(address);
-                    Debug.Log(JsonConvert.SerializeObject(newBalance));
-                    Debug.Log("[Dev Faucet]: New balance: " + newBalance.Value);
-                }
-            }
+            // if (!string.IsNullOrWhiteSpace(faucetUrl))
+            // {
+            //     Debug.Log("[Dev Faucet]: Player address -> " + address);
+            //     // var faucet = new FaucetClient(faucetUrl);
+            //     // _disposables.Add(faucet);
+            //     var balance = await _provider.Eth.GetBalance.SendRequestAsync(address);
+            //     Debug.Log(JsonConvert.SerializeObject(balance));
+            //     Debug.Log("Current balance: " + balance.Value);
+            //     var lowBalance = balance.Value <= BigInteger.Parse("1000000000000000000");
+            //     if (lowBalance)
+            //     {
+            //         Debug.Log("[Dev Faucet]: Balance is low, dripping funds to player");
+            //         var d = await faucet.Drip(address);
+            //         Debug.Log(JsonConvert.SerializeObject(d));
+            //         var newBalance = await _provider.Eth.GetBalance.SendRequestAsync(address);
+            //         Debug.Log(JsonConvert.SerializeObject(newBalance));
+            //         Debug.Log("[Dev Faucet]: New balance: " + newBalance.Value);
+            //     }
+            // }
             #endif
 
 
@@ -259,12 +263,17 @@ namespace mud.Unity
             //     startingBlockNumber = ds.GetCachedBlockNumber() ?? startingBlockNumber;
             // }
 
+            Debug.Log("Creating tx executor...");
             await worldSend.CreateTxExecutor(account, _provider, contractAddress);
+            Debug.Log("Tx executor created.");
 
+            Debug.Log("Creating sync worker...");
             _syncWorker = new SyncWorker();
             var currentBlockNumber = (int)await GetCurrentBlockNumberAsync(_provider);
+            Debug.Log("Starting sync...");
             await _syncWorker.StartSync(storeContract, _client, startingBlockNumber, currentBlockNumber);
 
+            Debug.Log("Subscribing to updates...");
             UniRx.ObservableExtensions
                 .Subscribe(_syncWorker.OutputStream, (update) => { NetworkUpdates.ApplyNetworkUpdates(update, ds); })
                 .AddTo(_disposables);

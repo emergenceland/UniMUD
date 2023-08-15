@@ -12,8 +12,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 14fa04022fa7a524a934fef3a55e299a, type: 3}
   m_Name: Mainnet
   m_EditorClassIdentifier: 
-  jsonRpcUrl: 
-  wsRpcUrl: 
+  jsonRpcUrl: http://localhost:8545
+  wsRpcUrl: ws://localhost:8545
+  faucetUrl: 
   contractAddress: 
   pk: 
   chainId: 31337

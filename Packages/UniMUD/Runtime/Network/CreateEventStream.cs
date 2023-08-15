@@ -12,6 +12,7 @@ using Nethereum.JsonRpc.WebSocketStreamingClient;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.RPC.Eth.Filters;
 using Nethereum.RPC.Reactive.Eth.Subscriptions;
+using UnityEngine;
 
 namespace mud.Network
 {
@@ -94,6 +95,7 @@ namespace mud.Network
 
             var observables = new List<IObservable<Types.NetworkTableUpdate>>();
 
+            Debug.Log("Shaddap you face");
             foreach (var filter in filterInput)
             {
                 var subscription = new EthLogsObservableSubscription(client);
@@ -104,6 +106,7 @@ namespace mud.Network
                         var update = await EcsEventFromLog(log, store, false);
                         return update;
                     });
+                Debug.Log("observable");
                 observables.Add(observable);
                 await subscription.SubscribeAsync(filter);
                 var subscriptionDisposable = Disposable.Create(() => subscription.UnsubscribeAsync());

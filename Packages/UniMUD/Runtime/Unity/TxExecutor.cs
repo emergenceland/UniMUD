@@ -43,9 +43,12 @@ namespace mud.Network
             ContractHandler = contractHandler;
             GasConfig = new GasConfig();
             PriorityFeeMultiplier = priorityFeeMultiplier ?? 1;
-            var (maxPriorityFee, maxFee) = await UpdateFeePerGas(PriorityFeeMultiplier);
-            GasConfig.MaxPriorityFeePerGas = maxPriorityFee;
-            GasConfig.MaxFeePerGas = maxFee;
+            // TODO: fix this
+            // var (maxPriorityFee, maxFee) = await UpdateFeePerGas(PriorityFeeMultiplier);
+            // GasConfig.MaxPriorityFeePerGas = maxPriorityFee;
+            GasConfig.MaxPriorityFeePerGas = 0;
+            // GasConfig.MaxFeePerGas = maxFee;
+            GasConfig.MaxFeePerGas = 0;
         }
 
         public async UniTask<bool> TxExecute<TFunction>(params object[] functionParameters)
@@ -69,8 +72,6 @@ namespace mud.Network
                         properties[i].SetValue(functionMessage, functionParameters[i]);
                     }
                 }
-
-
 
                 var gasLimit = await _provider.Eth.GetContractTransactionHandler<TFunction>()
                     .EstimateGasAsync(_contractAddress, functionMessage);
