@@ -15,7 +15,7 @@ MonoBehaviour:
   jsonRpcUrl: http://localhost:8545
   wsRpcUrl: ws://localhost:8545
   faucetUrl: 
-  contractAddress: 
+  contractAddress: 0x5FbDB2315678afecb367f032d93F642f64180aa3
   pk: 
   chainId: 31337
   disableCache: 1

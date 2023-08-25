@@ -1,6 +1,7 @@
 #nullable enable
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Cysharp.Threading.Tasks;
 using mud.Network.IStore;
 
 namespace mud.Network.schemas
@@ -11,7 +12,7 @@ namespace mud.Network.schemas
         public static readonly TableId SchemaTableId = new("mudstore", "schema");
         public static readonly TableId MetadataTableId = new("mudstore", "StoreMetadata");
 
-        public static async Task<Property> DecodeStoreSetRecord(IStoreService store, TableId table,
+        public static async UniTask<Property> DecodeStoreSetRecord(string storeContractAddress, string account, TableId table,
             List<string> keyTuple,
             string data)
         {
@@ -23,11 +24,11 @@ namespace mud.Network.schemas
                 {
                     Logger.Warn(
                         "registerSchema Event has more than one value in the key tuple, but this method only supports a single key");
-                    await Schema.RegisterSchema(store, TableId.FromHexString(tableForSchema), data);
+                    await Schema.RegisterSchema(storeContractAddress,account, TableId.FromHexString(tableForSchema), data);
                 }
             }
 
-            var schema = await Schema.RegisterSchema(store, table);
+            var schema = await Schema.RegisterSchema(storeContractAddress, account, table);
             var decoded = DataDecoder.DecodeData(schema, data);
 
             if (table.ToHexString() == MetadataTableId.ToHexString())
@@ -42,7 +43,7 @@ namespace mud.Network.schemas
 
                 var tableName = (string)decoded[0];
                 var fieldNames = Metadata.DecodeGetRecordResult((string)decoded[1]);
-                await Metadata.RegisterMetadata(store, TableId.FromHexString(tableForMetadata),
+                await Metadata.RegisterMetadata(storeContractAddress, account, TableId.FromHexString(tableForMetadata),
                     new TableMetadata
                     {
                         TableName = tableName,
@@ -50,7 +51,7 @@ namespace mud.Network.schemas
                     });
             }
 
-            var metadata = await Metadata.RegisterMetadata(store, table);
+            var metadata = await Metadata.RegisterMetadata(storeContractAddress, account, table);
             if (metadata != null)
             {
                 var namedValues = new Dictionary<string, object>();

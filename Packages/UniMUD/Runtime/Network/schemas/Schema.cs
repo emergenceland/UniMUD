@@ -5,11 +5,16 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Cysharp.Threading.Tasks;
 using mud.Network.IStore;
 using mud.Network.IStore.ContractDefinition;
+using Nethereum.Unity.Rpc;
+using Newtonsoft.Json;
 using NLog;
+using UnityEngine;
 using static mud.Network.schemas.SchemaTypes;
 using static mud.Network.schemas.Common;
+using Logger = NLog.Logger;
 
 namespace mud.Network.schemas
 {
@@ -25,10 +30,10 @@ namespace mud.Network.schemas
             return _schemaCache[cacheKey].Value;
         }
 
-        public static async Task<TableSchema> RegisterSchema(IStoreService store, TableId table,
+        public static async UniTask<TableSchema> RegisterSchema(string storeContractAddress, string account, TableId table,
             string? rawSchema = null)
         {
-            var cacheKey = $"{store.ContractHandler.ContractAddress}:{table.ToHexString()}";
+            var cacheKey = $"{storeContractAddress}:{table.ToHexString()}";
             var existingSchema = _schemaCache.ContainsKey(cacheKey);
             if (existingSchema)
             {
@@ -56,7 +61,7 @@ namespace mud.Network.schemas
                 return schema;
             }
 
-            var schemaResult = await FetchSchema(store, table);
+            var schemaResult = await FetchSchema(storeContractAddress, account, table);
 
             var decodedSchema = DecodeSchema(schemaResult);
             if (decodedSchema.IsEmpty)
@@ -72,15 +77,21 @@ namespace mud.Network.schemas
             return decodedSchema;
         }
 
-        private static async Task<byte[]> FetchSchema(IStoreService store, TableId table)
+        private static async UniTask<byte[]> FetchSchema(string storeContractAddress, string account, TableId table)
         {
-            Logger.Debug($"Fetching schema for table: {table}, world: {store.ContractHandler.ContractAddress}");
+            Logger.Debug($"Fetching schema for table: {table}, world: {storeContractAddress}");
             var getSchema = new GetSchemaFunction
             {
                 Table = table.ToBytes()
             };
-            var schemaResult = await store.ContractHandler.QueryAsync<GetSchemaFunction, byte[]>(getSchema);
-            return schemaResult;
+            
+            var schemaRequest = new QueryUnityRequest<GetSchemaFunction, GetSchemaOutputDTO>("http://localhost:8545", account);
+            Debug.Log(JsonConvert.SerializeObject(schemaRequest));
+            await schemaRequest.Query(getSchema, storeContractAddress).ToUniTask();
+            Debug.Log(JsonConvert.SerializeObject(schemaRequest));
+            return schemaRequest.Result.Schema;
+            // var schemaResult = await store.ContractHandler.QueryAsync<GetSchemaFunction, byte[]>(getSchema);
+            // return schemaResult;
         }
 
         public static TableSchema DecodeSchema(byte[] rawSchema)

@@ -2,8 +2,7 @@ using System;
 using System.Linq;
 using System.Numerics;
 using System.Threading;
-using System.Threading.Tasks;
-using Faucet;
+using Cysharp.Threading.Tasks;
 using mud.Client;
 using mud.Client.MudDefinitions;
 using mud.Network;
@@ -14,12 +13,10 @@ using Nethereum.JsonRpc.WebSocketStreamingClient;
 using Nethereum.RPC.Eth.Blocks;
 using Nethereum.Web3;
 using Nethereum.Web3.Accounts;
-using Network;
 using Newtonsoft.Json;
 using NLog;
 using UniRx;
 using UnityEngine;
-using UnityEngine.Serialization;
 
 
 namespace mud.Unity
@@ -73,7 +70,7 @@ namespace mud.Unity
 
         public readonly TxExecutor worldSend = new();
         public Datastore ds;
-        private SyncWorker _syncWorker;
+        // private SyncWorker _syncWorker;
         private Web3 _provider;
         public Account account;
 
@@ -123,7 +120,7 @@ namespace mud.Unity
             await SetupNetwork(config);
         }
 
-        private async Task SetupNetwork(NetworkConfig config)
+        private async UniTask SetupNetwork(NetworkConfig config)
         {
 
             var (jsonRpcUrl, wsRpcUrl, pk, chainId, contractAddress, disableCache) = config;
@@ -169,34 +166,35 @@ namespace mud.Unity
 
             _cts = new CancellationTokenSource();
 
+            Debug.Log("Creating clients...");
             var (prov, wsClient) = await Providers.CreateReconnectingProviders(account, providerConfig, _cts.Token);
             _provider = prov;
             _client = wsClient;
 
-            #if UNITY_STANDALONE_WIN || UNITY_EDITOR_WIN 
-            //we can't use faucets on windows atm
-            //might be a firewall problem, not sure (308 error)
-            #else
-            if (!string.IsNullOrWhiteSpace(faucetUrl))
-            {
-                Debug.Log("[Dev Faucet]: Player address -> " + address);
-                var faucet = new FaucetClient(faucetUrl);
-                _disposables.Add(faucet);
-                var balance = await _provider.Eth.GetBalance.SendRequestAsync(address);
-                Debug.Log(JsonConvert.SerializeObject(balance));
-                Debug.Log("Current balance: " + balance.Value);
-                var lowBalance = balance.Value <= BigInteger.Parse("1000000000000000000");
-                if (lowBalance)
-                {
-                    Debug.Log("[Dev Faucet]: Balance is low, dripping funds to player");
-                    var d = await faucet.Drip(address);
-                    Debug.Log(JsonConvert.SerializeObject(d));
-                    var newBalance = await _provider.Eth.GetBalance.SendRequestAsync(address);
-                    Debug.Log(JsonConvert.SerializeObject(newBalance));
-                    Debug.Log("[Dev Faucet]: New balance: " + newBalance.Value);
-                }
-            }
-            #endif
+            // #if UNITY_STANDALONE_WIN || UNITY_EDITOR_WIN 
+            // //we can't use faucets on windows atm
+            // //might be a firewall problem, not sure (308 error)
+            // #else
+            // if (!string.IsNullOrWhiteSpace(faucetUrl))
+            // {
+            //     Debug.Log("[Dev Faucet]: Player address -> " + address);
+            //     var faucet = new FaucetClient(faucetUrl);
+            //     _disposables.Add(faucet);
+            //     var balance = await _provider.Eth.GetBalance.SendRequestAsync(address);
+            //     Debug.Log(JsonConvert.SerializeObject(balance));
+            //     Debug.Log("Current balance: " + balance.Value);
+            //     var lowBalance = balance.Value <= BigInteger.Parse("1000000000000000000");
+            //     if (lowBalance)
+            //     {
+            //         Debug.Log("[Dev Faucet]: Balance is low, dripping funds to player");
+            //         var d = await faucet.Drip(address);
+            //         Debug.Log(JsonConvert.SerializeObject(d));
+            //         var newBalance = await _provider.Eth.GetBalance.SendRequestAsync(address);
+            //         Debug.Log(JsonConvert.SerializeObject(newBalance));
+            //         Debug.Log("[Dev Faucet]: New balance: " + newBalance.Value);
+            //     }
+            // }
+            // #endif
 
 
             var startingBlockNumber = -1;
@@ -220,54 +218,55 @@ namespace mud.Unity
 
             if (startingBlockNumber < 0)
             {
+                Debug.Log("Getting current block number...");
                 startingBlockNumber = (int)await GetCurrentBlockNumberAsync(_provider);
             }
 
             Debug.Log("Starting sync from block " + startingBlockNumber + "...");
 
-            var storeContract = new IStoreService(_provider, contractAddress);
-
-            var jsonStore = new JsonDataStorage(Application.persistentDataPath + contractAddress + ".json");
-            // ds = new Datastore(jsonStore);
-            ds = new Datastore(); // TODO: add persistence
-
-            var types = AppDomain.CurrentDomain.GetAssemblies()
-                .SelectMany(s => s.GetTypes())
-                .Where(p => typeof(IMudTable).IsAssignableFrom(p) && p.IsClass);
-            foreach (var t in types)
-            {
-
-                //ignore exact IMudTable class
-                if(t == typeof(IMudTable)) {
-                    continue;
-                }
-
-                Debug.Log($"Registering table: {t.Name}");
-                if (t.GetField("ID").GetValue(null) is not TableId tableId) return;
-                ds.RegisterTable(tableId);
-            }
-
-            WorldDefinitions.DefineDataStoreConfig(ds);
-            StoreDefinitions.DefineDataStoreConfig(ds);
-
-            ds.RegisterTable(new TableId("mudstore", "schema"));
-            
-            // TODO
-            // if (!disableCache)
+            // var storeContract = new IStoreService(_provider, contractAddress);
+            //
+            // var jsonStore = new JsonDataStorage(Application.persistentDataPath + contractAddress + ".json");
+            // // ds = new Datastore(jsonStore);
+            // ds = new Datastore(); // TODO: add persistence
+            //
+            // var types = AppDomain.CurrentDomain.GetAssemblies()
+            //     .SelectMany(s => s.GetTypes())
+            //     .Where(p => typeof(IMudTable).IsAssignableFrom(p) && p.IsClass);
+            // foreach (var t in types)
             // {
-            //     ds.LoadCache(); // TODO: this does not update the components
-            //     startingBlockNumber = ds.GetCachedBlockNumber() ?? startingBlockNumber;
+            //
+            //     //ignore exact IMudTable class
+            //     if(t == typeof(IMudTable)) {
+            //         continue;
+            //     }
+            //
+            //     Debug.Log($"Registering table: {t.Name}");
+            //     if (t.GetField("ID").GetValue(null) is not TableId tableId) return;
+            //     ds.RegisterTable(tableId);
             // }
-
-            await worldSend.CreateTxExecutor(account, _provider, contractAddress);
-
-            _syncWorker = new SyncWorker();
-            var currentBlockNumber = (int)await GetCurrentBlockNumberAsync(_provider);
-            await _syncWorker.StartSync(storeContract, _client, startingBlockNumber, currentBlockNumber);
-
-            UniRx.ObservableExtensions
-                .Subscribe(_syncWorker.OutputStream, (update) => { NetworkUpdates.ApplyNetworkUpdates(update, ds); })
-                .AddTo(_disposables);
+            //
+            // WorldDefinitions.DefineDataStoreConfig(ds);
+            // StoreDefinitions.DefineDataStoreConfig(ds);
+            //
+            // ds.RegisterTable(new TableId("mudstore", "schema"));
+            //
+            // // TODO
+            // // if (!disableCache)
+            // // {
+            // //     ds.LoadCache(); // TODO: this does not update the components
+            // //     startingBlockNumber = ds.GetCachedBlockNumber() ?? startingBlockNumber;
+            // // }
+            //
+            // await worldSend.CreateTxExecutor(account, _provider, contractAddress);
+            //
+            // _syncWorker = new SyncWorker();
+            // var currentBlockNumber = (int)await GetCurrentBlockNumberAsync(_provider);
+            // await _syncWorker.StartSync(storeContract, _client, startingBlockNumber, currentBlockNumber);
+            //
+            // UniRx.ObservableExtensions
+            //     .Subscribe(_syncWorker.OutputStream, (update) => { NetworkUpdates.ApplyNetworkUpdates(update, ds); })
+            //     .AddTo(_disposables);
 
             m_NetworkInitialized = true;
 
@@ -275,16 +274,19 @@ namespace mud.Unity
             OnInitialized?.Invoke();
         }
 
-        private static async Task<BigInteger> GetCurrentBlockNumberAsync(Web3 provider)
+        private static async UniTask<BigInteger> GetCurrentBlockNumberAsync(Web3 provider)
         {
+            Debug.Log("line 278");
             EthBlockNumber ethBlockNumber = new EthBlockNumber(provider.Client);
+            Debug.Log("yee");
             var blockNumber = await ethBlockNumber.SendRequestAsync();
+            Debug.Log(JsonConvert.SerializeObject(blockNumber));
             return blockNumber.Value;
         }
 
         private void OnDestroy()
         {
-            _syncWorker?.Dispose();
+            // _syncWorker?.Dispose();
             _client?.Dispose();
             _disposables?.Dispose();
             _cts.Cancel();

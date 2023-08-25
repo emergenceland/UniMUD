@@ -3,8 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using Cysharp.Threading.Tasks;
 using mud.Network.IStore;
 using mud.Network.IStore.ContractDefinition;
+using Nethereum.Unity.Rpc;
 using Newtonsoft.Json;
 using NLog;
 using static mud.Network.schemas.Common;
@@ -22,10 +24,10 @@ namespace mud.Network.schemas
         private static readonly Dictionary<string, TableMetadata> MetadataCache = new();
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
-        public static async Task<TableMetadata?> RegisterMetadata(IStoreService store, TableId table,
+        public static async UniTask<TableMetadata?> RegisterMetadata(string storeContractAddress, string account, TableId table,
             TableMetadata? metadata = null)
         {
-            var cacheKey = $"{store.ContractHandler.ContractAddress}:{table.ToHexString()}";
+            var cacheKey = $"{storeContractAddress}:{table.ToHexString()}";
 
             var metadataIsCached = MetadataCache.TryGetValue(cacheKey, out var cachedMetadata);
             if (metadataIsCached)
@@ -52,20 +54,20 @@ namespace mud.Network.schemas
                 return null;
             }
 
-            var metadataSchema = await Schema.RegisterSchema(store, DecodeStore.MetadataTableId);
+            var metadataSchema = await Schema.RegisterSchema(storeContractAddress, account, DecodeStore.MetadataTableId);
 
             if (metadataSchema.IsEmpty)
             {
                 Logger.Warn(
-                    $"Metadata schema not found: {DecodeStore.MetadataTableId}, {store.ContractHandler.ContractAddress}");
+                    $"Metadata schema not found: {DecodeStore.MetadataTableId}, {storeContractAddress}");
             }
 
-            var metadataRecord = await FetchMetadata(store, table);
+            var metadataRecord = await FetchMetadata(storeContractAddress, account, table);
 
             if (metadataRecord == null || ByteArrayToHexString(metadataRecord) == "0x")
             {
                 Logger.Warn(
-                    $"Metadata not found for table: {table}, {store.ContractHandler.ContractAddress}");
+                    $"Metadata not found for table: {table}, {storeContractAddress}");
             }
 
             var decoded = DataDecoder.DecodeData(metadataSchema, ByteArrayToHexString(metadataRecord));
@@ -88,16 +90,18 @@ namespace mud.Network.schemas
             return md;
         }
 
-        private static async Task<byte[]?> FetchMetadata(IStoreService store, TableId table)
+        private static async UniTask<byte[]?> FetchMetadata(string storeContractAddress, string account, TableId table)
         {
-            Logger.Debug($"Fetching metadata for table {table}, world: {store.ContractHandler.ContractAddress}");
+            Logger.Debug($"Fetching metadata for table {table}, world: {storeContractAddress}");
             var getMetadata = new GetRecordFunction
             {
                 Table = DecodeStore.MetadataTableId.ToBytes(),
                 Key = new List<byte[]> { table.ToBytes() }
             };
-            var metadataRecord = await store.ContractHandler.QueryAsync<GetRecordFunction, byte[]>(getMetadata);
-            return metadataRecord;
+            // var metadataRecord = await store.ContractHandler.QueryAsync<GetRecordFunction, byte[]>(getMetadata);
+            var metadataRequest = new QueryUnityRequest<GetRecordFunction, GetRecordOutputDTO>("http://localhost:8545", account);
+            await metadataRequest.Query(getMetadata, storeContractAddress).ToUniTask();
+            return metadataRequest.Result.Data;
         }
 
         public static List<string> DecodeGetRecordResult(string input)

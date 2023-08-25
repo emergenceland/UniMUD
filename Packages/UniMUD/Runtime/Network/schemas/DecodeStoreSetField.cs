@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Cysharp.Threading.Tasks;
 using mud.Network.IStore;
 using NLog;
 
@@ -14,11 +15,11 @@ namespace mud.Network.schemas
     {
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
-        public static async Task<(TableSchema, Property?, Property?)> DecodeStoreSetField(
-            IStoreService store, TableId table,
+        public static async UniTask<(TableSchema, Property?, Property?)> DecodeStoreSetField(
+            string storeContractAddress, string account, TableId table,
             int schemaIndex, string data)
         {
-            var schema = await Schema.RegisterSchema(store, table, null);
+            var schema = await Schema.RegisterSchema(storeContractAddress, account, table, null);
             var value = DataDecoder.DecodeField(schema, schemaIndex, data);
 
             var staticFields = schema.StaticFields;
@@ -33,7 +34,7 @@ namespace mud.Network.schemas
             var initialValue = defaultValues.Select((v, index) => new { index, value = v })
                 .ToDictionary(pair => pair.index, pair => pair.value);
 
-            var metadata = await Metadata.RegisterMetadata(store, table);
+            var metadata = await Metadata.RegisterMetadata(storeContractAddress, account, table);
             if (metadata != null)
             {
                 return (schema, Utils.CreateProperty((metadata.FieldNames[0], value[schemaIndex])),

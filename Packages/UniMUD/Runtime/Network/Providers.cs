@@ -44,13 +44,13 @@ namespace mud.Network
                 Logger.Debug("Websocket client created.");
             }
 
-            await CallWithRetry(async () =>
-            {
-                if (config.SkipNetworkCheck is false or null)
-                {
-                    await EnsureNetworkIsUp(jsonProvider, wsClient, cancellationToken);
-                }
-            }, 10, 1000, cancellationToken);
+            // await CallWithRetry(async () =>
+            // {
+            //     if (config.SkipNetworkCheck is false or null)
+            //     {
+            //         await EnsureNetworkIsUp(jsonProvider, wsClient, cancellationToken);
+            //     }
+            // }, 10, 1000, cancellationToken);
 
             return new ProviderPair
             {
