@@ -35,4 +35,7 @@
     <assembly fullname="Nethereum.Signer" preserve="all"/>
     <assembly fullname="Nethereum.JsonRpc.Client" preserve="all"/>
     <assembly fullname="Nethereum.Unity" preserve="all"/>
+    <assembly fullname="UniMUD">
+        <type fullname="BlockchainInterop" preserve="all"/>
+    </assembly>
 </linker>

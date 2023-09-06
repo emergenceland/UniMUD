@@ -15,33 +15,40 @@ namespace v2
         public static async UniTask<IObservable<List<mud.Network.Types.NetworkTableUpdate>>> WatchLogs(
             string storeContractAddress, string account, string rpcUrl, int pollingInterval)
         {
-            
-            var lastFetchedBlock = await Common.GetLatestBlockNumber(rpcUrl);
+            return Observable.Create<List<mud.Network.Types.NetworkTableUpdate>>(async observer =>
+            {
+                var lastFetchedBlock = await Common.GetLatestBlockNumber(rpcUrl);
 
-            var observable = Observable.Interval(TimeSpan.FromMilliseconds(pollingInterval))
-                .SelectMany(async _ =>
-                {
-                    Debug.Log("hee");
-                    var latestBlock = await Common.GetLatestBlockNumber(rpcUrl);
+                return UniRx.Observable
+                    .ObserveOnMainThread(Observable.Interval(TimeSpan.FromMilliseconds(pollingInterval))).Subscribe(
+                        async _ =>
+                        {
+                            try
+                            {
+                                Debug.Log("hee");
+                                var latestBlock = await Common.GetLatestBlockNumber(rpcUrl);
 
-                    if (latestBlock <= lastFetchedBlock)
-                    {
-                        // No new blocks since the last fetch, so return an empty list.
-                        return new List<mud.Network.Types.NetworkTableUpdate>();
-                    }
+                                if (latestBlock <= lastFetchedBlock)
+                                {
+                                    // No new blocks since the last fetch, so we won't notify the observer of any new data.
+                                    return;
+                                }
 
-                    // Fetch logs between the last fetched block and the latest block.
-                    var newFromBlock = BigInteger.Add(BigInteger.One, lastFetchedBlock);
-                    var logs = await FetchLogs(storeContractAddress, account, rpcUrl, newFromBlock, latestBlock);
+                                var newFromBlock = BigInteger.Add(BigInteger.One, lastFetchedBlock);
+                                var logs = await FetchLogs(storeContractAddress, account, rpcUrl, newFromBlock,
+                                    latestBlock);
 
-                    // Update the last fetched block number.
-                    lastFetchedBlock = latestBlock;
-                    Debug.Log("Last fetched block: " + lastFetchedBlock);
-
-                    return logs;
-                });
-    
-            return observable;
+                                lastFetchedBlock = latestBlock;
+                                Debug.Log("Last fetched block: " + lastFetchedBlock);
+                                observer.OnNext(logs);
+                            }
+                            catch (Exception ex)
+                            {
+                                Debug.LogError($"Error while fetching logs: {ex}");
+                                // observer.OnError(ex);
+                            }
+                        });
+            });
         }
     }
 }

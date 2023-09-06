@@ -1,6 +1,8 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using Cysharp.Threading.Tasks;
 using IWorld.ContractDefinition;
 using mud.Client;
@@ -12,6 +14,9 @@ using Nethereum.Unity.Rpc;
 using Nethereum.Web3.Accounts;
 using UniRx;
 using UnityEngine;
+using HybridWebSocket;
+using Newtonsoft.Json;
+
 
 namespace v2
 {
@@ -33,7 +38,6 @@ namespace v2
         private static bool m_NetworkInitialized = false;
         public event Action<NetworkManager> OnNetworkInitialized = delegate { };
         public static Action OnInitialized;
-
         
         private async void Start()
         {
@@ -121,14 +125,59 @@ namespace v2
             
             Debug.Log("Starting sync from block " + startingBlockNumber + "...");
             
-            var syncWorker = new Sync();
-            // await Sync.FetchLogs(storeContract, account.Address, rpcUrl, 0, 123);
-            await syncWorker.StartSync(storeContract, account.Address, rpcUrl,  startingBlockNumber);
+            WebSocket ws = WebSocketFactory.CreateInstance("ws://localhost:8545");
+
+            // Add OnOpen event listener
+            ws.OnOpen += () =>
+            {
+                Debug.Log("WS connected!");
+                Debug.Log("WS state: " + ws.GetState().ToString());
+
+                // ws.Send(Encoding.UTF8.GetBytes("Hello from Unity 3D!"));
+                // ws.SubscribeToNewHeads();
+                string typeStr = "newHeads";
+                var subscriptionRequest = new
+                {
+                    jsonrpc = "2.0",
+                    id = 1,
+                    method = "eth_subscribe",
+                    @params = new List<string> { typeStr }
+                };
+
+                string jsonString = JsonConvert.SerializeObject(subscriptionRequest);
+                byte[] byteArray = Encoding.UTF8.GetBytes(jsonString);
+                ws.Send(byteArray);
+            };
             
-            Debug.Log("yipee");
-            UniRx.ObservableExtensions
-            .Subscribe(syncWorker.OutputStream, (update) => { NetworkUpdates.ApplyNetworkUpdates(update, ds); })
-            .AddTo(_disposables);
+            ws.OnMessage += (byte[] msg) =>
+            {
+                Debug.Log("WS received message: " + Encoding.UTF8.GetString(msg));
+
+                // ws.Close();
+            };
+
+            // Add OnError event listener
+            ws.OnError += (string errMsg) =>
+            {
+                Debug.Log("WS error: " + errMsg);
+            };
+
+            // Add OnClose event listener
+            ws.OnClose += (WebSocketCloseCode code) =>
+            {
+                Debug.Log("WS closed with code: " + code.ToString());
+            };
+
+            // Connect to the server
+            ws.Connect();
+            // var syncWorker = new Sync();
+            // // await Sync.FetchLogs(storeContract, account.Address, rpcUrl, 0, 123);
+            // await syncWorker.StartSync(storeContract, account.Address, rpcUrl,  startingBlockNumber);
+            //
+            // Debug.Log("yipee");
+            // UniRx.ObservableExtensions
+            // .Subscribe(syncWorker.OutputStream, (update) => { NetworkUpdates.ApplyNetworkUpdates(update, ds); })
+            // .AddTo(_disposables);
             
             Debug.Log("Sending test tx...");
             await world.Write<IncrementFunction>();
