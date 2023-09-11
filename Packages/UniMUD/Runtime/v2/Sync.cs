@@ -1,10 +1,10 @@
 using System;
-using System.Collections.Generic;
+using System.Numerics;
 using Cysharp.Threading.Tasks;
 using Newtonsoft.Json;
 using UniRx;
+using UniRx.Operators;
 using UnityEngine;
-using Observable = System.Reactive.Linq.Observable;
 using ObservableExtensions = UniRx.ObservableExtensions;
 using Types = mud.Network.Types;
 
@@ -20,17 +20,14 @@ namespace v2
             int initialBlockNumber)
         {
             Debug.Log("Fetching initial state from indexer...");
-            var initialLiveEvents = new List<Types.NetworkTableUpdate>();
-            var latestEvents = await WatchLogs(storeContractAddress, account, rpcUrl, 1000);
-
-            Debug.Log("Yipe");
-            var latestEventSub = ObservableExtensions.Subscribe(latestEvents, list =>
+            var blockStream = new BlockStream().AddTo(_disposables).WatchBlocks();
+            var latestBlockNumber = blockStream.Select(block =>
             {
-                initialLiveEvents.AddRange(list);
-                Debug.Log(JsonConvert.SerializeObject(list));
-            });
-            Debug.Log("Subbed.");
-            _disposables.Add(latestEventSub);
+                if (block.@params?.result.number == null) return 0;
+                return Common.ConvertFromHexUnsigned(block.@params.result.number);
+            }).Do(blockNum => Debug.Log("Latest block number: " + blockNum)).Share();
+            ObservableExtensions.Subscribe(latestBlockNumber, integer => { }, Debug.LogError);
         }
+
     }
 }

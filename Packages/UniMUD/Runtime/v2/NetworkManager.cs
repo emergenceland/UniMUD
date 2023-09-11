@@ -22,18 +22,6 @@ using Newtonsoft.Json;
 
 namespace v2
 {
-    public class BlockParams
-    {
-        public BlockResult result;
-    }
-    public class BlockResult
-    {
-        public string number;
-    }
-    public class Block
-    {
-        public BlockParams @params;
-    }
     public class NetworkManager : MonoBehaviour
     {
         public string pk;
@@ -47,7 +35,6 @@ namespace v2
         private int startingBlockNumber = -1;
         public Datastore ds;
         private readonly CompositeDisposable _disposables = new();
-        private WebSocket ws;
         
         // initialization events
         private static bool m_NetworkInitialized = false;
@@ -101,7 +88,6 @@ namespace v2
 
             var world = new CreateContract();
             await world.CreateTxExecutor(account, storeContract, rpcUrl, chainId);
-           
 
             /*
              * ==== CLIENT CACHE ====
@@ -139,62 +125,19 @@ namespace v2
             }
             
             Debug.Log("Starting sync from block " + startingBlockNumber + "...");
-            
-            // WebSocket ws = WebSocketFactory.CreateInstance("ws://localhost:8545");
-             ws = WebSocketFactory.CreateInstance("ws://localhost:8545");
 
-            // Add OnOpen event listener
-            ws.OnOpen += () =>
-            {
-                Debug.Log("WS connected!");
-                Debug.Log("WS state: " + ws.GetState().ToString());
-
-                string typeStr = "newHeads";
-                var subscriptionRequest = new
-                {
-                    jsonrpc = "2.0",
-                    id = 1,
-                    method = "eth_subscribe",
-                    @params = new List<string> { typeStr }
-                };
-
-                string jsonString = JsonConvert.SerializeObject(subscriptionRequest);
-                byte[] byteArray = Encoding.UTF8.GetBytes(jsonString);
-                ws.Send(byteArray);
-            };
-            
-            ws.OnMessage += async (byte[] msg) =>
-            {
-                var message = Encoding.UTF8.GetString(msg);
-                Debug.Log("WS received message: " + message);
-                var x = JsonConvert.DeserializeObject<Block>(message);
-                Debug.Log(JsonConvert.SerializeObject(x));
-                if (x.@params.result.number != null)
-                {
-                    Debug.Log("yippee" + x.@params.result.number);
-                    // Remove the "0x" prefix if it exists
-                    BigInteger bigIntNumber = BigInteger.Parse(x.@params.result.number.Substring(2), System.Globalization.NumberStyles.HexNumber);
-                    Debug.Log("Big int number: " + JsonConvert.SerializeObject(bigIntNumber));
-                    await Sync.FetchLogs(storeContract, account.Address, rpcUrl, bigIntNumber, bigIntNumber); 
-                }
-
-                // ws.Close();
-            };
-
-            // Add OnError event listener
-            ws.OnError += (string errMsg) =>
-            {
-                Debug.Log("WS error: " + errMsg);
-            };
-
-            // Add OnClose event listener
-            ws.OnClose += (WebSocketCloseCode code) =>
-            {
-                Debug.Log("WS closed with code: " + code.ToString());
-            };
-
-            ws.Connect();
+            // var blockStream = new BlockStream().AddTo(_disposables);
+            // UniRx.ObservableExtensions.Subscribe<Block>(blockStream.WatchBlocks(), (block) => 
+            //     {
+            //         Debug.Log($"Received block with number: {block.@params.result.number}");
+            //     },
+            //     error => 
+            //     {
+            //         Debug.LogError($"Error: {error.Message}");
+            //     });
+            //
             var syncWorker = new Sync();
+            await syncWorker.StartSync(storeContract, account.Address, rpcUrl, startingBlockNumber);
 
             // await Sync.FetchLogs(storeContract, account.Address, rpcUrl, 0, 123);
             // await syncWorker.StartSync(storeContract, account.Address, rpcUrl,  startingBlockNumber);
@@ -222,10 +165,6 @@ namespace v2
         private void OnDestroy()
         {
             _disposables?.Dispose();
-            if (ws != null && ws.GetState() == WebSocketState.Open)
-            {
-                ws.Close();
-            }
         }
     }
 }

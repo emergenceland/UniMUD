@@ -1,54 +1,100 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Numerics;
-using Cysharp.Threading.Tasks;
-using System.Reactive;
-using System.Reactive.Linq;
-using Nethereum.Hex.HexTypes;
+using System.Text;
+using HybridWebSocket;
+using Newtonsoft.Json;
+using UniRx;
+// using UniRx;
 using UnityEngine;
 
 namespace v2
 {
-    public partial class Sync
+    public class BlockParams
     {
-        // repeatedly calls FetchLogs at a defined polling interval
-        public static async UniTask<IObservable<List<mud.Network.Types.NetworkTableUpdate>>> WatchLogs(
-            string storeContractAddress, string account, string rpcUrl, int pollingInterval)
+        public BlockResult result;
+    }
+
+    public class BlockResult
+    {
+        public string number;
+    }
+
+    public class Block
+    {
+        public BlockParams @params;
+    }
+
+    public class BlockStream : IDisposable
+    {
+        private WebSocket ws;
+        Subject<Block> subject = new();
+
+        public IObservable<Block> WatchBlocks()
         {
-            return Observable.Create<List<mud.Network.Types.NetworkTableUpdate>>(async observer =>
+            ws = WebSocketFactory.CreateInstance("ws://localhost:8545");
+
+            ws.OnOpen += () =>
             {
-                var lastFetchedBlock = await Common.GetLatestBlockNumber(rpcUrl);
+                Debug.Log("WS connected!");
+                Debug.Log("WS state: " + ws.GetState().ToString());
 
-                return UniRx.Observable
-                    .ObserveOnMainThread(Observable.Interval(TimeSpan.FromMilliseconds(pollingInterval))).Subscribe(
-                        async _ =>
-                        {
-                            try
-                            {
-                                Debug.Log("hee");
-                                var latestBlock = await Common.GetLatestBlockNumber(rpcUrl);
+                string typeStr = "newHeads";
+                var subscriptionRequest = new
+                {
+                    jsonrpc = "2.0",
+                    id = 1,
+                    method = "eth_subscribe",
+                    @params = new List<string> { typeStr }
+                };
 
-                                if (latestBlock <= lastFetchedBlock)
-                                {
-                                    // No new blocks since the last fetch, so we won't notify the observer of any new data.
-                                    return;
-                                }
+                string jsonString = JsonConvert.SerializeObject(subscriptionRequest);
+                byte[] byteArray = Encoding.UTF8.GetBytes(jsonString);
+                ws.Send(byteArray);
+            };
 
-                                var newFromBlock = BigInteger.Add(BigInteger.One, lastFetchedBlock);
-                                var logs = await FetchLogs(storeContractAddress, account, rpcUrl, newFromBlock,
-                                    latestBlock);
+            ws.OnMessage += async (byte[] msg) =>
+            {
+                var message = Encoding.UTF8.GetString(msg);
+                Debug.Log("WS received message: " + message);
+                var block = JsonConvert.DeserializeObject<Block>(message);
+                // Debug.Log(JsonConvert.SerializeObject(block));
+                // if (block.@params.result.number != null)
+                // {
+                //     BigInteger bigIntNumber = BigInteger.Parse(block.@params.result.number.Substring(2),
+                //         System.Globalization.NumberStyles.HexNumber);
+                //     Debug.Log("Big int number: " + JsonConvert.SerializeObject(bigIntNumber));
+                //     // await Sync.FetchLogs(storeContract, account.Address, rpcUrl, bigIntNumber, bigIntNumber);
+                // }
 
-                                lastFetchedBlock = latestBlock;
-                                Debug.Log("Last fetched block: " + lastFetchedBlock);
-                                observer.OnNext(logs);
-                            }
-                            catch (Exception ex)
-                            {
-                                Debug.LogError($"Error while fetching logs: {ex}");
-                                // observer.OnError(ex);
-                            }
-                        });
-            });
+                subject.OnNext(block);
+            };
+
+            ws.OnError += (string errMsg) =>
+            {
+                Debug.Log("WS error: " + errMsg);
+                subject.OnError(new Exception(errMsg));
+            };
+
+            ws.OnClose += (WebSocketCloseCode code) =>
+            {
+                Debug.Log("WS closed with code: " + code.ToString());
+                subject.OnCompleted();
+            };
+
+            ws.Connect();
+            return subject;
+        }
+
+        public void Dispose()
+        {
+            if (ws != null && ws.GetState() == WebSocketState.Open)
+            {
+                ws.Close();
+            }
+
+            subject?.Dispose();
         }
     }
 }

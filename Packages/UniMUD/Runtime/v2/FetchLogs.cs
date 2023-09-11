@@ -24,8 +24,6 @@ namespace v2
             string account,
             string rpcUrl, BigInteger fromBlock, BigInteger toBlock)
         {
-            Debug.Log("FromBlock: " + fromBlock);
-            Debug.Log("ToBlock" + toBlock);
             var storeEvents = new List<EventABI>
             {
                 new StoreSetFieldEventDTO().GetEventABI(),
@@ -35,16 +33,13 @@ namespace v2
             };
             var events = storeEvents.Select(e => e.CreateFilterInput(e, new[] { storeContractAddress },
                 new BlockParameter((ulong)fromBlock), new BlockParameter((ulong)toBlock))).ToList();
-            Debug.Log(JsonConvert.SerializeObject(events));
 
-            // events.ForEach(fi =>
-            // {
-            //     fi.Address = new[] { storeContractAddress };
-            //     fi.FromBlock = new BlockParameter((ulong)fromBlock);
-            //     fi.ToBlock = new BlockParameter((ulong)toBlock);
-            //     Debug.Log("Modified FromBlock: " + fi.FromBlock.BlockNumber);
-            //     Debug.Log("Modified ToBlock: " + fi.ToBlock.BlockNumber);
-            // });
+            events.ForEach(fi =>
+            {
+                fi.Address = new[] { storeContractAddress };
+                fi.FromBlock = new BlockParameter((ulong)fromBlock);
+                fi.ToBlock = new BlockParameter((ulong)toBlock);
+            });
 
             var allLogs = new List<FilterLog>();
             var getLogsRequest = new EthGetLogsUnityRequest(rpcUrl);
