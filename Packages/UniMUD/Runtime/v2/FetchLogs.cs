@@ -16,13 +16,16 @@ using Types = mud.Network.Types;
 
 namespace v2
 {
-    public partial class Sync  
+    public partial class Sync
     {
         public int pollingInterval = 1000;
 
-        public static async UniTask<List<Types.NetworkTableUpdate>> FetchLogs(string storeContractAddress, string account,
+        public static async UniTask<List<Types.NetworkTableUpdate>> FetchLogs(string storeContractAddress,
+            string account,
             string rpcUrl, BigInteger fromBlock, BigInteger toBlock)
         {
+            Debug.Log("FromBlock: " + fromBlock);
+            Debug.Log("ToBlock" + toBlock);
             var storeEvents = new List<EventABI>
             {
                 new StoreSetFieldEventDTO().GetEventABI(),
@@ -30,16 +33,18 @@ namespace v2
                 new StoreDeleteRecordEventDTO().GetEventABI(),
                 new StoreEphemeralRecordEventDTO().GetEventABI()
             };
-            Debug.Log(storeEvents);
-            var events = storeEvents.Select(e => e.CreateFilterInput()).ToList();
-            Debug.Log(events);
+            var events = storeEvents.Select(e => e.CreateFilterInput(e, new[] { storeContractAddress },
+                new BlockParameter((ulong)fromBlock), new BlockParameter((ulong)toBlock))).ToList();
+            Debug.Log(JsonConvert.SerializeObject(events));
 
-            events.ForEach(fi =>
-            {
-                fi.Address = new[] { storeContractAddress };
-                fi.FromBlock = new BlockParameter((ulong)fromBlock);
-                fi.ToBlock = new BlockParameter((ulong)toBlock);
-            });
+            // events.ForEach(fi =>
+            // {
+            //     fi.Address = new[] { storeContractAddress };
+            //     fi.FromBlock = new BlockParameter((ulong)fromBlock);
+            //     fi.ToBlock = new BlockParameter((ulong)toBlock);
+            //     Debug.Log("Modified FromBlock: " + fi.FromBlock.BlockNumber);
+            //     Debug.Log("Modified ToBlock: " + fi.ToBlock.BlockNumber);
+            // });
 
             var allLogs = new List<FilterLog>();
             var getLogsRequest = new EthGetLogsUnityRequest(rpcUrl);
@@ -60,6 +65,7 @@ namespace v2
             });
 
             var filterLogs = allLogs.ToArray();
+            Debug.Log(JsonConvert.SerializeObject(filterLogs));
             var allUpdates = new List<mud.Network.Types.NetworkTableUpdate>();
 
             for (var i = 0; i < filterLogs.Length; i++)
@@ -73,6 +79,7 @@ namespace v2
                 var update = await BlockLogsToStorage(fl, storeContractAddress, account, lastEventInTx);
                 allUpdates.Add(update);
             }
+
             Debug.Log(JsonConvert.SerializeObject(allUpdates));
 
             return allUpdates;

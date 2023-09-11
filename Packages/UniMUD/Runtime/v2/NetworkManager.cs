@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Numerics;
 using System.Text;
 using Cysharp.Threading.Tasks;
 using IWorld.ContractDefinition;
@@ -15,11 +16,24 @@ using Nethereum.Web3.Accounts;
 using UniRx;
 using UnityEngine;
 using HybridWebSocket;
+using Nethereum.Contracts.QueryHandlers.MultiCall;
 using Newtonsoft.Json;
 
 
 namespace v2
 {
+    public class BlockParams
+    {
+        public BlockResult result;
+    }
+    public class BlockResult
+    {
+        public string number;
+    }
+    public class Block
+    {
+        public BlockParams @params;
+    }
     public class NetworkManager : MonoBehaviour
     {
         public string pk;
@@ -33,6 +47,7 @@ namespace v2
         private int startingBlockNumber = -1;
         public Datastore ds;
         private readonly CompositeDisposable _disposables = new();
+        private WebSocket ws;
         
         // initialization events
         private static bool m_NetworkInitialized = false;
@@ -125,7 +140,8 @@ namespace v2
             
             Debug.Log("Starting sync from block " + startingBlockNumber + "...");
             
-            WebSocket ws = WebSocketFactory.CreateInstance("ws://localhost:8545");
+            // WebSocket ws = WebSocketFactory.CreateInstance("ws://localhost:8545");
+             ws = WebSocketFactory.CreateInstance("ws://localhost:8545");
 
             // Add OnOpen event listener
             ws.OnOpen += () =>
@@ -133,8 +149,6 @@ namespace v2
                 Debug.Log("WS connected!");
                 Debug.Log("WS state: " + ws.GetState().ToString());
 
-                // ws.Send(Encoding.UTF8.GetBytes("Hello from Unity 3D!"));
-                // ws.SubscribeToNewHeads();
                 string typeStr = "newHeads";
                 var subscriptionRequest = new
                 {
@@ -149,9 +163,20 @@ namespace v2
                 ws.Send(byteArray);
             };
             
-            ws.OnMessage += (byte[] msg) =>
+            ws.OnMessage += async (byte[] msg) =>
             {
-                Debug.Log("WS received message: " + Encoding.UTF8.GetString(msg));
+                var message = Encoding.UTF8.GetString(msg);
+                Debug.Log("WS received message: " + message);
+                var x = JsonConvert.DeserializeObject<Block>(message);
+                Debug.Log(JsonConvert.SerializeObject(x));
+                if (x.@params.result.number != null)
+                {
+                    Debug.Log("yippee" + x.@params.result.number);
+                    // Remove the "0x" prefix if it exists
+                    BigInteger bigIntNumber = BigInteger.Parse(x.@params.result.number.Substring(2), System.Globalization.NumberStyles.HexNumber);
+                    Debug.Log("Big int number: " + JsonConvert.SerializeObject(bigIntNumber));
+                    await Sync.FetchLogs(storeContract, account.Address, rpcUrl, bigIntNumber, bigIntNumber); 
+                }
 
                 // ws.Close();
             };
@@ -168,13 +193,12 @@ namespace v2
                 Debug.Log("WS closed with code: " + code.ToString());
             };
 
-            // Connect to the server
             ws.Connect();
-            // var syncWorker = new Sync();
-            // // await Sync.FetchLogs(storeContract, account.Address, rpcUrl, 0, 123);
+            var syncWorker = new Sync();
+
+            // await Sync.FetchLogs(storeContract, account.Address, rpcUrl, 0, 123);
             // await syncWorker.StartSync(storeContract, account.Address, rpcUrl,  startingBlockNumber);
             //
-            // Debug.Log("yipee");
             // UniRx.ObservableExtensions
             // .Subscribe(syncWorker.OutputStream, (update) => { NetworkUpdates.ApplyNetworkUpdates(update, ds); })
             // .AddTo(_disposables);
@@ -198,6 +222,10 @@ namespace v2
         private void OnDestroy()
         {
             _disposables?.Dispose();
+            if (ws != null && ws.GetState() == WebSocketState.Open)
+            {
+                ws.Close();
+            }
         }
     }
 }
