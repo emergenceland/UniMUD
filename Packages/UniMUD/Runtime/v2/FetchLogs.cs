@@ -18,9 +18,7 @@ namespace v2
 {
     public partial class Sync
     {
-        public int pollingInterval = 1000;
-
-        public static async UniTask<List<Types.NetworkTableUpdate>> FetchLogs(string storeContractAddress,
+        public static async IAsyncEnumerable<Types.NetworkTableUpdate> FetchLogs(string storeContractAddress,
             string account,
             string rpcUrl, BigInteger fromBlock, BigInteger toBlock)
         {
@@ -31,8 +29,9 @@ namespace v2
                 new StoreDeleteRecordEventDTO().GetEventABI(),
                 new StoreEphemeralRecordEventDTO().GetEventABI()
             };
-            var events = storeEvents.Select(e => e.CreateFilterInput(e, new[] { storeContractAddress },
-                new BlockParameter((ulong)fromBlock), new BlockParameter((ulong)toBlock))).ToList();
+            // var events = storeEvents.Select(e => e.CreateFilterInput(e, new[] { storeContractAddress },
+            //     new BlockParameter((ulong)fromBlock), new BlockParameter((ulong)toBlock))).ToList();
+            var events = storeEvents.Select(e => e.CreateFilterInput()).ToList();
 
             events.ForEach(fi =>
             {
@@ -46,6 +45,7 @@ namespace v2
 
             foreach (var fi in events)
             {
+                await UniTask.SwitchToMainThread();
                 await getLogsRequest.SendRequest(fi).ToUniTask();
                 allLogs.AddRange(getLogsRequest.Result);
             }
@@ -61,7 +61,7 @@ namespace v2
 
             var filterLogs = allLogs.ToArray();
             Debug.Log(JsonConvert.SerializeObject(filterLogs));
-            var allUpdates = new List<mud.Network.Types.NetworkTableUpdate>();
+            // var allUpdates = new List<mud.Network.Types.NetworkTableUpdate>();
 
             for (var i = 0; i < filterLogs.Length; i++)
             {
@@ -72,12 +72,12 @@ namespace v2
                 var lastEventInTx = (i == filterLogs.Length - 1) ||
                                     (filterLogs[i + 1].TransactionHash != fl.TransactionHash);
                 var update = await BlockLogsToStorage(fl, storeContractAddress, account, lastEventInTx);
-                allUpdates.Add(update);
+                yield return update;
+                // allUpdates.Add(update);
             }
 
-            Debug.Log(JsonConvert.SerializeObject(allUpdates));
-
-            return allUpdates;
+            // Debug.Log(JsonConvert.SerializeObject(allUpdates));
+            // return allUpdates;
         }
     }
 }

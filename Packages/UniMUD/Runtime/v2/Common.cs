@@ -1,9 +1,11 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 using Cysharp.Threading.Tasks;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.Unity.Rpc;
+using UniRx;
 
 namespace v2
 {
@@ -42,6 +44,32 @@ namespace v2
 
             bigIntValue = BigInteger.Parse(hexValue, System.Globalization.NumberStyles.HexNumber);
             return bigIntValue;
+        }
+
+        public static IObservable<T> AsyncEnumerableToObservable<T>(IAsyncEnumerable<T> source)
+        {
+            return Observable.Create<T>(observer =>
+            {
+                var _ = IterateAsync(observer, source);
+                return Disposable.Empty;
+            });
+        }
+
+        private static async UniTask IterateAsync<T>(IObserver<T> observer, IAsyncEnumerable<T> source)
+        {
+            try
+            {
+                await foreach (var item in source)
+                {
+                    observer.OnNext(item);
+                }
+
+                observer.OnCompleted();
+            }
+            catch (Exception ex)
+            {
+                observer.OnError(ex);
+            }
         }
     }
 }
