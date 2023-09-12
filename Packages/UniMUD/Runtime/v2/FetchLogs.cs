@@ -3,15 +3,10 @@ using System.Linq;
 using System.Numerics;
 using Cysharp.Threading.Tasks;
 using mud.Network.IStore.ContractDefinition;
-using mud.Network.schemas;
-using mud.Network.schemas;
-using Nethereum.ABI.FunctionEncoding.Attributes;
 using Nethereum.ABI.Model;
 using Nethereum.Contracts;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.Unity.Rpc;
-using Newtonsoft.Json;
-using UnityEngine;
 using Types = mud.Network.Types;
 
 namespace v2
@@ -29,8 +24,6 @@ namespace v2
                 new StoreDeleteRecordEventDTO().GetEventABI(),
                 new StoreEphemeralRecordEventDTO().GetEventABI()
             };
-            // var events = storeEvents.Select(e => e.CreateFilterInput(e, new[] { storeContractAddress },
-            //     new BlockParameter((ulong)fromBlock), new BlockParameter((ulong)toBlock))).ToList();
             var events = storeEvents.Select(e => e.CreateFilterInput()).ToList();
 
             events.ForEach(fi =>
@@ -60,8 +53,6 @@ namespace v2
             });
 
             var filterLogs = allLogs.ToArray();
-            Debug.Log(JsonConvert.SerializeObject(filterLogs));
-            // var allUpdates = new List<mud.Network.Types.NetworkTableUpdate>();
 
             for (var i = 0; i < filterLogs.Length; i++)
             {
@@ -73,11 +64,7 @@ namespace v2
                                     (filterLogs[i + 1].TransactionHash != fl.TransactionHash);
                 var update = await BlockLogsToStorage(fl, storeContractAddress, account, lastEventInTx);
                 yield return update;
-                // allUpdates.Add(update);
             }
-
-            // Debug.Log(JsonConvert.SerializeObject(allUpdates));
-            // return allUpdates;
         }
     }
 }

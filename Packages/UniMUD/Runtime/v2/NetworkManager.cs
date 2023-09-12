@@ -35,12 +35,12 @@ namespace v2
         private int startingBlockNumber = -1;
         public Datastore ds;
         private readonly CompositeDisposable _disposables = new();
-        
+
         // initialization events
         private static bool m_NetworkInitialized = false;
         public event Action<NetworkManager> OnNetworkInitialized = delegate { };
         public static Action OnInitialized;
-        
+
         private async void Start()
         {
             /*
@@ -123,32 +123,20 @@ namespace v2
                 Debug.Log("Getting current block number...");
                 await GetBlockNumber().ToUniTask();
             }
-            
+
             Debug.Log("Starting sync from block " + startingBlockNumber + "...");
 
-            // var blockStream = new BlockStream().AddTo(_disposables);
-            // UniRx.ObservableExtensions.Subscribe<Block>(blockStream.WatchBlocks(), (block) => 
-            //     {
-            //         Debug.Log($"Received block with number: {block.@params.result.number}");
-            //     },
-            //     error => 
-            //     {
-            //         Debug.LogError($"Error: {error.Message}");
-            //     });
-            //
-            var syncWorker = new Sync();
-            await syncWorker.StartSync(storeContract, account.Address, rpcUrl, startingBlockNumber);
+            var syncWorker = new SyncWorker().AddTo(_disposables);
+            var updateStream = syncWorker.StartSync(storeContract, account.Address, rpcUrl, startingBlockNumber);
 
-            // await Sync.FetchLogs(storeContract, account.Address, rpcUrl, 0, 123);
-            // await syncWorker.StartSync(storeContract, account.Address, rpcUrl,  startingBlockNumber);
-            //
-            // UniRx.ObservableExtensions
-            // .Subscribe(syncWorker.OutputStream, (update) => { NetworkUpdates.ApplyNetworkUpdates(update, ds); })
-            // .AddTo(_disposables);
-            
+            UniRx.ObservableExtensions
+                // .Subscribe(updateStream, update => { NetworkUpdates.ApplyNetworkUpdates(update, ds); })
+                .Subscribe(updateStream, update => { Debug.Log("HASDASDAS - " + JsonConvert.SerializeObject(update)); })
+                .AddTo(_disposables);
+
             Debug.Log("Sending test tx...");
             await world.Write<IncrementFunction>();
-            
+
             m_NetworkInitialized = true;
 
             OnNetworkInitialized(this);
@@ -161,7 +149,7 @@ namespace v2
             yield return blockNumberRequest.SendRequest();
             startingBlockNumber = (int)blockNumberRequest.Result.Value;
         }
-        
+
         private void OnDestroy()
         {
             _disposables?.Dispose();

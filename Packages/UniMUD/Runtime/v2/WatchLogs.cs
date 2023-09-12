@@ -57,17 +57,7 @@ namespace v2
             ws.OnMessage += async (byte[] msg) =>
             {
                 var message = Encoding.UTF8.GetString(msg);
-                Debug.Log("WS received message: " + message);
                 var block = JsonConvert.DeserializeObject<Block>(message);
-                // Debug.Log(JsonConvert.SerializeObject(block));
-                // if (block.@params.result.number != null)
-                // {
-                //     BigInteger bigIntNumber = BigInteger.Parse(block.@params.result.number.Substring(2),
-                //         System.Globalization.NumberStyles.HexNumber);
-                //     Debug.Log("Big int number: " + JsonConvert.SerializeObject(bigIntNumber));
-                //     // await Sync.FetchLogs(storeContract, account.Address, rpcUrl, bigIntNumber, bigIntNumber);
-                // }
-
                 subject.OnNext(block);
             };
 

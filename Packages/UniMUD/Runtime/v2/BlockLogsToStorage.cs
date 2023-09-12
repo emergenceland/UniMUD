@@ -78,7 +78,6 @@ namespace v2
                 var component = tableId.ToString();
                 var entity = EntityIdUtil.KeyTupleToEntityID(decoded.Event.Key);
                 var data = mud.Network.schemas.Common.ByteArrayToHexString(decoded.Event.Data);
-                Debug.Log(JsonConvert.SerializeObject(data));
 
                 var (schema, value, initialValue) = await DecodeStore.DecodeStoreSetField(storeContractAddress, account, tableId,
                     decoded.Event.SchemaIndex, data);
