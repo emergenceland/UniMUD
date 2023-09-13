@@ -37,11 +37,23 @@ namespace v2
         public Datastore ds;
         private readonly CompositeDisposable _disposables = new();
         private BlockStream _wsClient;
+        public CreateContract world;
+        public static NetworkManager Instance { get; private set; }
 
         // initialization events
         private static bool m_NetworkInitialized = false;
         public event Action<NetworkManager> OnNetworkInitialized = delegate { };
         public static Action OnInitialized;
+
+        protected async void Awake()
+        {
+            if (Instance != null)
+            {
+                Debug.LogError("Already have a NetworkManager instance");
+                return;
+            }
+            Instance = this;
+        }
 
         private async void Start()
         {
@@ -96,7 +108,7 @@ namespace v2
              * ==== TX EXECUTOR ====
              */
 
-            var world = new CreateContract();
+            world = new CreateContract();
             await world.CreateTxExecutor(account, storeContract, rpcUrl, chainId);
 
             /*
@@ -139,11 +151,10 @@ namespace v2
             var syncWorker = new SyncWorker().AddTo(_disposables);
             var updateStream = syncWorker.StartSync(blockStream, storeContract, account.Address, rpcUrl, startingBlockNumber);
 
-            Debug.Log("Starting subscription...");
-            // UniRx.ObservableExtensions
-            //     // .Subscribe(updateStream, update => { NetworkUpdates.ApplyNetworkUpdates(update, ds); })
-            //     .Subscribe(updateStream.ObserveOnMainThread(), update => { Debug.Log("HASDASDAS - " + JsonConvert.SerializeObject(update)); })
-            //     .AddTo(_disposables);
+            UniRx.ObservableExtensions
+                // .Subscribe(updateStream, update => { NetworkUpdates.ApplyNetworkUpdates(update, ds); })
+                .Subscribe(updateStream, update => { Debug.Log("HASDASDAS - " + JsonConvert.SerializeObject(update)); })
+                .AddTo(_disposables);
 
             // Debug.Log("Sending test tx...");
             // await world.Write<IncrementFunction>();

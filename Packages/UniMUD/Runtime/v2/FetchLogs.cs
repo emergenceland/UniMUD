@@ -13,7 +13,7 @@ namespace v2
 {
     public partial class Sync
     {
-        public static async IAsyncEnumerable<FilterLog> FetchLogs(string storeContractAddress,
+        public static async IAsyncEnumerable<FilterLog[]> FetchLogs(string storeContractAddress,
             string account,
             string rpcUrl, BigInteger fromBlock, BigInteger toBlock)
         {
@@ -43,27 +43,18 @@ namespace v2
                 allLogs.AddRange(getLogsRequest.Result);
             }
 
-            // Sort logs by block number and transaction index
-            // allLogs.Sort((log1, log2) =>
+            yield return allLogs.ToArray();
+
+            // foreach (var fl in filterLogs)
             // {
-            //     int blockComparison = log1.BlockNumber.Value.CompareTo(log2.BlockNumber.Value);
-            //     return blockComparison != 0
-            //         ? blockComparison
-            //         : log1.TransactionIndex.Value.CompareTo(log2.TransactionIndex.Value);
-            // });
-
-            var filterLogs = allLogs.ToArray();
-
-            foreach (var fl in filterLogs)
-            {
-                // Since ECS events are coming in ordered over the wire, we check if the following event has a
-                // different transaction then the current, which would mean an event associated with another
-                // tx
-                // var lastEventInTx = (i == filterLogs.Length - 1) ||
-                //                     (filterLogs[i + 1].TransactionHash != fl.TransactionHash);
-                // var update = await BlockLogsToStorage(fl, storeContractAddress, account, lastEventInTx);
-                yield return fl;
-            }
+            //     // Since ECS events are coming in ordered over the wire, we check if the following event has a
+            //     // different transaction then the current, which would mean an event associated with another
+            //     // tx
+            //     // var lastEventInTx = (i == filterLogs.Length - 1) ||
+            //     //                     (filterLogs[i + 1].TransactionHash != fl.TransactionHash);
+            //     // var update = await BlockLogsToStorage(fl, storeContractAddress, account, lastEventInTx);
+            //     yield return fl;
+            // }
         }
     }
 }
