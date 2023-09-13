@@ -28,6 +28,7 @@ namespace v2
         public Account account;
         public int chainId;
         public string rpcUrl;
+        public string wsRpcUrl;
         public bool uniqueWallets;
         public string address;
         public string addressKey;
@@ -35,6 +36,7 @@ namespace v2
         private int startingBlockNumber = -1;
         public Datastore ds;
         private readonly CompositeDisposable _disposables = new();
+        private BlockStream _wsClient;
 
         // initialization events
         private static bool m_NetworkInitialized = false;
@@ -77,6 +79,14 @@ namespace v2
                 address = account.Address;
                 addressKey = "0x" + address.Replace("0x", "").PadLeft(64, '0').ToLower();
             }
+            
+            /* 
+             * ==== PROVIDER ====
+             */
+            
+            Debug.Log("Creating websocket client...");
+            _wsClient = new BlockStream().AddTo(_disposables);
+            var blockStream = _wsClient.WatchBlocks(wsRpcUrl);
 
             /*
              * ==== FAUCET ====
@@ -127,15 +137,16 @@ namespace v2
             Debug.Log("Starting sync from block " + startingBlockNumber + "...");
 
             var syncWorker = new SyncWorker().AddTo(_disposables);
-            var updateStream = syncWorker.StartSync(storeContract, account.Address, rpcUrl, startingBlockNumber);
+            var updateStream = syncWorker.StartSync(blockStream, storeContract, account.Address, rpcUrl, startingBlockNumber);
 
-            UniRx.ObservableExtensions
-                // .Subscribe(updateStream, update => { NetworkUpdates.ApplyNetworkUpdates(update, ds); })
-                .Subscribe(updateStream, update => { Debug.Log("HASDASDAS - " + JsonConvert.SerializeObject(update)); })
-                .AddTo(_disposables);
+            Debug.Log("Starting subscription...");
+            // UniRx.ObservableExtensions
+            //     // .Subscribe(updateStream, update => { NetworkUpdates.ApplyNetworkUpdates(update, ds); })
+            //     .Subscribe(updateStream.ObserveOnMainThread(), update => { Debug.Log("HASDASDAS - " + JsonConvert.SerializeObject(update)); })
+            //     .AddTo(_disposables);
 
-            Debug.Log("Sending test tx...");
-            await world.Write<IncrementFunction>();
+            // Debug.Log("Sending test tx...");
+            // await world.Write<IncrementFunction>();
 
             m_NetworkInitialized = true;
 

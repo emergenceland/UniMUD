@@ -33,7 +33,7 @@ namespace v2
                 LogIndex = log.LogIndex.Value,
                 LastEventInTx = lastEventInTx
             };
-
+            
             if (eventSig == storeSetRecordSignature)
             {
                 var decoded = Event<StoreSetRecordEventDTO>.DecodeEvent(log);

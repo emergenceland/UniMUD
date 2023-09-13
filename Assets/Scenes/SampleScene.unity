@@ -264,6 +264,7 @@ MonoBehaviour:
   pk: 
   chainId: 31337
   rpcUrl: http://localhost:8545
+  wsRpcUrl: ws://localhost:8545
   uniqueWallets: 0
   address: 
   addressKey: 

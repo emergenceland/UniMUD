@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Numerics;
 using System.Text;
+using Cysharp.Threading.Tasks;
 using HybridWebSocket;
 using Newtonsoft.Json;
 using UniRx;
@@ -31,9 +32,13 @@ namespace v2
         private WebSocket ws;
         Subject<Block> subject = new();
 
-        public IObservable<Block> WatchBlocks()
+        private UniTaskCompletionSource<bool> _connected = new();
+        private readonly int maxRetryAttempts = 3; 
+        TimeSpan retryDelay = TimeSpan.FromSeconds(3);
+        
+        public IObservable<Block> WatchBlocks(string wsRpc)
         {
-            ws = WebSocketFactory.CreateInstance("ws://localhost:8545");
+            ws = WebSocketFactory.CreateInstance(wsRpc);
 
             ws.OnOpen += () =>
             {
@@ -52,6 +57,7 @@ namespace v2
                 string jsonString = JsonConvert.SerializeObject(subscriptionRequest);
                 byte[] byteArray = Encoding.UTF8.GetBytes(jsonString);
                 ws.Send(byteArray);
+                _connected.TrySetResult(true); // Indicates that the connection has been established
             };
 
             ws.OnMessage += async (byte[] msg) =>
@@ -76,7 +82,7 @@ namespace v2
             ws.Connect();
             return subject;
         }
-
+        
         public void Dispose()
         {
             if (ws != null && ws.GetState() == WebSocketState.Open)
