@@ -296,14 +296,14 @@ namespace v2
 
         public static List<string> FormatGetRecordResult(string input)
         {
-            if (input.Length == 0) return new List<string> { input };
-            // var decodedString = HexToUTF8(input);
-            Debug.Log("Decoded string: " + input);
+            if (input.All(c => c == '\u0000')) return new List<string> { string.Empty };
+
+            if (input.Length == 0) return new List<string> { string.Empty };
 
             var parts = Regex.Split(input, @"[\x00-\x1F]|[\uFFFD]|[\s@`]")
                 .Where(part => !string.IsNullOrWhiteSpace(part)).ToList();
 
-            return parts;
+            return parts.Count > 0 ? parts : new List<string> { string.Empty };
         }
     }
 }

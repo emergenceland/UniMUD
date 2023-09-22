@@ -119,7 +119,7 @@ namespace v2
             var updateStream =
                 storeSync.StartSync(_wsClient, storeContract, account.Address, rpcUrl, startingBlockNumber, wsRpcUrl);
 
-            UniRx.ObservableExtensions.Subscribe(updateStream, b => StorageAdapter.ToStorage(ds, b))
+            UniRx.ObservableExtensions.Subscribe(updateStream, b => RxStorageAdapter.ToStorage(ds, b))
                 .AddTo(_disposables);
             
             /*

@@ -25,14 +25,14 @@ namespace mud.Client
 
         public void RegisterTable(ProtocolParser.Table table)
         {
-            var tableKey = Common.CreateTableKey(table);
+            var tableKey = Common.GetTableKey(table);
             store.TryAdd(tableKey, new RxTable());
             tableIds.TryAdd(tableKey, table);
         }
 
         public void Set(ProtocolParser.Table tableId, string entity, Property value)
         {
-            var tableKey = Common.CreateTableKey(tableId);
+            var tableKey = Common.GetTableKey(tableId);
             var hasTable = store.TryGetValue(tableKey, out var table);
             var record = new RxRecord(tableKey, entity, value);
             if (table != null && hasTable && table.Records.ContainsKey(entity))
@@ -48,7 +48,7 @@ namespace mud.Client
 
         public void Update(ProtocolParser.Table tableId, string entity, Property value, Property? initialValue = null)
         {
-            var tableKey = Common.CreateTableKey(tableId);
+            var tableKey = Common.GetTableKey(tableId);
             var index = entity;
             if (!store[tableKey].Records.ContainsKey(index))
             {
@@ -64,7 +64,7 @@ namespace mud.Client
 
         public void Delete(ProtocolParser.Table tableId, string key)
         {
-            var tableKey = Common.CreateTableKey(tableId);
+            var tableKey = Common.GetTableKey(tableId);
             if (!store[tableKey].Records.ContainsKey(key)) return;
             EmitUpdate(UpdateType.DeleteRecord, tableKey, key, null, store[tableKey].Records[key].value);
             store[tableKey].Records.Remove(key);
@@ -72,7 +72,7 @@ namespace mud.Client
 
         public RxRecord? GetValue(ProtocolParser.Table tableId, string key)
         {
-            var tableKey = Common.CreateTableKey(tableId);
+            var tableKey = Common.GetTableKey(tableId);
             var hasTable = store.TryGetValue(tableKey, out var table);
             if (!hasTable) return null;
             var hasKey = store[tableKey].Records.TryGetValue(key, out var value);

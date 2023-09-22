@@ -4,7 +4,7 @@ namespace mud.Client
 {
     public class Common
     {
-        public static string CreateTableKey(string address, string ns, string name)
+        public static string GetTableKey(string address, string ns, string name)
         {
             return v2.Common.ConcatHex(new[]
             {
@@ -14,7 +14,7 @@ namespace mud.Client
             });
         }
 
-        public static string CreateTableKey(ProtocolParser.Table table)
+        public static string GetTableKey(ProtocolParser.Table table)
         {
             return v2.Common.ConcatHex(new[]
             {

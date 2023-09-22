@@ -85,10 +85,8 @@ namespace v2
             {
                 Address = log.Address,
                 TableId = keyTuple[0],
-                Namespace = table.Namespace,
-                // Namespace = Common.FormatGetRecordResult(table.Namespace)[0],
-                Name = Common.FormatGetRecordResult(table.Name)[0],
-                // Name = table.Name,
+                Namespace = FormatGetRecordResult(table.Namespace)[0],
+                Name = FormatGetRecordResult(table.Name)[0],
                 KeySchema = tableKeySchema,
                 ValueSchema = tableValueSchema,
             };
