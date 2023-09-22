@@ -154,12 +154,7 @@ namespace v2
         {
             data = data.StartsWith("0x", StringComparison.OrdinalIgnoreCase) ? data.Substring(2) : data;
 
-            if (start * 2 >= data.Length)
-            {
-                return data;
-            }
-
-            ;
+            if (start * 2 >= data.Length) return data;
 
             int? endIndex = end * 2;
             string result = data.Substring(start * 2,
@@ -202,7 +197,7 @@ namespace v2
 
             for (int i = 0; i < result.Length; i++)
             {
-                result[i] = byte.Parse(hexString.Substring(i * 2, 2), System.Globalization.NumberStyles.HexNumber);
+                result[i] = byte.Parse(hexString.Substring(i * 2, 2), NumberStyles.HexNumber);
             }
 
             return result;

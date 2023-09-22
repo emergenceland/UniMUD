@@ -4,85 +4,106 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
-using mud.Network.schemas;
-using NLog;
 using v2;
 
 namespace mud.Client
 {
     using Property = Dictionary<string, object>;
-    
+
     public class RxDatastore
     {
         // tableId -> table -> records
         public readonly Dictionary<string, RxTable> store = new();
-        public Dictionary<string, ProtocolParser.Table> tableIds = new();
+        public Dictionary<string, ProtocolParser.Table> registeredTables = new();
 
         private readonly ReplaySubject<RecordUpdate> _onDataStoreUpdate = new();
         private readonly Subject<RecordUpdate> _onRxDataStoreUpdate = new();
         public IObservable<RecordUpdate> OnDataStoreUpdate => _onDataStoreUpdate;
-        private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
         public void RegisterTable(ProtocolParser.Table table)
         {
             var tableKey = Common.GetTableKey(table);
             store.TryAdd(tableKey, new RxTable());
-            tableIds.TryAdd(tableKey, table);
+            registeredTables.TryAdd(tableKey, table);
         }
 
-        public void Set(ProtocolParser.Table tableId, string entity, Property value)
+        public void RegisterTable(RxTable table)
         {
-            var tableKey = Common.GetTableKey(tableId);
-            var hasTable = store.TryGetValue(tableKey, out var table);
-            var record = new RxRecord(tableKey, entity, value);
-            if (table != null && hasTable && table.Records.ContainsKey(entity))
+            store.TryAdd(table.Id, table);
+        }
+
+        public RxTable CreateTable(string tNamespace, string tName,
+            Dictionary<string, SchemaAbiTypes.SchemaType> schema)
+        {
+            var id = v2.Common.ResourceIDToHex(new ResourceID()
             {
-                store[tableKey].Records[entity] = record;
-                EmitUpdate(UpdateType.SetField, tableKey, entity, record.value);
+                Type = ResourceType.Table,
+                Namespace = tNamespace,
+                Name = tName,
+            });
+            return new RxTable()
+            {
+                Id = id,
+                Schema = schema,
+                Values = new Dictionary<string, RxRecord>()
+            };
+        }
+
+        public ProtocolParser.Table GetTable(string ns, string name)
+        {
+            var result = registeredTables.FirstOrDefault(t => t.Value.Namespace == ns && t.Value.Name == name);
+            return result.Value;
+        }
+
+        public void Set(RxTable table, string entity, Property value)
+        {
+            var hasTable = store.TryGetValue(table.Id, out var tableValue);
+            var record = new RxRecord(table.Id, entity, value);
+            if (tableValue != null && hasTable && table.Values.ContainsKey(entity))
+            {
+                store[table.Id].Values[entity] = record;
+                EmitUpdate(UpdateType.SetField, table.Id, entity, record.value);
                 return;
             }
 
-            store[tableKey].Records[entity] = record;
-            EmitUpdate(UpdateType.SetRecord, tableKey, entity, record.value);
+            store[table.Id].Values[entity] = record;
+            EmitUpdate(UpdateType.SetRecord, table.Id, entity, record.value);
         }
 
-        public void Update(ProtocolParser.Table tableId, string entity, Property value, Property? initialValue = null)
+        public void Update(RxTable table, string entity, Property value, Property? initialValue = null)
         {
-            var tableKey = Common.GetTableKey(tableId);
             var index = entity;
-            if (!store[tableKey].Records.ContainsKey(index))
+            if (!store[table.Id].Values.ContainsKey(index))
             {
-                Set(tableId, index, value);
+                Set(table, index, value);
             }
             else
             {
-                var record = new RxRecord(tableKey, entity, value);
-                store[tableKey].Records[index] = record;
-                EmitUpdate(UpdateType.SetField, tableKey, index, record.value, initialValue);
+                var record = new RxRecord(table.Id, entity, value);
+                store[table.Id].Values[index] = record;
+                EmitUpdate(UpdateType.SetField, table.Id, index, record.value, initialValue);
             }
         }
 
-        public void Delete(ProtocolParser.Table tableId, string key)
+        public void Delete(RxTable table, string key)
         {
-            var tableKey = Common.GetTableKey(tableId);
-            if (!store[tableKey].Records.ContainsKey(key)) return;
-            EmitUpdate(UpdateType.DeleteRecord, tableKey, key, null, store[tableKey].Records[key].value);
-            store[tableKey].Records.Remove(key);
+            if (!store[table.Id].Values.ContainsKey(key)) return;
+            EmitUpdate(UpdateType.DeleteRecord, table.Id, key, null, store[table.Id].Values[key].value);
+            store[table.Id].Values.Remove(key);
         }
 
-        public RxRecord? GetValue(ProtocolParser.Table tableId, string key)
+        public RxRecord? GetValue(RxTable table, string key)
         {
-            var tableKey = Common.GetTableKey(tableId);
-            var hasTable = store.TryGetValue(tableKey, out var table);
+            var hasTable = store.ContainsKey(table.Id);
             if (!hasTable) return null;
-            var hasKey = store[tableKey].Records.TryGetValue(key, out var value);
+            var hasKey = store[table.Id].Values.TryGetValue(key, out var value);
             return hasKey ? value : null;
         }
 
         protected string GetKey(string tableId)
         {
             if (!store.ContainsKey(tableId)) throw new Exception($"Table {tableId} does not exist");
-            return store[tableId].Records.Count == 0 ? "1" : (store[tableId].Records.Count + 1).ToString();
+            return store[tableId].Values.Count == 0 ? "1" : (store[tableId].Values.Count + 1).ToString();
         }
 
         public IEnumerable<RxRecord> RunQuery(Query query)
@@ -95,7 +116,7 @@ namespace mud.Client
         {
             var queryTables = query.GetTableFilters().Select(f => f.Table);
             var tableSubjects =
-                queryTables.Select(t => _onRxDataStoreUpdate.Where(update => update.TableId == t.ToString()));
+                queryTables.Select(t => _onRxDataStoreUpdate.Where(update => update.TableId == t.Id));
             var tableUpdates = tableSubjects.Merge();
 
             return Observable.Create<(List<RxRecord> SetRecords, List<RxRecord> RemovedRecords)>(observer =>
@@ -110,8 +131,8 @@ namespace mud.Client
                 {
                     var affectedRecordKey = update.Key;
                     var affectedTableKey = update.TableId;
-                    var recordFromStore = store[affectedTableKey].Records[affectedRecordKey];
-
+                    var recordFromStore = store[affectedTableKey].Values[affectedRecordKey];
+                    
                     switch (update.Type)
                     {
                         case UpdateType.SetField:
@@ -125,6 +146,7 @@ namespace mud.Client
                                 observer.OnNext((SetRecords: new List<RxRecord> { setRecord },
                                     RemovedRecords: new List<RxRecord>()));
                             }
+
                             break;
                         case UpdateType.DeleteRecord:
                             observer.OnNext((SetRecords: new List<RxRecord>(),

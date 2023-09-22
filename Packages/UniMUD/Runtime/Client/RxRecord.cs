@@ -9,31 +9,26 @@ namespace mud.Client
 
     public class RxRecord
     {
-        public string table;
+        public string tableId;
         public string key;
         public Property value;
 
         private static bool PropEquals(Property x, Property y)
         {
-            // If the dictionaries have different counts, they're not equal
-            if (x.Count != y.Count)
-                return false;
+            if (x.Count != y.Count) return false;
 
-            // If any key-value pair is not equal, the dictionaries are not equal
             foreach (var pair in x)
             {
-                if (!y.TryGetValue(pair.Key, out var value) || !value.Equals(pair.Value))
-                    return false;
+                if (!y.TryGetValue(pair.Key, out var value) || !value.Equals(pair.Value)) return false;
             }
 
-            // All key-value pairs are equal
             return true;
         }
 
         public bool Equals(RxRecord other)
         {
             var valueEquals = PropEquals(value, other.value);
-            return table == other.table && key == other.key && valueEquals;
+            return tableId == other.tableId && key == other.key && valueEquals;
         }
 
         public override bool Equals(object? obj)
@@ -46,12 +41,12 @@ namespace mud.Client
 
         public override int GetHashCode()
         {
-            return HashCode.Combine(table, key, value);
+            return HashCode.Combine(tableId, key, value);
         }
 
-        public RxRecord(string table, string key, Property value)
+        public RxRecord(string tableId, string key, Property value)
         {
-            this.table = table;
+            this.tableId = tableId;
             this.key = key;
             this.value = value;
         }

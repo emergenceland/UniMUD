@@ -3,18 +3,16 @@
 using System;
 using System.Collections.Generic;
 using System.Numerics;
+using v2;
 
 namespace mud.Client
 {
 
     public class RxTable
     {
-        public Dictionary<string, RxRecord> Records { get; set; }
-        
-        public RxTable()
-        {
-            Records = new Dictionary<string, RxRecord>();
-        }
+        public string Id { get; set; }
+        public Dictionary<string, RxRecord> Values { get; set; } = new();
+        public Dictionary<string, SchemaAbiTypes.SchemaType> Schema { get; set; } = new();
     }
     
     public class Types

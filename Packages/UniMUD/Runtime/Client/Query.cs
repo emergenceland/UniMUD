@@ -1,9 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using mud.Network.schemas;
-using Newtonsoft.Json;
-using UnityEngine;
 
 namespace mud.Client
 {
@@ -11,11 +8,11 @@ namespace mud.Client
 
     public class TableFilter
     {
-        public string Table { get; }
+        public RxTable Table { get; }
         public Condition[] Conditions { get; }
         public bool IsNegative { get; }
 
-        public TableFilter(string table, Condition[] conditions = null, bool isNegative = false)
+        public TableFilter(RxTable table, Condition[] conditions = null, bool isNegative = false)
         {
             Table = table;
             Conditions = conditions ?? Array.Empty<Condition>();
@@ -51,14 +48,14 @@ namespace mud.Client
             return _filters;
         }
 
-        public Query In(string table, Condition[] conditions = null)
+        public Query In(RxTable table, Condition[] conditions = null)
         {
             var clause = new TableFilter(table, conditions);
             _filters.Add(clause);
             return this;
         }
 
-        public Query Not(string table)
+        public Query Not(RxTable table)
         {
             var clause = new TableFilter(table, null, true);
             _filters.Add(clause);
@@ -80,12 +77,12 @@ namespace mud.Client
             HashSet<RxRecord> context = null;
             foreach (var table in _filters)
             {
-                if (!store.TryGetValue(table.Table, out var candidates)) continue; // table not registered
+                if (!store.TryGetValue(table.Table.Id, out var candidates)) continue; // table not registered
                 if (context == null)
                 {
                     // populate context with first table
                     if (table.IsNegative) throw new Exception("Negative table filter cannot be first");
-                    context = new HashSet<RxRecord>(candidates.Records.Values);
+                    context = new HashSet<RxRecord>(candidates.Values.Values);
                 }
                 else
                 {
@@ -94,8 +91,7 @@ namespace mud.Client
 
                     foreach (var record in context)
                     {
-                        // does key also exist in the requested table?
-                        var recordInTable = candidates.Records.TryGetValue(record.key, out var newRecord);
+                        var recordInTable = candidates.Values.TryGetValue(record.key, out var newRecord);
                         if (table.IsNegative)
                         {
                             if (recordInTable)
@@ -143,7 +139,7 @@ namespace mud.Client
 
             if (_queryVariables.Count > 0 && context != null)
             {
-                context.RemoveWhere(record => !_queryVariables.All(record.table.Contains));
+                context.RemoveWhere(record => !_queryVariables.All(record.tableId.Contains));
             }
 
             return context ?? new HashSet<RxRecord>();

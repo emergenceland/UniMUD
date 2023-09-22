@@ -16,8 +16,8 @@ namespace mud.Client {
     
     [System.Serializable]
     public abstract class IMudTable {
-        public ProtocolParser.Table TableId { get { return GetTableId(); } }
-        public abstract ProtocolParser.Table GetTableId();
+        public RxTable TableId { get { return GetTableId(); } }
+        public abstract RxTable GetTableId();
 
 
         public abstract Type TableType();

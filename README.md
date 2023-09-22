@@ -40,8 +40,7 @@ You also need Nethereum bindings for your generated World contract. Bindings can
 
 ```csharp
 using IWorld.ContractDefinition;
-using mud.Unity;
-using UnityEngine;
+using mud;
 
 async void Move(int x, int y)
 {
@@ -49,7 +48,7 @@ async void Move(int x, int y)
 	// NetworkManager exposes a worldSend property that you can use to send transactions.
 	// It takes care of gas and nonce management for you.
 	// Make sure your MonoBehaviour is set up to handle async/await.
-	await NetworkManager.Instance.worldSend.TxExecute<MoveFunction>(x, y);
+  await NetworkManager.Instance.world.Write<MoveFunction>(x, y);
 }
 ```
 
@@ -58,8 +57,8 @@ async void Move(int x, int y)
 UniMUD caches MUD v2 events in the client for you in a "datastore." You can access the datastore via the NetworkManager instance. The datastore keeps a multilevel index of tableId -> table -> records
 
 ```csharp
-class Record {
-  public string table;
+class RxRecord {
+  public string tableId;
   public string key;
   public Dictionary<string, object> value;
 }
@@ -70,7 +69,7 @@ For example, records for an entity's Position might look like:
 ```json
 [
   {
-    "table": "Position",
+    "tableId": "Position",
     "key": "0x1234",
     "value": {
       "x": 1,
@@ -78,7 +77,7 @@ For example, records for an entity's Position might look like:
     }
   },
   {
-    "table": "Position",
+    "tableId": "Position",
     "key": "0x5678",
     "value": {
       "x": 3,
@@ -93,9 +92,9 @@ For example, records for an entity's Position might look like:
 To fetch a record by key, use `GetValue` on the datastore:
 
 ```csharp
-Record? GetMonstersWithKey(string monsterKey) {
-	var ds = NetworkManager.Instance.ds;
-	var monstersTable = new TableId("", "Monsters");
+RxRecord? GetMonstersWithKey(string monsterKey) {
+	RxDatastore ds = NetworkManager.Instance.ds;
+	string monstersTable = ds.GetTableKey("", "Monsters");
 
 	return ds.GetValue(monstersTable, monsterKey);
 }
