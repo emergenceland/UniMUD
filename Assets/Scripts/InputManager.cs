@@ -19,11 +19,12 @@ public class InputManager : MonoBehaviour
         net = v2.NetworkManager.Instance;
         net.OnNetworkInitialized += SubscribeToCounter;
     }
-
+    
     private void SubscribeToCounter(v2.NetworkManager _)
     {
-        Debug.Log("Subscribed to counter.");
-        var incrementQuery = new Query().In(new TableId("", "Counter"));
+        var tableKey = mud.Client.Common.GetTableKey(net.storeContract, "0x", "Counter");
+        Debug.Log("Subscribed to counter: " + tableKey);
+        var incrementQuery = new Query().In(tableKey);
         _counterSub = ObservableExtensions.Subscribe(net.ds.RxQuery(incrementQuery).ObserveOnMainThread(), OnIncrement);
     }
 
@@ -52,10 +53,6 @@ public class InputManager : MonoBehaviour
         try
         {
             await net.world.Write<IncrementFunction>();
-            // var contractHandler = net._provider.Eth.GetContractTransactionHandler<IncrementFunction>();
-            // // Debug.Log(JsonConvert.SerializeObject(contractHandler));
-            // // var transactionReceipt = await contractHandler.SendRequestAndWaitForReceiptAsync(net.worldAddress);
-            // // Debug.Log(JsonConvert.SerializeObject(transactionReceipt));
         }
         catch (Exception ex)
         {

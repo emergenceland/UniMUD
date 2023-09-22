@@ -14,7 +14,7 @@ namespace v2
         public IObservable<Types.NetworkTableUpdate> OutputStream => _outputStream;
         private readonly CompositeDisposable _disposables = new();
 
-        public IObservable<StorageAdapterBlock> StartSync(BlockStream blockStream, string storeContractAddress,
+        public IObservable<StorageAdapterBlock> StartSync(IObservable<Block> blockStream, string storeContractAddress,
             string account, string rpcUrl,
             int initialBlockNumber, string wsRpcUrl)
         {
@@ -22,8 +22,7 @@ namespace v2
             Debug.Log("Fetching initial state from indexer...");
 
             BigInteger endBlock = 0;
-            var latestBlock = blockStream.WatchBlocks(wsRpcUrl);
-            var latestBlockNumber = latestBlock.Select(block =>
+            var latestBlockNumber = blockStream.Select(block =>
             {
                 if (block.@params?.result.number == null) return 0;
                 return Common.HexToBigInt(block.@params.result.number);

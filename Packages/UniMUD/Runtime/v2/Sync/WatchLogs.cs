@@ -32,21 +32,21 @@ namespace v2
         private WebSocket _ws;
         Subject<Block> subject = new();
 
-        private UniTaskCompletionSource<bool> _connected = new();
+        private UniTaskCompletionSource<bool> _connectionComplete = new();
         private const int MaxRetryAttempts = 3;
         private int _currentRetryCount = 0;
         private const double BaseDelay = 1000; // Initial delay in milliseconds
         private bool _intentionalClose = false;
 
 
-        public IObservable<Block> WatchBlocks(string wsRpc)
+        public async UniTask<IObservable<Block>> WatchBlocks(string wsRpc)
         {
             _ws = WebSocketFactory.CreateInstance(wsRpc);
 
             _ws.OnOpen += () =>
             {
                 _currentRetryCount = 0;
-                Debug.Log("WS state: " + _ws.GetState().ToString());
+                Debug.Log("WS state: " + _ws.GetState());
 
                 string typeStr = "newHeads";
                 var subscriptionRequest = new
@@ -60,8 +60,7 @@ namespace v2
                 string jsonString = JsonConvert.SerializeObject(subscriptionRequest);
                 byte[] byteArray = Encoding.UTF8.GetBytes(jsonString);
                 _ws.Send(byteArray);
-                _connected.TrySetResult(true); 
-                Debug.Log("WS connected!");
+                _connectionComplete.TrySetResult(true);
             };
 
             _ws.OnMessage += msg =>
@@ -80,12 +79,14 @@ namespace v2
 
             _ws.OnClose += code =>
             {
-                Debug.Log("WS closed with code: " + code.ToString());
+                Debug.Log("WS closed with code: " + code);
                 TryReconnect(wsRpc);
                 // subject.OnCompleted();
             };
 
             _ws.Connect();
+            await _connectionComplete.Task;
+            Debug.Log("WS Connected.");
             return subject;
         }
 

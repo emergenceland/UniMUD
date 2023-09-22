@@ -11,11 +11,11 @@ namespace mud.Client
 
     public class TableFilter
     {
-        public TableId Table { get; }
+        public string Table { get; }
         public Condition[] Conditions { get; }
         public bool IsNegative { get; }
 
-        public TableFilter(TableId table, Condition[] conditions = null, bool isNegative = false)
+        public TableFilter(string table, Condition[] conditions = null, bool isNegative = false)
         {
             Table = table;
             Conditions = conditions ?? Array.Empty<Condition>();
@@ -51,21 +51,21 @@ namespace mud.Client
             return _filters;
         }
 
-        public Query In(TableId table, Condition[] conditions = null)
+        public Query In(string table, Condition[] conditions = null)
         {
             var clause = new TableFilter(table, conditions);
             _filters.Add(clause);
             return this;
         }
 
-        public Query Not(TableId table)
+        public Query Not(string table)
         {
             var clause = new TableFilter(table, null, true);
             _filters.Add(clause);
             return this;
         }
 
-        public Query Select(params TableId[] variables)
+        public Query Select(params string[] variables)
         {
             foreach (var table in variables)
             {
@@ -80,7 +80,7 @@ namespace mud.Client
             HashSet<RxRecord> context = null;
             foreach (var table in _filters)
             {
-                if (!store.TryGetValue(table.Table.ToString(), out var candidates)) continue; // table not registered
+                if (!store.TryGetValue(table.Table, out var candidates)) continue; // table not registered
                 if (context == null)
                 {
                     // populate context with first table

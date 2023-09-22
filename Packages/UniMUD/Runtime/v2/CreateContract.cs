@@ -74,8 +74,6 @@ namespace v2
                 }
                 
 
-                Debug.Log("Gas limit: " + gasLimit.Value);
-
                 functionMessage.TransactionType = TransactionType.EIP1559.AsByte();
                 functionMessage.MaxPriorityFeePerGas = new HexBigInteger(GasConfig.MaxPriorityFeePerGas);
                 functionMessage.MaxFeePerGas = new HexBigInteger(GasConfig.MaxFeePerGas);
@@ -113,6 +111,7 @@ namespace v2
 
         private async UniTask<(BigInteger, BigInteger)> UpdateFeePerGas(int multiplier)
         {
+            await UniTask.SwitchToMainThread();
             var blockNumberRequest = new EthGetBlockWithTransactionsHashesByNumberUnityRequest(_rpcUrl);
             await blockNumberRequest.SendRequest(BlockParameter.CreateLatest()).ToUniTask();
             var latestBlock = blockNumberRequest.Result;

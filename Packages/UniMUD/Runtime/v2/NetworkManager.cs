@@ -71,10 +71,16 @@ namespace v2
              * ==== PROVIDER ====
              */
 
-            Debug.Log("Creating websocket client...");
+            Debug.Log("Connecting to websocket...");
             _wsClient = new BlockStream().AddTo(_disposables);
+            var blockNumberStream = await _wsClient.WatchBlocks(wsRpcUrl);
+            
+            /*
+             * ==== TX EXECUTOR ====
+             */
 
-    
+            world = new CreateContract();
+            await world.CreateTxExecutor(account, storeContract, rpcUrl, chainId);
 
             /*
              * ==== CLIENT CACHE ====
@@ -117,22 +123,12 @@ namespace v2
 
             var storeSync = new StoreSync().AddTo(_disposables);
             var updateStream =
-                storeSync.StartSync(_wsClient, storeContract, account.Address, rpcUrl, startingBlockNumber, wsRpcUrl);
+                storeSync.StartSync(blockNumberStream, storeContract, account.Address, rpcUrl, startingBlockNumber, wsRpcUrl);
 
             UniRx.ObservableExtensions.Subscribe(updateStream, b => RxStorageAdapter.ToStorage(ds, b))
                 .AddTo(_disposables);
             
-            /*
-             * ==== TX EXECUTOR ====
-             */
-
-            // delay for 3 seconds
-            await UniTask.Delay(3000);
-            world = new CreateContract();
-            await world.CreateTxExecutor(account, storeContract, rpcUrl, chainId);
-
-            // Debug.Log("Sending test tx...");
-            // await world.Write<IncrementFunction>();
+           
 
             /*
              * ==== FAUCET ====
