@@ -7,15 +7,10 @@ using Nethereum.ABI.Model;
 using Nethereum.Contracts;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.Unity.Rpc;
-using Newtonsoft.Json;
 using UniRx;
-using UnityEngine;
 using v2.IStore.ContractDefinition;
 using StoreDeleteRecordEventDTO = v2.IStore.ContractDefinition.StoreDeleteRecordEventDTO;
-// using StoreEphemeralRecordEventDTO = v2.IStore.ContractDefinition.StoreEphemeralRecordEventDTO;
-// using StoreSetFieldEventDTO = v2.IStore.ContractDefinition.StoreSetFieldEventDTO;
 using StoreSetRecordEventDTO = v2.IStore.ContractDefinition.StoreSetRecordEventDTO;
-using Types = mud.Network.Types;
 
 namespace v2
 {
@@ -65,25 +60,28 @@ namespace v2
         {
             return blockLogs.SelectMany(logs =>
             {
-                var blockNumbers = logs.Select(log => log.BlockNumber).Distinct().ToList();
-                blockNumbers.Sort();
-
-                var groupedBlocks = new List<StorageAdapterBlock>();
-
-                foreach (var blockNumber in blockNumbers)
+                return Observable.Create<StorageAdapterBlock>(observer =>
                 {
-                    var blockNumberLogs = logs.Where(log => log.BlockNumber == blockNumber).ToList();
+                    var blockNumbers = logs.Select(log => log.BlockNumber).Distinct().ToList();
+                    blockNumbers.Sort((a, b) => a.Value.CompareTo(b.Value));
 
-                    blockNumberLogs.Sort((a, b) => a.LogIndex.Value.CompareTo(b.LogIndex.Value));
-
-                    if (blockNumberLogs.Count > 0)
+                    foreach (var blockNumber in blockNumbers)
                     {
-                        groupedBlocks.Add(new StorageAdapterBlock
-                            { BlockNumber = blockNumber, Logs = blockNumberLogs.ToArray() });
-                    }
-                }
+                        var blockNumberLogs = logs.Where(log => log.BlockNumber == blockNumber).ToList();
 
-                return groupedBlocks;
+                        blockNumberLogs.Sort((a, b) => a.LogIndex.Value.CompareTo(b.LogIndex.Value));
+
+                        if (blockNumberLogs.Count > 0)
+                        {
+                            var storageAdapterBlock = new StorageAdapterBlock
+                                { BlockNumber = blockNumber, Logs = blockNumberLogs.ToArray() };
+                            observer.OnNext(storageAdapterBlock);
+                        }
+                    }
+
+                    observer.OnCompleted();
+                    return Disposable.Empty;
+                });
             });
         }
     }

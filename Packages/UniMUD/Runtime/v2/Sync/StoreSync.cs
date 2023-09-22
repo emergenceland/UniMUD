@@ -1,5 +1,6 @@
 using System;
 using System.Numerics;
+using Cysharp.Threading.Tasks;
 using Nethereum.RPC.Eth.DTOs;
 using UniRx;
 using UniRx.Operators;
@@ -14,12 +15,17 @@ namespace v2
         public IObservable<Types.NetworkTableUpdate> OutputStream => _outputStream;
         private readonly CompositeDisposable _disposables = new();
 
-        public IObservable<StorageAdapterBlock> StartSync(IObservable<Block> blockStream, string storeContractAddress,
+        public IObservable<StorageAdapterBlock> StartSync(IObservable<Block> blockStream,
+            string storeContractAddress,
             string account, string rpcUrl,
-            int initialBlockNumber, string wsRpcUrl)
+            int initialBlockNumber, int streamStartBlockNumber)
         {
             // TODO: fetch initial state from indexer
-            Debug.Log("Fetching initial state from indexer...");
+
+            Debug.Log("Fetching gap state events...");
+            var gapStateEvents = Common.AsyncEnumerableToObservable(Sync.FetchLogs(storeContractAddress, account,
+                rpcUrl, initialBlockNumber,
+                streamStartBlockNumber));
 
             BigInteger endBlock = 0;
             var latestBlockNumber = blockStream.Select(block =>
@@ -38,9 +44,9 @@ namespace v2
                             blockRange.Start, blockRange.End))
                         .Do(_ => startBlock = blockRange.End + 1);
                 });
-
             var orderedLogs = Sync.ToStorageAdapterBlock(blockLogs).Share();
-            return orderedLogs;
+
+            return orderedLogs.Concat(Sync.ToStorageAdapterBlock(gapStateEvents));
         }
 
         public void Dispose()

@@ -74,7 +74,7 @@ namespace v2
             Debug.Log("Connecting to websocket...");
             _wsClient = new BlockStream().AddTo(_disposables);
             var blockNumberStream = await _wsClient.WatchBlocks(wsRpcUrl);
-            
+
             /*
              * ==== TX EXECUTOR ====
              */
@@ -112,23 +112,16 @@ namespace v2
              * ==== SYNC ====
              */
 
-            // if (startingBlockNumber < 0)
-            // {
-            //     Debug.Log("Getting current block number...");
-            //     await GetBlockNumber().ToUniTask();
-            // }
-            startingBlockNumber = 0;
-
-            Debug.Log("Starting sync from block " + startingBlockNumber + "...");
+            if (startingBlockNumber < 0) await GetStartingBlockNumber().ToUniTask();
+            // startingBlockNumber = 0;
+            Debug.Log("Starting sync...");
 
             var storeSync = new StoreSync().AddTo(_disposables);
             var updateStream =
-                storeSync.StartSync(blockNumberStream, storeContract, account.Address, rpcUrl, startingBlockNumber, wsRpcUrl);
+                storeSync.StartSync(blockNumberStream, storeContract, account.Address, rpcUrl, 0, startingBlockNumber);
 
             UniRx.ObservableExtensions.Subscribe(updateStream, b => RxStorageAdapter.ToStorage(ds, b))
                 .AddTo(_disposables);
-            
-           
 
             /*
              * ==== FAUCET ====
@@ -140,7 +133,7 @@ namespace v2
             OnInitialized?.Invoke();
         }
 
-        private IEnumerator GetBlockNumber()
+        private IEnumerator GetStartingBlockNumber()
         {
             var blockNumberRequest = new EthBlockNumberUnityRequest(rpcUrl);
             yield return blockNumberRequest.SendRequest();

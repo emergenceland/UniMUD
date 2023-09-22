@@ -1,7 +1,5 @@
 using System;
 using System.Numerics;
-using Unity.Plastic.Newtonsoft.Json;
-using UnityEngine;
 using static v2.Common;
 using static v2.SchemaAbiTypes;
 
