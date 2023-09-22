@@ -29,21 +29,24 @@ namespace v2
 
     public class BlockStream : IDisposable
     {
-        private WebSocket ws;
+        private WebSocket _ws;
         Subject<Block> subject = new();
 
         private UniTaskCompletionSource<bool> _connected = new();
-        private readonly int maxRetryAttempts = 3; 
-        TimeSpan retryDelay = TimeSpan.FromSeconds(3);
-        
+        private const int MaxRetryAttempts = 3;
+        private int _currentRetryCount = 0;
+        private const double BaseDelay = 1000; // Initial delay in milliseconds
+        private bool _intentionalClose = false;
+
+
         public IObservable<Block> WatchBlocks(string wsRpc)
         {
-            ws = WebSocketFactory.CreateInstance(wsRpc);
+            _ws = WebSocketFactory.CreateInstance(wsRpc);
 
-            ws.OnOpen += () =>
+            _ws.OnOpen += () =>
             {
-                Debug.Log("WS connected!");
-                Debug.Log("WS state: " + ws.GetState().ToString());
+                _currentRetryCount = 0;
+                Debug.Log("WS state: " + _ws.GetState().ToString());
 
                 string typeStr = "newHeads";
                 var subscriptionRequest = new
@@ -56,40 +59,63 @@ namespace v2
 
                 string jsonString = JsonConvert.SerializeObject(subscriptionRequest);
                 byte[] byteArray = Encoding.UTF8.GetBytes(jsonString);
-                ws.Send(byteArray);
-                _connected.TrySetResult(true); // Indicates that the connection has been established
+                _ws.Send(byteArray);
+                _connected.TrySetResult(true); 
+                Debug.Log("WS connected!");
             };
 
-            ws.OnMessage += async (byte[] msg) =>
+            _ws.OnMessage += msg =>
             {
                 var message = Encoding.UTF8.GetString(msg);
                 var block = JsonConvert.DeserializeObject<Block>(message);
                 subject.OnNext(block);
             };
 
-            ws.OnError += (string errMsg) =>
+            _ws.OnError += errMsg =>
             {
                 Debug.Log("WS error: " + errMsg);
                 subject.OnError(new Exception(errMsg));
+                TryReconnect(wsRpc);
             };
 
-            ws.OnClose += (WebSocketCloseCode code) =>
+            _ws.OnClose += code =>
             {
                 Debug.Log("WS closed with code: " + code.ToString());
-                subject.OnCompleted();
+                TryReconnect(wsRpc);
+                // subject.OnCompleted();
             };
 
-            ws.Connect();
+            _ws.Connect();
             return subject;
         }
-        
+
+
+        private void TryReconnect(string wsRpc)
+        {
+            if (_intentionalClose) return;
+            if (_currentRetryCount < MaxRetryAttempts)
+            {
+                var delay = TimeSpan.FromMilliseconds(Math.Pow(2, _currentRetryCount) * BaseDelay); // Exponential delay
+                Debug.Log(
+                    $"Attempting to reconnect. Trying again in {delay.Seconds} seconds  ({_currentRetryCount + 1} of {MaxRetryAttempts})");
+                _currentRetryCount++;
+                UniTask.Delay(delay).ContinueWith(() => WatchBlocks(wsRpc));
+            }
+            else
+            {
+                Debug.Log("Max retry attempts reached. Giving up.");
+                subject.OnError(new Exception("Max retry attempts reached."));
+            }
+        }
+
         public void Dispose()
         {
-            if (ws != null && ws.GetState() == WebSocketState.Open)
+            if (_ws != null && _ws.GetState() == WebSocketState.Open)
             {
-                ws.Close();
+                _ws.Close();
             }
 
+            _intentionalClose = true;
             subject?.Dispose();
         }
     }

@@ -1,27 +1,19 @@
 using System;
 using System.Collections;
-using System.Collections.Generic;
 using System.Linq;
-using System.Numerics;
-using System.Text;
 using Cysharp.Threading.Tasks;
-using IWorld.ContractDefinition;
 using mud.Client;
 using mud.Client.MudDefinitions;
-using mud.Network;
 using mud.Network.schemas;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Unity.Rpc;
 using Nethereum.Web3.Accounts;
 using UniRx;
 using UnityEngine;
-using HybridWebSocket;
-using Nethereum.Contracts.QueryHandlers.MultiCall;
-using Newtonsoft.Json;
-
 
 namespace v2
 {
+    
     public class NetworkManager : MonoBehaviour
     {
         public string pk;
@@ -34,6 +26,7 @@ namespace v2
         public string addressKey;
         public string storeContract;
         private int startingBlockNumber = -1;
+        private int streamStartBlockNumber = 0;
         public Datastore ds;
         private readonly CompositeDisposable _disposables = new();
         private BlockStream _wsClient;
@@ -52,6 +45,7 @@ namespace v2
                 Debug.LogError("Already have a NetworkManager instance");
                 return;
             }
+
             Instance = this;
         }
 
@@ -63,53 +57,30 @@ namespace v2
             if (!string.IsNullOrWhiteSpace(pk))
             {
                 account = new Account(pk, chainId);
+                Debug.Log("Loaded account from pk: " + account.Address);
             }
             else
             {
-                var savedBurnerWallet = PlayerPrefs.GetString("burnerWallet");
-                if (!string.IsNullOrWhiteSpace(savedBurnerWallet) && !uniqueWallets)
-                {
-                    account = new Account(savedBurnerWallet, chainId);
-                    Debug.Log("Loaded burner wallet: " + account.Address);
-                }
-                else
-                {
-                    var ecKey = Nethereum.Signer.EthECKey.GenerateKey();
-                    var privateKey = ecKey.GetPrivateKeyAsBytes().ToHex();
-                    account = new Account(privateKey, chainId);
-                    Debug.Log("New burner wallet created: " + account.Address);
-                    // TODO: Insecure.
-                    // We can use Nethereum's KeyStoreScryptService
-                    // However, this requires user to set a password
-                    if (!uniqueWallets)
-                    {
-                        PlayerPrefs.SetString("burnerWallet", privateKey);
-                        PlayerPrefs.Save();
-                    }
-                }
-
+                // TODO: Unique wallets
+                account = new Account(Common.GetBurnerPrivateKey(chainId), chainId);
                 address = account.Address;
+                Debug.Log("Burner wallet created/loaded: " + address);
                 addressKey = "0x" + address.Replace("0x", "").PadLeft(64, '0').ToLower();
             }
-            
-            /* 
-             * ==== PROVIDER ====
-             */
-            
-            Debug.Log("Creating websocket client...");
-            _wsClient = new BlockStream().AddTo(_disposables);
-            var blockStream = _wsClient.WatchBlocks(wsRpcUrl);
 
             /*
-             * ==== FAUCET ====
+             * ==== PROVIDER ====
              */
+
+            Debug.Log("Creating websocket client...");
+            _wsClient = new BlockStream().AddTo(_disposables);
 
             /*
              * ==== TX EXECUTOR ====
              */
 
-            world = new CreateContract();
-            await world.CreateTxExecutor(account, storeContract, rpcUrl, chainId);
+            // world = new CreateContract();
+            // await world.CreateTxExecutor(account, storeContract, rpcUrl, chainId);
 
             /*
              * ==== CLIENT CACHE ====
@@ -140,24 +111,27 @@ namespace v2
              * ==== SYNC ====
              */
 
-            if (startingBlockNumber < 0)
-            {
-                Debug.Log("Getting current block number...");
-                await GetBlockNumber().ToUniTask();
-            }
+            // if (startingBlockNumber < 0)
+            // {
+            //     Debug.Log("Getting current block number...");
+            //     await GetBlockNumber().ToUniTask();
+            // }
+            startingBlockNumber = 0;
 
             Debug.Log("Starting sync from block " + startingBlockNumber + "...");
 
-            var syncWorker = new SyncWorker().AddTo(_disposables);
-            var updateStream = syncWorker.StartSync(blockStream, storeContract, account.Address, rpcUrl, startingBlockNumber);
+            var storeSync = new StoreSync().AddTo(_disposables);
+            var updateStream =
+                storeSync.StartSync(_wsClient, storeContract, account.Address, rpcUrl, startingBlockNumber, wsRpcUrl);
 
-            UniRx.ObservableExtensions
-                // .Subscribe(updateStream, update => { NetworkUpdates.ApplyNetworkUpdates(update, ds); })
-                .Subscribe(updateStream, update => { Debug.Log("HASDASDAS - " + JsonConvert.SerializeObject(update)); })
-                .AddTo(_disposables);
+            UniRx.ObservableExtensions.Subscribe(updateStream, StorageAdapter.ToStorage).AddTo(_disposables);
 
             // Debug.Log("Sending test tx...");
             // await world.Write<IncrementFunction>();
+
+            /*
+             * ==== FAUCET ====
+             */
 
             m_NetworkInitialized = true;
 
