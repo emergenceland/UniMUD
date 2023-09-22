@@ -23,7 +23,6 @@ namespace v2
     public partial class Sync
     {
         public static async IAsyncEnumerable<FilterLog[]> FetchLogs(string storeContractAddress,
-            string account,
             string rpcUrl, BigInteger fromBlock, BigInteger toBlock)
         {
             var storeEvents = new List<EventABI>

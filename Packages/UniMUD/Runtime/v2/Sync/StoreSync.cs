@@ -17,13 +17,13 @@ namespace v2
 
         public IObservable<StorageAdapterBlock> StartSync(IObservable<Block> blockStream,
             string storeContractAddress,
-            string account, string rpcUrl,
+            string rpcUrl,
             int initialBlockNumber, int streamStartBlockNumber)
         {
             // TODO: fetch initial state from indexer
 
             Debug.Log("Fetching gap state events...");
-            var gapStateEvents = Common.AsyncEnumerableToObservable(Sync.FetchLogs(storeContractAddress, account,
+            var gapStateEvents = Common.AsyncEnumerableToObservable(Sync.FetchLogs(storeContractAddress,
                 rpcUrl, initialBlockNumber,
                 streamStartBlockNumber));
 
@@ -40,7 +40,7 @@ namespace v2
                 {
                     if (blockRange.Start > blockRange.End) return Observable.Empty<FilterLog[]>();
 
-                    return Common.AsyncEnumerableToObservable(Sync.FetchLogs(storeContractAddress, account, rpcUrl,
+                    return Common.AsyncEnumerableToObservable(Sync.FetchLogs(storeContractAddress, rpcUrl,
                             blockRange.Start, blockRange.End))
                         .Do(_ => startBlock = blockRange.End + 1);
                 });
