@@ -1,5 +1,6 @@
 using System;
 using System.Numerics;
+using Unity.Plastic.Newtonsoft.Json;
 using UnityEngine;
 using static v2.Common;
 using static v2.SchemaAbiTypes;
@@ -146,8 +147,8 @@ namespace v2
                     return data;
                 case SchemaType.BOOL:
                     var hex = data.StartsWith("0x") ? data[2..] : data;
-                    if (hex == "0x00") return false;
-                    if (hex == "0x01") return true;
+                    if (hex == "00") return false;
+                    if (hex == "01") return true;
                     return UnsupportedStaticField(fieldType);
                 case SchemaType.ADDRESS:
                     return Pad(data, PadDirection.Right, staticLength);

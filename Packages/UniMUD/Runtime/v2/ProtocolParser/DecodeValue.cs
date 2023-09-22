@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
-using Newtonsoft.Json;
 using UnityEngine;
 using static v2.Common;
 using static v2.SchemaAbiTypes;
@@ -10,7 +9,7 @@ namespace v2
 {
     public partial class ProtocolParser
     {
-        public static List<object> DecodeValue(Dictionary<string, SchemaType> valueSchema, string data)
+        public static Dictionary<string, object> DecodeValue(Dictionary<string, SchemaType> valueSchema, string data)
         {
             var staticFields = valueSchema.Values.Where(value => StaticAbiTypes.Contains(value))
                 .ToList();
@@ -69,7 +68,15 @@ namespace v2
                 }
             }
 
-            return values;
+            var result = new Dictionary<string, object>();
+            int j = 0;
+            foreach (var key in valueSchema)
+            {
+                result.Add(key.Key, values[j]);
+                j++;
+            }
+
+            return result;
         }
     }
 }

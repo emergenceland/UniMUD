@@ -28,7 +28,7 @@ public class InputManager : MonoBehaviour
     }
 
 
-    private void OnIncrement((List<Record> SetRecords, List<Record> RemovedRecords) update)
+    private void OnIncrement((List<RxRecord> SetRecords, List<RxRecord> RemovedRecords) update)
     {
         // first element of tuple is set records, second is deleted records
         foreach (var record in update.SetRecords)
@@ -51,7 +51,6 @@ public class InputManager : MonoBehaviour
     {
         try
         {
-            Debug.Log(net);
             await net.world.Write<IncrementFunction>();
             // var contractHandler = net._provider.Eth.GetContractTransactionHandler<IncrementFunction>();
             // // Debug.Log(JsonConvert.SerializeObject(contractHandler));

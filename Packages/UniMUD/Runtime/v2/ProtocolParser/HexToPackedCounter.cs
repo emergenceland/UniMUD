@@ -7,15 +7,8 @@ using static v2.SchemaAbiTypes;
 
 namespace v2
 {
-    public struct PackedCounter
-    {
-        public BigInteger TotalByteLength;
-        public UInt64[] FieldByteLengths;
-    }
-
     public static partial class ProtocolParser
     {
-       
         public static PackedCounter HexToPackedCounter(string data)
         {
             if (data.Length != 66) throw InvalidHexLengthForPackedCounterError(data);
@@ -35,6 +28,7 @@ namespace v2
             {
                 reversedFieldByteLengths = objects
                     // we cast to Uint64 because uint40 fits in a regular int
+                    // don't need a bigint
                     .Select(item => (UInt64)item)
                     .ToArray();
             }

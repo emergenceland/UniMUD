@@ -75,9 +75,9 @@ namespace mud.Client
             return this;
         }
 
-        public IEnumerable<Record> Run(Dictionary<string, Table> store)
+        public IEnumerable<RxRecord> Run(Dictionary<string, RxTable> store)
         {
-            HashSet<Record> context = null;
+            HashSet<RxRecord> context = null;
             foreach (var table in _filters)
             {
                 if (!store.TryGetValue(table.Table.ToString(), out var candidates)) continue; // table not registered
@@ -85,12 +85,12 @@ namespace mud.Client
                 {
                     // populate context with first table
                     if (table.IsNegative) throw new Exception("Negative table filter cannot be first");
-                    context = new HashSet<Record>(candidates.Records.Values);
+                    context = new HashSet<RxRecord>(candidates.Records.Values);
                 }
                 else
                 {
-                    var recordsToRemove = new List<Record>();
-                    var recordsToAdd = new List<Record>();
+                    var recordsToRemove = new List<RxRecord>();
+                    var recordsToAdd = new List<RxRecord>();
 
                     foreach (var record in context)
                     {
@@ -146,7 +146,7 @@ namespace mud.Client
                 context.RemoveWhere(record => !_queryVariables.All(record.table.Contains));
             }
 
-            return context ?? new HashSet<Record>();
+            return context ?? new HashSet<RxRecord>();
         }
     }
 }

@@ -7,7 +7,7 @@ namespace mud.Client
     using Property = Dictionary<string, object>;
 
 
-    public class Record
+    public class RxRecord
     {
         public string table;
         public string key;
@@ -30,7 +30,7 @@ namespace mud.Client
             return true;
         }
 
-        public bool Equals(Record other)
+        public bool Equals(RxRecord other)
         {
             var valueEquals = PropEquals(value, other.value);
             return table == other.table && key == other.key && valueEquals;
@@ -41,7 +41,7 @@ namespace mud.Client
             if (ReferenceEquals(null, obj)) return false;
             if (ReferenceEquals(this, obj)) return true;
             if (obj.GetType() != this.GetType()) return false;
-            return Equals((Record)obj);
+            return Equals((RxRecord)obj);
         }
 
         public override int GetHashCode()
@@ -49,7 +49,7 @@ namespace mud.Client
             return HashCode.Combine(table, key, value);
         }
 
-        public Record(string table, string key, Property value)
+        public RxRecord(string table, string key, Property value)
         {
             this.table = table;
             this.key = key;

@@ -7,13 +7,13 @@ using System.Numerics;
 namespace mud.Client
 {
 
-    public class Table
+    public class RxTable
     {
-        public Dictionary<string, Record> Records { get; set; }
+        public Dictionary<string, RxRecord> Records { get; set; }
         
-        public Table()
+        public RxTable()
         {
-            Records = new Dictionary<string, Record>();
+            Records = new Dictionary<string, RxRecord>();
         }
     }
     

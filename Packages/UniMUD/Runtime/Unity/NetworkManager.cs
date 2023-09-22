@@ -4,7 +4,7 @@ using System.Numerics;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using mud.Client;
-using mud.Client.MudDefinitions;
+// using mud.Client.MudDefinitions;
 using mud.Network;
 using mud.Network.IStore;
 using mud.Network.schemas;
@@ -69,7 +69,7 @@ namespace mud.Unity
         public string addressKey;
 
         public readonly TxExecutor worldSend = new();
-        public Datastore ds;
+        public RxDatastore ds;
         // private SyncWorker _syncWorker;
         private Web3 _provider;
         public Account account;

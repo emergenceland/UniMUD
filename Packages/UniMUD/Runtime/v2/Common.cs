@@ -154,9 +154,16 @@ namespace v2
         {
             data = data.StartsWith("0x", StringComparison.OrdinalIgnoreCase) ? data.Substring(2) : data;
 
-            int? endIndex = end.HasValue ? end.Value * 2 : (int?)null;
+            if (start * 2 >= data.Length)
+            {
+                return data;
+            }
+
+            ;
+
+            int? endIndex = end * 2;
             string result = data.Substring(start * 2,
-                endIndex.HasValue ? endIndex.Value - (start * 2) : data.Length - (start * 2));
+                endIndex.HasValue ? endIndex.Value - start * 2 : data.Length - start * 2);
 
             return $"0x{result.PadRight(((end ?? start) - start) * 2, '0')}";
         }
@@ -223,6 +230,16 @@ namespace v2
             return $"0x{values.Aggregate("", (acc, x) => acc + x.Replace("0x", ""))}";
         }
 
+        public static string SpliceHex(string data, int start, int deleteCount = 0, string newData = "0x")
+        {
+            return ConcatHex(new[]
+            {
+                ReadHex(data, 0, start),
+                newData,
+                ReadHex(data, start + deleteCount)
+            });
+        }
+
         private static readonly Dictionary<ResourceType, string> ResourceTypeIds = new()
         {
             // keep these in sync with worldResourceTypes.sol
@@ -275,6 +292,18 @@ namespace v2
                 Namespace = ns,
                 Name = name
             };
+        }
+
+        public static List<string> FormatGetRecordResult(string input)
+        {
+            if (input.Length == 0) return new List<string> { input };
+            // var decodedString = HexToUTF8(input);
+            Debug.Log("Decoded string: " + input);
+
+            var parts = Regex.Split(input, @"[\x00-\x1F]|[\uFFFD]|[\s@`]")
+                .Where(part => !string.IsNullOrWhiteSpace(part)).ToList();
+
+            return parts;
         }
     }
 }

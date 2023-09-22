@@ -6,80 +6,73 @@ using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using mud.Network.schemas;
 using NLog;
-using Logger = NLog.Logger;
+using v2;
 
 namespace mud.Client
 {
     using Property = Dictionary<string, object>;
-
-    public class Datastore
+    
+    public class RxDatastore
     {
         // tableId -> table -> records
-        public readonly Dictionary<string, Table> store;
-        public Dictionary<string, TableId> tableIds;
+        public readonly Dictionary<string, RxTable> store = new();
+        public Dictionary<string, ProtocolParser.Table> tableIds = new();
 
         private readonly ReplaySubject<RecordUpdate> _onDataStoreUpdate = new();
         private readonly Subject<RecordUpdate> _onRxDataStoreUpdate = new();
         public IObservable<RecordUpdate> OnDataStoreUpdate => _onDataStoreUpdate;
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
-        public Datastore()
+        public void RegisterTable(ProtocolParser.Table table)
         {
-            store = new Dictionary<string, Table>();
-            tableIds = new Dictionary<string, TableId>();
+            var tableKey = Common.CreateTableKey(table);
+            store.TryAdd(tableKey, new RxTable());
+            tableIds.TryAdd(tableKey, table);
         }
 
-        public void RegisterTable(TableId table, Dictionary<string, Types.Type>? schema = null,
-            string? key = null)
+        public void Set(ProtocolParser.Table tableId, string entity, Property value)
         {
-            store.TryAdd(table.ToString(), new Table());
-            tableIds.TryAdd(table.ToString(), table);
-        }
-
-        public void Set(TableId tableId, string? entity, Property value)
-        {
-            var tableKey = tableId.ToString();
-            var index = entity ?? GetKey(tableKey);
+            var tableKey = Common.CreateTableKey(tableId);
             var hasTable = store.TryGetValue(tableKey, out var table);
-            var record = new Record(tableKey, entity, value);
-            if (table != null && hasTable && table.Records.ContainsKey(index))
+            var record = new RxRecord(tableKey, entity, value);
+            if (table != null && hasTable && table.Records.ContainsKey(entity))
             {
-                store[tableKey].Records[index] = record;
-                EmitUpdate(UpdateType.SetField, tableKey, index, record.value);
+                store[tableKey].Records[entity] = record;
+                EmitUpdate(UpdateType.SetField, tableKey, entity, record.value);
                 return;
             }
 
-            store[tableKey].Records[index] = record;
-            EmitUpdate(UpdateType.SetRecord, tableKey, index, record.value);
+            store[tableKey].Records[entity] = record;
+            EmitUpdate(UpdateType.SetRecord, tableKey, entity, record.value);
         }
 
-        public void Update(TableId tableId, string? entity, Property value, Property? initialValue = null)
+        public void Update(ProtocolParser.Table tableId, string entity, Property value, Property? initialValue = null)
         {
-            var tableKey = tableId.ToString();
-            var index = entity ?? GetKey(tableKey);
+            var tableKey = Common.CreateTableKey(tableId);
+            var index = entity;
             if (!store[tableKey].Records.ContainsKey(index))
             {
                 Set(tableId, index, value);
             }
             else
             {
-                var record = new Record(tableKey, entity, value);
+                var record = new RxRecord(tableKey, entity, value);
                 store[tableKey].Records[index] = record;
                 EmitUpdate(UpdateType.SetField, tableKey, index, record.value, initialValue);
             }
         }
 
-        public void Delete(TableId tableId, string key)
+        public void Delete(ProtocolParser.Table tableId, string key)
         {
-            var tableKey = tableId.ToString();
+            var tableKey = Common.CreateTableKey(tableId);
             if (!store[tableKey].Records.ContainsKey(key)) return;
             EmitUpdate(UpdateType.DeleteRecord, tableKey, key, null, store[tableKey].Records[key].value);
             store[tableKey].Records.Remove(key);
         }
 
-        public Record? GetValue(TableId tableId, string key)
+        public RxRecord? GetValue(ProtocolParser.Table tableId, string key)
         {
-            var tableKey = tableId.ToString();
+            var tableKey = Common.CreateTableKey(tableId);
             var hasTable = store.TryGetValue(tableKey, out var table);
             if (!hasTable) return null;
             var hasKey = store[tableKey].Records.TryGetValue(key, out var value);
@@ -92,12 +85,12 @@ namespace mud.Client
             return store[tableId].Records.Count == 0 ? "1" : (store[tableId].Records.Count + 1).ToString();
         }
 
-        public IEnumerable<Record> RunQuery(Query query)
+        public IEnumerable<RxRecord> RunQuery(Query query)
         {
             return query.Run(store);
         }
 
-        public IObservable<(List<Record> SetRecords, List<Record> RemovedRecords)> RxQuery(Query query,
+        public IObservable<(List<RxRecord> SetRecords, List<RxRecord> RemovedRecords)> RxQuery(Query query,
             bool pushInitialResults = true)
         {
             var queryTables = query.GetTableFilters().Select(f => f.Table);
@@ -105,12 +98,12 @@ namespace mud.Client
                 queryTables.Select(t => _onRxDataStoreUpdate.Where(update => update.TableId == t.ToString()));
             var tableUpdates = tableSubjects.Merge();
 
-            return Observable.Create<(List<Record> SetRecords, List<Record> RemovedRecords)>(observer =>
+            return Observable.Create<(List<RxRecord> SetRecords, List<RxRecord> RemovedRecords)>(observer =>
             {
                 var initialResult = RunQuery(query).ToList();
                 if (pushInitialResults)
                 {
-                    observer.OnNext((SetRecords: initialResult, RemovedRecords: new List<Record>()));
+                    observer.OnNext((SetRecords: initialResult, RemovedRecords: new List<RxRecord>()));
                 }
 
                 var updateSubscription = tableUpdates.Subscribe(update =>
@@ -129,13 +122,13 @@ namespace mud.Client
                             var setRecord = setRecordQuery.SingleOrDefault(r => r.key == affectedRecordKey);
                             if (setRecord != null)
                             {
-                                observer.OnNext((SetRecords: new List<Record> { setRecord },
-                                    RemovedRecords: new List<Record>()));
+                                observer.OnNext((SetRecords: new List<RxRecord> { setRecord },
+                                    RemovedRecords: new List<RxRecord>()));
                             }
                             break;
                         case UpdateType.DeleteRecord:
-                            observer.OnNext((SetRecords: new List<Record>(),
-                                RemovedRecords: new List<Record> { recordFromStore }));
+                            observer.OnNext((SetRecords: new List<RxRecord>(),
+                                RemovedRecords: new List<RxRecord> { recordFromStore }));
                             break;
                         default:
                             throw new ArgumentOutOfRangeException();

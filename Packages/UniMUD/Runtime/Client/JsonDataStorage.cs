@@ -15,17 +15,17 @@ namespace mud.Client
             _filePath = filePath;
         }
 
-        public void Write(IEnumerable<Record> records)
+        public void Write(IEnumerable<RxRecord> records)
         {
             var json = JsonConvert.SerializeObject(records);
             File.WriteAllText(_filePath, json);
         }
 
-        public IEnumerable<Record> Load()
+        public IEnumerable<RxRecord> Load()
         {
-            if (!File.Exists(_filePath)) return Enumerable.Empty<Record>();
+            if (!File.Exists(_filePath)) return Enumerable.Empty<RxRecord>();
             var json = File.ReadAllText(_filePath);
-            return JsonConvert.DeserializeObject<IEnumerable<Record>>(json);
+            return JsonConvert.DeserializeObject<IEnumerable<RxRecord>>(json);
         }
         
         public int GetCachedBlockNumber()

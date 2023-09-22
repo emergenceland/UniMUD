@@ -3,7 +3,7 @@ using System.Collections;
 using System.Linq;
 using Cysharp.Threading.Tasks;
 using mud.Client;
-using mud.Client.MudDefinitions;
+// using mud.Client.MudDefinitions;
 using mud.Network.schemas;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Unity.Rpc;
@@ -13,7 +13,6 @@ using UnityEngine;
 
 namespace v2
 {
-    
     public class NetworkManager : MonoBehaviour
     {
         public string pk;
@@ -27,7 +26,7 @@ namespace v2
         public string storeContract;
         private int startingBlockNumber = -1;
         private int streamStartBlockNumber = 0;
-        public Datastore ds;
+        public RxDatastore ds;
         private readonly CompositeDisposable _disposables = new();
         private BlockStream _wsClient;
         public CreateContract world;
@@ -75,37 +74,33 @@ namespace v2
             Debug.Log("Creating websocket client...");
             _wsClient = new BlockStream().AddTo(_disposables);
 
-            /*
-             * ==== TX EXECUTOR ====
-             */
-
-            // world = new CreateContract();
-            // await world.CreateTxExecutor(account, storeContract, rpcUrl, chainId);
+    
 
             /*
              * ==== CLIENT CACHE ====
              */
-            ds = new Datastore(); // TODO: add persistence
+            ds = new RxDatastore(); // TODO: add persistence
 
-            var types = AppDomain.CurrentDomain.GetAssemblies()
-                .SelectMany(s => s.GetTypes())
-                .Where(p => typeof(IMudTable).IsAssignableFrom(p) && p.IsClass);
-            foreach (var t in types)
-            {
-                //ignore exact IMudTable class
-                if (t == typeof(IMudTable))
-                {
-                    continue;
-                }
-
-                Debug.Log($"Registering table: {t.Name}");
-                if (t.GetField("ID").GetValue(null) is not TableId tableId) return;
-                ds.RegisterTable(tableId);
-            }
-
-            WorldDefinitions.DefineDataStoreConfig(ds);
-            StoreDefinitions.DefineDataStoreConfig(ds);
-            ds.RegisterTable(new TableId("mudstore", "schema"));
+            // TODO: do this.
+            // var types = AppDomain.CurrentDomain.GetAssemblies()
+            //     .SelectMany(s => s.GetTypes())
+            //     .Where(p => typeof(IMudTable).IsAssignableFrom(p) && p.IsClass);
+            // foreach (var t in types)
+            // {
+            //     //ignore exact IMudTable class
+            //     if (t == typeof(IMudTable))
+            //     {
+            //         continue;
+            //     }
+            //
+            //     Debug.Log($"Registering table: {t.Name}");
+            //     if (t.GetField("ID").GetValue(null) is not TableId tableId) return;
+            //     ds.RegisterTable(tableId);
+            // }
+            //
+            // WorldDefinitions.DefineDataStoreConfig(ds);
+            // StoreDefinitions.DefineDataStoreConfig(ds);
+            // ds.RegisterTable(new TableId("mudstore", "schema"));
 
             /*
              * ==== SYNC ====
@@ -124,7 +119,17 @@ namespace v2
             var updateStream =
                 storeSync.StartSync(_wsClient, storeContract, account.Address, rpcUrl, startingBlockNumber, wsRpcUrl);
 
-            UniRx.ObservableExtensions.Subscribe(updateStream, StorageAdapter.ToStorage).AddTo(_disposables);
+            UniRx.ObservableExtensions.Subscribe(updateStream, b => StorageAdapter.ToStorage(ds, b))
+                .AddTo(_disposables);
+            
+            /*
+             * ==== TX EXECUTOR ====
+             */
+
+            // delay for 3 seconds
+            await UniTask.Delay(3000);
+            world = new CreateContract();
+            await world.CreateTxExecutor(account, storeContract, rpcUrl, chainId);
 
             // Debug.Log("Sending test tx...");
             // await world.Write<IncrementFunction>();

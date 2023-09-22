@@ -3,9 +3,10 @@ using System;
 using System.Collections.Generic;
 
 using mud.Network.schemas;
-using mud.Unity;
 using Property = System.Collections.Generic.Dictionary<string, object>;
 using UnityEngine;
+using v2;
+using NetworkManager = mud.Unity.NetworkManager;
 
 #if UNITY_EDITOR
 using UnityEditor;
@@ -15,13 +16,13 @@ namespace mud.Client {
     
     [System.Serializable]
     public abstract class IMudTable {
-        public TableId TableId { get { return GetTableId(); } }
-        public abstract TableId GetTableId();
+        public ProtocolParser.Table TableId { get { return GetTableId(); } }
+        public abstract ProtocolParser.Table GetTableId();
 
 
         public abstract Type TableType();
         public abstract Type TableUpdateType();
-        public abstract void RecordToTable(Record record);
+        public abstract void RecordToTable(RxRecord rxRecord);
 
         public static T? GetValueFromTable<T>(string key) where T : IMudTable, new() {
             var table = new T();
