@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
+using UnityEngine;
 using v2;
 
 namespace mud.Client
@@ -14,22 +15,20 @@ namespace mud.Client
     {
         // tableId -> table -> records
         public readonly Dictionary<string, RxTable> store = new();
-        public Dictionary<string, ProtocolParser.Table> registeredTables = new();
+        // TODO: refactor later so we don't need to duplicate table stores
+        public readonly Dictionary<string, RxTable> tableNameIndex = new();
+        public HashSet<string> registeredTables = new();
 
         private readonly ReplaySubject<RecordUpdate> _onDataStoreUpdate = new();
         private readonly Subject<RecordUpdate> _onRxDataStoreUpdate = new();
         public IObservable<RecordUpdate> OnDataStoreUpdate => _onDataStoreUpdate;
 
-        public void RegisterTable(ProtocolParser.Table table)
-        {
-            var tableKey = Common.GetTableKey(table);
-            store.TryAdd(tableKey, new RxTable());
-            registeredTables.TryAdd(tableKey, table);
-        }
-
-        public void RegisterTable(RxTable table)
+        public void RegisterTable(RxTable table, string? name = null)
         {
             store.TryAdd(table.Id, table);
+            if (registeredTables.Contains(table.Id)) Debug.LogWarning($"Already registered table: {table.Id}");
+            registeredTables.Add(table.Id);
+            if (name != null) tableNameIndex.TryAdd(name, table);
         }
 
         public RxTable CreateTable(string tNamespace, string tName,
@@ -47,12 +46,6 @@ namespace mud.Client
                 Schema = schema,
                 Values = new Dictionary<string, RxRecord>()
             };
-        }
-
-        public ProtocolParser.Table GetTable(string ns, string name)
-        {
-            var result = registeredTables.FirstOrDefault(t => t.Value.Namespace == ns && t.Value.Name == name);
-            return result.Value;
         }
 
         public void Set(RxTable table, string entity, Property value)

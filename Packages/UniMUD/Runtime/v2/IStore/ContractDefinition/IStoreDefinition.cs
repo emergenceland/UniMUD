@@ -36,8 +36,6 @@ namespace v2.IStore.ContractDefinition
         public virtual byte[] TableId { get; set; }
         [Parameter("bytes32[]", "keyTuple", 2)]
         public virtual List<byte[]> KeyTuple { get; set; }
-        [Parameter("bytes32", "fieldLayout", 3)]
-        public virtual byte[] FieldLayout { get; set; }
     }
 
     public partial class GetDynamicFieldFunction : GetDynamicFieldFunctionBase { }
@@ -53,10 +51,40 @@ namespace v2.IStore.ContractDefinition
         public virtual byte DynamicFieldIndex { get; set; }
     }
 
-    public partial class GetFieldFunction : GetFieldFunctionBase { }
+    public partial class GetDynamicFieldLengthFunction : GetDynamicFieldLengthFunctionBase { }
+
+    [Function("getDynamicFieldLength", "uint256")]
+    public class GetDynamicFieldLengthFunctionBase : FunctionMessage
+    {
+        [Parameter("bytes32", "tableId", 1)]
+        public virtual byte[] TableId { get; set; }
+        [Parameter("bytes32[]", "keyTuple", 2)]
+        public virtual List<byte[]> KeyTuple { get; set; }
+        [Parameter("uint8", "dynamicFieldIndex", 3)]
+        public virtual byte DynamicFieldIndex { get; set; }
+    }
+
+    public partial class GetDynamicFieldSliceFunction : GetDynamicFieldSliceFunctionBase { }
+
+    [Function("getDynamicFieldSlice", "bytes")]
+    public class GetDynamicFieldSliceFunctionBase : FunctionMessage
+    {
+        [Parameter("bytes32", "tableId", 1)]
+        public virtual byte[] TableId { get; set; }
+        [Parameter("bytes32[]", "keyTuple", 2)]
+        public virtual List<byte[]> KeyTuple { get; set; }
+        [Parameter("uint8", "dynamicFieldIndex", 3)]
+        public virtual byte DynamicFieldIndex { get; set; }
+        [Parameter("uint256", "start", 4)]
+        public virtual BigInteger Start { get; set; }
+        [Parameter("uint256", "end", 5)]
+        public virtual BigInteger End { get; set; }
+    }
+
+    public partial class GetField1Function : GetField1FunctionBase { }
 
     [Function("getField", "bytes")]
-    public class GetFieldFunctionBase : FunctionMessage
+    public class GetField1FunctionBase : FunctionMessage
     {
         [Parameter("bytes32", "tableId", 1)]
         public virtual byte[] TableId { get; set; }
@@ -68,6 +96,19 @@ namespace v2.IStore.ContractDefinition
         public virtual byte[] FieldLayout { get; set; }
     }
 
+    public partial class GetFieldFunction : GetFieldFunctionBase { }
+
+    [Function("getField", "bytes")]
+    public class GetFieldFunctionBase : FunctionMessage
+    {
+        [Parameter("bytes32", "tableId", 1)]
+        public virtual byte[] TableId { get; set; }
+        [Parameter("bytes32[]", "keyTuple", 2)]
+        public virtual List<byte[]> KeyTuple { get; set; }
+        [Parameter("uint8", "fieldIndex", 3)]
+        public virtual byte FieldIndex { get; set; }
+    }
+
     public partial class GetFieldLayoutFunction : GetFieldLayoutFunctionBase { }
 
     [Function("getFieldLayout", "bytes32")]
@@ -75,6 +116,21 @@ namespace v2.IStore.ContractDefinition
     {
         [Parameter("bytes32", "tableId", 1)]
         public virtual byte[] TableId { get; set; }
+    }
+
+    public partial class GetFieldLength1Function : GetFieldLength1FunctionBase { }
+
+    [Function("getFieldLength", "uint256")]
+    public class GetFieldLength1FunctionBase : FunctionMessage
+    {
+        [Parameter("bytes32", "tableId", 1)]
+        public virtual byte[] TableId { get; set; }
+        [Parameter("bytes32[]", "keyTuple", 2)]
+        public virtual List<byte[]> KeyTuple { get; set; }
+        [Parameter("uint8", "fieldIndex", 3)]
+        public virtual byte FieldIndex { get; set; }
+        [Parameter("bytes32", "fieldLayout", 4)]
+        public virtual byte[] FieldLayout { get; set; }
     }
 
     public partial class GetFieldLengthFunction : GetFieldLengthFunctionBase { }
@@ -88,27 +144,6 @@ namespace v2.IStore.ContractDefinition
         public virtual List<byte[]> KeyTuple { get; set; }
         [Parameter("uint8", "fieldIndex", 3)]
         public virtual byte FieldIndex { get; set; }
-        [Parameter("bytes32", "fieldLayout", 4)]
-        public virtual byte[] FieldLayout { get; set; }
-    }
-
-    public partial class GetFieldSliceFunction : GetFieldSliceFunctionBase { }
-
-    [Function("getFieldSlice", "bytes")]
-    public class GetFieldSliceFunctionBase : FunctionMessage
-    {
-        [Parameter("bytes32", "tableId", 1)]
-        public virtual byte[] TableId { get; set; }
-        [Parameter("bytes32[]", "keyTuple", 2)]
-        public virtual List<byte[]> KeyTuple { get; set; }
-        [Parameter("uint8", "fieldIndex", 3)]
-        public virtual byte FieldIndex { get; set; }
-        [Parameter("bytes32", "fieldLayout", 4)]
-        public virtual byte[] FieldLayout { get; set; }
-        [Parameter("uint256", "start", 5)]
-        public virtual BigInteger Start { get; set; }
-        [Parameter("uint256", "end", 6)]
-        public virtual BigInteger End { get; set; }
     }
 
     public partial class GetKeySchemaFunction : GetKeySchemaFunctionBase { }
@@ -120,6 +155,19 @@ namespace v2.IStore.ContractDefinition
         public virtual byte[] TableId { get; set; }
     }
 
+    public partial class GetRecord1Function : GetRecord1FunctionBase { }
+
+    [Function("getRecord", typeof(GetRecord1OutputDTO))]
+    public class GetRecord1FunctionBase : FunctionMessage
+    {
+        [Parameter("bytes32", "tableId", 1)]
+        public virtual byte[] TableId { get; set; }
+        [Parameter("bytes32[]", "keyTuple", 2)]
+        public virtual List<byte[]> KeyTuple { get; set; }
+        [Parameter("bytes32", "fieldLayout", 3)]
+        public virtual byte[] FieldLayout { get; set; }
+    }
+
     public partial class GetRecordFunction : GetRecordFunctionBase { }
 
     [Function("getRecord", typeof(GetRecordOutputDTO))]
@@ -129,8 +177,6 @@ namespace v2.IStore.ContractDefinition
         public virtual byte[] TableId { get; set; }
         [Parameter("bytes32[]", "keyTuple", 2)]
         public virtual List<byte[]> KeyTuple { get; set; }
-        [Parameter("bytes32", "fieldLayout", 3)]
-        public virtual byte[] FieldLayout { get; set; }
     }
 
     public partial class GetStaticFieldFunction : GetStaticFieldFunctionBase { }
@@ -157,38 +203,34 @@ namespace v2.IStore.ContractDefinition
         public virtual byte[] TableId { get; set; }
     }
 
-    public partial class PopFromFieldFunction : PopFromFieldFunctionBase { }
+    public partial class PopFromDynamicFieldFunction : PopFromDynamicFieldFunctionBase { }
 
-    [Function("popFromField")]
-    public class PopFromFieldFunctionBase : FunctionMessage
+    [Function("popFromDynamicField")]
+    public class PopFromDynamicFieldFunctionBase : FunctionMessage
     {
         [Parameter("bytes32", "tableId", 1)]
         public virtual byte[] TableId { get; set; }
         [Parameter("bytes32[]", "keyTuple", 2)]
         public virtual List<byte[]> KeyTuple { get; set; }
-        [Parameter("uint8", "fieldIndex", 3)]
-        public virtual byte FieldIndex { get; set; }
+        [Parameter("uint8", "dynamicFieldIndex", 3)]
+        public virtual byte DynamicFieldIndex { get; set; }
         [Parameter("uint256", "byteLengthToPop", 4)]
         public virtual BigInteger ByteLengthToPop { get; set; }
-        [Parameter("bytes32", "fieldLayout", 5)]
-        public virtual byte[] FieldLayout { get; set; }
     }
 
-    public partial class PushToFieldFunction : PushToFieldFunctionBase { }
+    public partial class PushToDynamicFieldFunction : PushToDynamicFieldFunctionBase { }
 
-    [Function("pushToField")]
-    public class PushToFieldFunctionBase : FunctionMessage
+    [Function("pushToDynamicField")]
+    public class PushToDynamicFieldFunctionBase : FunctionMessage
     {
         [Parameter("bytes32", "tableId", 1)]
         public virtual byte[] TableId { get; set; }
         [Parameter("bytes32[]", "keyTuple", 2)]
         public virtual List<byte[]> KeyTuple { get; set; }
-        [Parameter("uint8", "fieldIndex", 3)]
-        public virtual byte FieldIndex { get; set; }
+        [Parameter("uint8", "dynamicFieldIndex", 3)]
+        public virtual byte DynamicFieldIndex { get; set; }
         [Parameter("bytes", "dataToPush", 4)]
         public virtual byte[] DataToPush { get; set; }
-        [Parameter("bytes32", "fieldLayout", 5)]
-        public virtual byte[] FieldLayout { get; set; }
     }
 
     public partial class RegisterStoreHookFunction : RegisterStoreHookFunctionBase { }
@@ -223,10 +265,40 @@ namespace v2.IStore.ContractDefinition
         public virtual List<string> FieldNames { get; set; }
     }
 
+    public partial class SetDynamicFieldFunction : SetDynamicFieldFunctionBase { }
+
+    [Function("setDynamicField")]
+    public class SetDynamicFieldFunctionBase : FunctionMessage
+    {
+        [Parameter("bytes32", "tableId", 1)]
+        public virtual byte[] TableId { get; set; }
+        [Parameter("bytes32[]", "keyTuple", 2)]
+        public virtual List<byte[]> KeyTuple { get; set; }
+        [Parameter("uint8", "dynamicFieldIndex", 3)]
+        public virtual byte DynamicFieldIndex { get; set; }
+        [Parameter("bytes", "data", 4)]
+        public virtual byte[] Data { get; set; }
+    }
+
     public partial class SetFieldFunction : SetFieldFunctionBase { }
 
     [Function("setField")]
     public class SetFieldFunctionBase : FunctionMessage
+    {
+        [Parameter("bytes32", "tableId", 1)]
+        public virtual byte[] TableId { get; set; }
+        [Parameter("bytes32[]", "keyTuple", 2)]
+        public virtual List<byte[]> KeyTuple { get; set; }
+        [Parameter("uint8", "fieldIndex", 3)]
+        public virtual byte FieldIndex { get; set; }
+        [Parameter("bytes", "data", 4)]
+        public virtual byte[] Data { get; set; }
+    }
+
+    public partial class SetField1Function : SetField1FunctionBase { }
+
+    [Function("setField")]
+    public class SetField1FunctionBase : FunctionMessage
     {
         [Parameter("bytes32", "tableId", 1)]
         public virtual byte[] TableId { get; set; }
@@ -255,7 +327,22 @@ namespace v2.IStore.ContractDefinition
         public virtual byte[] EncodedLengths { get; set; }
         [Parameter("bytes", "dynamicData", 5)]
         public virtual byte[] DynamicData { get; set; }
-        [Parameter("bytes32", "fieldLayout", 6)]
+    }
+
+    public partial class SetStaticFieldFunction : SetStaticFieldFunctionBase { }
+
+    [Function("setStaticField")]
+    public class SetStaticFieldFunctionBase : FunctionMessage
+    {
+        [Parameter("bytes32", "tableId", 1)]
+        public virtual byte[] TableId { get; set; }
+        [Parameter("bytes32[]", "keyTuple", 2)]
+        public virtual List<byte[]> KeyTuple { get; set; }
+        [Parameter("uint8", "fieldIndex", 3)]
+        public virtual byte FieldIndex { get; set; }
+        [Parameter("bytes", "data", 4)]
+        public virtual byte[] Data { get; set; }
+        [Parameter("bytes32", "fieldLayout", 5)]
         public virtual byte[] FieldLayout { get; set; }
     }
 
@@ -289,9 +376,7 @@ namespace v2.IStore.ContractDefinition
         public virtual List<byte[]> KeyTuple { get; set; }
         [Parameter("uint48", "start", 3)]
         public virtual ulong Start { get; set; }
-        [Parameter("uint40", "deleteCount", 4)]
-        public virtual ulong DeleteCount { get; set; }
-        [Parameter("bytes", "data", 5)]
+        [Parameter("bytes", "data", 4)]
         public virtual byte[] Data { get; set; }
     }
 
@@ -314,25 +399,6 @@ namespace v2.IStore.ContractDefinition
         public virtual string HookAddress { get; set; }
     }
 
-    public partial class UpdateInFieldFunction : UpdateInFieldFunctionBase { }
-
-    [Function("updateInField")]
-    public class UpdateInFieldFunctionBase : FunctionMessage
-    {
-        [Parameter("bytes32", "tableId", 1)]
-        public virtual byte[] TableId { get; set; }
-        [Parameter("bytes32[]", "keyTuple", 2)]
-        public virtual List<byte[]> KeyTuple { get; set; }
-        [Parameter("uint8", "fieldIndex", 3)]
-        public virtual byte FieldIndex { get; set; }
-        [Parameter("uint256", "startByteIndex", 4)]
-        public virtual BigInteger StartByteIndex { get; set; }
-        [Parameter("bytes", "dataToSet", 5)]
-        public virtual byte[] DataToSet { get; set; }
-        [Parameter("bytes32", "fieldLayout", 6)]
-        public virtual byte[] FieldLayout { get; set; }
-    }
-
     public partial class HelloStoreEventDTO : HelloStoreEventDTOBase { }
 
     [Event("HelloStore")]
@@ -344,7 +410,7 @@ namespace v2.IStore.ContractDefinition
 
     public partial class StoreDeleteRecordEventDTO : StoreDeleteRecordEventDTOBase { }
 
-    [Event("StoreDeleteRecord")]
+    [Event("Store_DeleteRecord")]
     public class StoreDeleteRecordEventDTOBase : IEventDTO
     {
         [Parameter("bytes32", "tableId", 1, true )]
@@ -355,7 +421,7 @@ namespace v2.IStore.ContractDefinition
 
     public partial class StoreSetRecordEventDTO : StoreSetRecordEventDTOBase { }
 
-    [Event("StoreSetRecord")]
+    [Event("Store_SetRecord")]
     public class StoreSetRecordEventDTOBase : IEventDTO
     {
         [Parameter("bytes32", "tableId", 1, true )]
@@ -372,7 +438,7 @@ namespace v2.IStore.ContractDefinition
 
     public partial class StoreSpliceDynamicDataEventDTO : StoreSpliceDynamicDataEventDTOBase { }
 
-    [Event("StoreSpliceDynamicData")]
+    [Event("Store_SpliceDynamicData")]
     public class StoreSpliceDynamicDataEventDTOBase : IEventDTO
     {
         [Parameter("bytes32", "tableId", 1, true )]
@@ -383,15 +449,15 @@ namespace v2.IStore.ContractDefinition
         public virtual ulong Start { get; set; }
         [Parameter("uint40", "deleteCount", 4, false )]
         public virtual ulong DeleteCount { get; set; }
-        [Parameter("bytes", "data", 5, false )]
-        public virtual byte[] Data { get; set; }
-        [Parameter("bytes32", "encodedLengths", 6, false )]
+        [Parameter("bytes32", "encodedLengths", 5, false )]
         public virtual byte[] EncodedLengths { get; set; }
+        [Parameter("bytes", "data", 6, false )]
+        public virtual byte[] Data { get; set; }
     }
 
     public partial class StoreSpliceStaticDataEventDTO : StoreSpliceStaticDataEventDTOBase { }
 
-    [Event("StoreSpliceStaticData")]
+    [Event("Store_SpliceStaticData")]
     public class StoreSpliceStaticDataEventDTOBase : IEventDTO
     {
         [Parameter("bytes32", "tableId", 1, true )]
@@ -400,27 +466,25 @@ namespace v2.IStore.ContractDefinition
         public virtual List<byte[]> KeyTuple { get; set; }
         [Parameter("uint48", "start", 3, false )]
         public virtual ulong Start { get; set; }
-        [Parameter("uint40", "deleteCount", 4, false )]
-        public virtual ulong DeleteCount { get; set; }
-        [Parameter("bytes", "data", 5, false )]
+        [Parameter("bytes", "data", 4, false )]
         public virtual byte[] Data { get; set; }
     }
 
-    public partial class StorecoreDataindexoverflowError : StorecoreDataindexoverflowErrorBase { }
+    public partial class StoreIndexOutOfBoundsError : StoreIndexOutOfBoundsErrorBase { }
 
-    [Error("StoreCore_DataIndexOverflow")]
-    public class StorecoreDataindexoverflowErrorBase : IErrorDTO
+    [Error("Store_IndexOutOfBounds")]
+    public class StoreIndexOutOfBoundsErrorBase : IErrorDTO
     {
         [Parameter("uint256", "length", 1)]
         public virtual BigInteger Length { get; set; }
-        [Parameter("uint256", "received", 2)]
-        public virtual BigInteger Received { get; set; }
+        [Parameter("uint256", "accessedIndex", 2)]
+        public virtual BigInteger AccessedIndex { get; set; }
     }
 
-    public partial class StorecoreInvaliddynamicdatalengthError : StorecoreInvaliddynamicdatalengthErrorBase { }
+    public partial class StoreInvalidDynamicDataLengthError : StoreInvalidDynamicDataLengthErrorBase { }
 
-    [Error("StoreCore_InvalidDynamicDataLength")]
-    public class StorecoreInvaliddynamicdatalengthErrorBase : IErrorDTO
+    [Error("Store_InvalidDynamicDataLength")]
+    public class StoreInvalidDynamicDataLengthErrorBase : IErrorDTO
     {
         [Parameter("uint256", "expected", 1)]
         public virtual BigInteger Expected { get; set; }
@@ -428,10 +492,10 @@ namespace v2.IStore.ContractDefinition
         public virtual BigInteger Received { get; set; }
     }
 
-    public partial class StorecoreInvalidfieldnameslengthError : StorecoreInvalidfieldnameslengthErrorBase { }
+    public partial class StoreInvalidFieldNamesLengthError : StoreInvalidFieldNamesLengthErrorBase { }
 
-    [Error("StoreCore_InvalidFieldNamesLength")]
-    public class StorecoreInvalidfieldnameslengthErrorBase : IErrorDTO
+    [Error("Store_InvalidFieldNamesLength")]
+    public class StoreInvalidFieldNamesLengthErrorBase : IErrorDTO
     {
         [Parameter("uint256", "expected", 1)]
         public virtual BigInteger Expected { get; set; }
@@ -439,10 +503,10 @@ namespace v2.IStore.ContractDefinition
         public virtual BigInteger Received { get; set; }
     }
 
-    public partial class StorecoreInvalidkeynameslengthError : StorecoreInvalidkeynameslengthErrorBase { }
+    public partial class StoreInvalidKeyNamesLengthError : StoreInvalidKeyNamesLengthErrorBase { }
 
-    [Error("StoreCore_InvalidKeyNamesLength")]
-    public class StorecoreInvalidkeynameslengthErrorBase : IErrorDTO
+    [Error("Store_InvalidKeyNamesLength")]
+    public class StoreInvalidKeyNamesLengthErrorBase : IErrorDTO
     {
         [Parameter("uint256", "expected", 1)]
         public virtual BigInteger Expected { get; set; }
@@ -450,10 +514,10 @@ namespace v2.IStore.ContractDefinition
         public virtual BigInteger Received { get; set; }
     }
 
-    public partial class StorecoreInvalidresourcetypeError : StorecoreInvalidresourcetypeErrorBase { }
+    public partial class StoreInvalidResourceTypeError : StoreInvalidResourceTypeErrorBase { }
 
-    [Error("StoreCore_InvalidResourceType")]
-    public class StorecoreInvalidresourcetypeErrorBase : IErrorDTO
+    [Error("Store_InvalidResourceType")]
+    public class StoreInvalidResourceTypeErrorBase : IErrorDTO
     {
         [Parameter("bytes2", "expected", 1)]
         public virtual byte[] Expected { get; set; }
@@ -463,10 +527,10 @@ namespace v2.IStore.ContractDefinition
         public virtual string ResourceIdString { get; set; }
     }
 
-    public partial class StorecoreInvalidspliceError : StorecoreInvalidspliceErrorBase { }
+    public partial class StoreInvalidSpliceError : StoreInvalidSpliceErrorBase { }
 
-    [Error("StoreCore_InvalidSplice")]
-    public class StorecoreInvalidspliceErrorBase : IErrorDTO
+    [Error("Store_InvalidSplice")]
+    public class StoreInvalidSpliceErrorBase : IErrorDTO
     {
         [Parameter("uint40", "startWithinField", 1)]
         public virtual ulong StartWithinField { get; set; }
@@ -476,10 +540,10 @@ namespace v2.IStore.ContractDefinition
         public virtual ulong FieldLength { get; set; }
     }
 
-    public partial class StorecoreInvalidstaticdatalengthError : StorecoreInvalidstaticdatalengthErrorBase { }
+    public partial class StoreInvalidValueSchemaLengthError : StoreInvalidValueSchemaLengthErrorBase { }
 
-    [Error("StoreCore_InvalidStaticDataLength")]
-    public class StorecoreInvalidstaticdatalengthErrorBase : IErrorDTO
+    [Error("Store_InvalidValueSchemaLength")]
+    public class StoreInvalidValueSchemaLengthErrorBase : IErrorDTO
     {
         [Parameter("uint256", "expected", 1)]
         public virtual BigInteger Expected { get; set; }
@@ -487,33 +551,10 @@ namespace v2.IStore.ContractDefinition
         public virtual BigInteger Received { get; set; }
     }
 
-    public partial class StorecoreInvalidvalueschemalengthError : StorecoreInvalidvalueschemalengthErrorBase { }
+    public partial class StoreTableAlreadyExistsError : StoreTableAlreadyExistsErrorBase { }
 
-    [Error("StoreCore_InvalidValueSchemaLength")]
-    public class StorecoreInvalidvalueschemalengthErrorBase : IErrorDTO
-    {
-        [Parameter("uint256", "expected", 1)]
-        public virtual BigInteger Expected { get; set; }
-        [Parameter("uint256", "received", 2)]
-        public virtual BigInteger Received { get; set; }
-    }
-
-    public partial class StorecoreNotdynamicfieldError : StorecoreNotdynamicfieldErrorBase { }
-    [Error("StoreCore_NotDynamicField")]
-    public class StorecoreNotdynamicfieldErrorBase : IErrorDTO
-    {
-    }
-
-    public partial class StorecoreNotimplementedError : StorecoreNotimplementedErrorBase { }
-    [Error("StoreCore_NotImplemented")]
-    public class StorecoreNotimplementedErrorBase : IErrorDTO
-    {
-    }
-
-    public partial class StorecoreTablealreadyexistsError : StorecoreTablealreadyexistsErrorBase { }
-
-    [Error("StoreCore_TableAlreadyExists")]
-    public class StorecoreTablealreadyexistsErrorBase : IErrorDTO
+    [Error("Store_TableAlreadyExists")]
+    public class StoreTableAlreadyExistsErrorBase : IErrorDTO
     {
         [Parameter("bytes32", "tableId", 1)]
         public virtual byte[] TableId { get; set; }
@@ -521,10 +562,10 @@ namespace v2.IStore.ContractDefinition
         public virtual string TableIdString { get; set; }
     }
 
-    public partial class StorecoreTablenotfoundError : StorecoreTablenotfoundErrorBase { }
+    public partial class StoreTableNotFoundError : StoreTableNotFoundErrorBase { }
 
-    [Error("StoreCore_TableNotFound")]
-    public class StorecoreTablenotfoundErrorBase : IErrorDTO
+    [Error("Store_TableNotFound")]
+    public class StoreTableNotFoundErrorBase : IErrorDTO
     {
         [Parameter("bytes32", "tableId", 1)]
         public virtual byte[] TableId { get; set; }
@@ -541,6 +582,33 @@ namespace v2.IStore.ContractDefinition
     {
         [Parameter("bytes", "", 1)]
         public virtual byte[] ReturnValue1 { get; set; }
+    }
+
+    public partial class GetDynamicFieldLengthOutputDTO : GetDynamicFieldLengthOutputDTOBase { }
+
+    [FunctionOutput]
+    public class GetDynamicFieldLengthOutputDTOBase : IFunctionOutputDTO 
+    {
+        [Parameter("uint256", "", 1)]
+        public virtual BigInteger ReturnValue1 { get; set; }
+    }
+
+    public partial class GetDynamicFieldSliceOutputDTO : GetDynamicFieldSliceOutputDTOBase { }
+
+    [FunctionOutput]
+    public class GetDynamicFieldSliceOutputDTOBase : IFunctionOutputDTO 
+    {
+        [Parameter("bytes", "data", 1)]
+        public virtual byte[] Data { get; set; }
+    }
+
+    public partial class GetField1OutputDTO : GetField1OutputDTOBase { }
+
+    [FunctionOutput]
+    public class GetField1OutputDTOBase : IFunctionOutputDTO 
+    {
+        [Parameter("bytes", "data", 1)]
+        public virtual byte[] Data { get; set; }
     }
 
     public partial class GetFieldOutputDTO : GetFieldOutputDTOBase { }
@@ -561,6 +629,15 @@ namespace v2.IStore.ContractDefinition
         public virtual byte[] FieldLayout { get; set; }
     }
 
+    public partial class GetFieldLength1OutputDTO : GetFieldLength1OutputDTOBase { }
+
+    [FunctionOutput]
+    public class GetFieldLength1OutputDTOBase : IFunctionOutputDTO 
+    {
+        [Parameter("uint256", "", 1)]
+        public virtual BigInteger ReturnValue1 { get; set; }
+    }
+
     public partial class GetFieldLengthOutputDTO : GetFieldLengthOutputDTOBase { }
 
     [FunctionOutput]
@@ -570,15 +647,6 @@ namespace v2.IStore.ContractDefinition
         public virtual BigInteger ReturnValue1 { get; set; }
     }
 
-    public partial class GetFieldSliceOutputDTO : GetFieldSliceOutputDTOBase { }
-
-    [FunctionOutput]
-    public class GetFieldSliceOutputDTOBase : IFunctionOutputDTO 
-    {
-        [Parameter("bytes", "data", 1)]
-        public virtual byte[] Data { get; set; }
-    }
-
     public partial class GetKeySchemaOutputDTO : GetKeySchemaOutputDTOBase { }
 
     [FunctionOutput]
@@ -586,6 +654,19 @@ namespace v2.IStore.ContractDefinition
     {
         [Parameter("bytes32", "keySchema", 1)]
         public virtual byte[] KeySchema { get; set; }
+    }
+
+    public partial class GetRecord1OutputDTO : GetRecord1OutputDTOBase { }
+
+    [FunctionOutput]
+    public class GetRecord1OutputDTOBase : IFunctionOutputDTO 
+    {
+        [Parameter("bytes", "staticData", 1)]
+        public virtual byte[] StaticData { get; set; }
+        [Parameter("bytes32", "encodedLengths", 2)]
+        public virtual byte[] EncodedLengths { get; set; }
+        [Parameter("bytes", "dynamicData", 3)]
+        public virtual byte[] DynamicData { get; set; }
     }
 
     public partial class GetRecordOutputDTO : GetRecordOutputDTOBase { }
@@ -635,6 +716,12 @@ namespace v2.IStore.ContractDefinition
 
 
 
+
+
+
+
+
+
     public partial class StoreVersionOutputDTO : StoreVersionOutputDTOBase { }
 
     [FunctionOutput]
@@ -643,8 +730,6 @@ namespace v2.IStore.ContractDefinition
         [Parameter("bytes32", "", 1)]
         public virtual byte[] ReturnValue1 { get; set; }
     }
-
-
 
 
 }

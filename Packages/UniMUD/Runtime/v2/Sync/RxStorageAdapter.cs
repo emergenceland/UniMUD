@@ -47,14 +47,15 @@ namespace v2
             var newTables = logs.Logs.Where(IsTableRegistrationLog).Select(LogToTable);
             foreach (var newTable in newTables)
             {
-                var tableEntity = mud.Client.Common.GetTableKey(newTable);
-                if (ds.registeredTables.ContainsKey(tableEntity))
+                var newRxTable = ds.CreateTable(newTable.Namespace, newTable.Name, newTable.ValueSchema);
+                if (ds.registeredTables.Contains(newRxTable.Id))
                 {
-                    Debug.LogWarning($"Skipping registration for already registered table: {tableEntity}");
+                    Debug.LogWarning($"Skipping registration for already registered table: {newTable.Name}");
                 }
                 else
                 {
-                    ds.RegisterTable(newTable);
+                    var tableName = $"{newTable.Namespace}:{newTable.Name}";
+                    ds.RegisterTable(newRxTable, tableName);
                 }
             }
 
@@ -73,12 +74,12 @@ namespace v2
 
         private static void HandleStoreSetRecord(RxDatastore ds, FilterLog log, StoreSetRecordEventDTO decoded)
         {
-            var tableResource = Common.HexToResourceId(Common.BytesToHex(decoded.TableId));
-            var tableKey = mud.Client.Common.GetTableKey(log.Address, tableResource.Namespace, tableResource.Name);
-            if (!ds.registeredTables.TryGetValue(tableKey, out var table))
+            var tableId = Common.BytesToHex(decoded.TableId);
+            var tableResource = Common.HexToResourceId(tableId);
+            if (!ds.registeredTables.Contains(tableId))
             {
                 Debug.LogWarning(
-                    $"Skipping update for unknown table: {table.Namespace}:{table.Name} at {table.Address}");
+                    $"Skipping update for unknown table: {tableId} at {log.Address}");
                 return;
             }
 
@@ -86,131 +87,158 @@ namespace v2
             var staticData = Common.BytesToHex(decoded.StaticData);
             var encodedLengths = Common.BytesToHex(decoded.EncodedLengths);
             var dynamicData = Common.BytesToHex(decoded.DynamicData);
-            var value = DecodeValueArgs(table.ValueSchema, staticData, encodedLengths, dynamicData);
+            var hasTable = ds.store.TryGetValue(tableId, out var table);
+            if (!hasTable) return;
+            var value = DecodeValueArgs(table.Schema, staticData, encodedLengths, dynamicData);
 
             Debug.Log(
-                $"Setting table: {table.Namespace}:{table.Name}, Key: {entity}, Value: {JsonConvert.SerializeObject(value)}");
-            // ds.Set(table, entity, new Dictionary<string, object>(value)
-            // {
-            //     ["__staticData"] = staticData,
-            //     ["__encodedLengths"] = encodedLengths,
-            //     ["__dynamicData"] = dynamicData
-            // });
+                $"Setting table: {tableResource.Namespace}:{tableResource.Name}, Key: {entity}, Value: {JsonConvert.SerializeObject(value)}");
+            ds.Set(table, entity, new Dictionary<string, object>(value)
+            {
+                ["__staticData"] = staticData,
+                ["__encodedLengths"] = encodedLengths,
+                ["__dynamicData"] = dynamicData
+            });
         }
 
         private static void HandleStoreSpliceStatic(RxDatastore ds, FilterLog log,
             StoreSpliceStaticDataEventDTO decoded)
         {
-            var tableResource = Common.HexToResourceId(Common.BytesToHex(decoded.TableId));
-            var tableKey = mud.Client.Common.GetTableKey(log.Address, tableResource.Namespace, tableResource.Name);
+            var tableId = Common.BytesToHex(decoded.TableId);
+            var tableResource = Common.HexToResourceId(tableId);
 
-            if (!ds.registeredTables.TryGetValue(tableKey, out var table))
+            if (!ds.registeredTables.Contains(tableId))
             {
-                Debug.LogWarning("Skipping update for unknown table: " + tableKey);
+                Debug.LogWarning(
+                    $"Skipping update for unknown table: {tableId} at {log.Address}");
                 return;
             }
 
+            var hasTable = ds.store.TryGetValue(tableId, out var table);
+            if (!hasTable) return;
+
             var start = (int)decoded.Start;
-            var deleteCount = (int)decoded.DeleteCount;
             var data = Common.BytesToHex(decoded.Data);
-
-            // var previousValue = ds.GetValue(table, tableKey);
-            var previousValue = new RxRecord
-            (
-                tableKey,
-                tableKey,
-                new Dictionary<string, object>()
-                {
-                    ["__staticData"] = "0x",
-                    ["__encodedLengths"] = "0x",
-                    ["__dynamicData"] = "0x"
-                }
-            );
-            var previousStaticData = (string)previousValue?.value["__staticData"] ?? "0x";
-            ;
-            var newStaticData = Common.SpliceHex(previousStaticData, start, deleteCount, data);
-            var newValue = DecodeValueArgs(
-                table.ValueSchema,
-                newStaticData,
-                (string)previousValue?.value["__encodedLengths"] ?? "0x",
-                (string)previousValue?.value["__dynamicData"] ?? "0x");
-
             var entity = Common.ConcatHex(decoded.KeyTuple.Select(b => Common.BytesToHex(b)).ToArray());
 
+            var previousValue = ds.GetValue(table, entity);
+
+            object previousStaticData;
+            object previousEncodedLengths;
+            object previousDynamicData;
+
+            if (previousValue != null)
+            {
+                previousValue.value.TryGetValue("__staticData", out previousStaticData);
+                previousValue.value.TryGetValue("__encodedLengths", out previousEncodedLengths);
+                previousValue.value.TryGetValue("__dynamicData", out previousDynamicData);
+            }
+            else
+            {
+                previousStaticData = "0x";
+                previousEncodedLengths = "0x";
+                previousDynamicData = "0x";
+            }
+
+            previousStaticData ??= "0x";
+            previousEncodedLengths ??= "0x";
+            previousDynamicData ??= "0x";
+
+            var newStaticData = Common.SpliceHex((string)previousStaticData, start, Common.Size(data), data);
+            var newValue = DecodeValueArgs(
+                table.Schema,
+                newStaticData,
+                (string)previousEncodedLengths,
+                (string)previousDynamicData);
+
             Debug.Log(
-                $"Setting table via splice static: {table.Namespace}:{table.Name}");
+                $"Setting table via splice static: {tableResource.Namespace}:{tableResource.Name}");
             Debug.Log(
                 $"Key: {entity}, {previousStaticData}, {newStaticData}, {JsonConvert.SerializeObject(previousValue)}, {JsonConvert.SerializeObject(newValue)}");
-            // ds.Update(table, entity, new Dictionary<string, object>(newValue)
-            // {
-            //     ["__StaticData"] = newStaticData
-            // });
+            ds.Update(table, entity, new Dictionary<string, object>(newValue)
+            {
+                ["__StaticData"] = newStaticData
+            });
         }
 
         private static void HandleStoreSpliceDynamic(RxDatastore ds, FilterLog log,
             StoreSpliceDynamicDataEventDTO decoded)
         {
-            var tableResource = Common.HexToResourceId(Common.BytesToHex(decoded.TableId));
-            var tableKey = mud.Client.Common.GetTableKey(log.Address, tableResource.Namespace, tableResource.Name);
+            var tableId = Common.BytesToHex(decoded.TableId);
+            var tableResource = Common.HexToResourceId(tableId);
 
-            if (!ds.registeredTables.TryGetValue(tableKey, out var table))
+            if (!ds.registeredTables.Contains(tableId))
             {
-                Debug.LogWarning("Skipping update for unknown table: " + tableKey);
+                Debug.LogWarning(
+                    $"Skipping update for unknown table: {tableId} at {log.Address}");
                 return;
             }
 
+            var hasTable = ds.store.TryGetValue(tableId, out var table);
+            if (!hasTable) return;
+
             var start = decoded.Start;
-            var deleteCount = decoded.DeleteCount;
             var data = Common.BytesToHex(decoded.Data);
             var encodedLengths = Common.BytesToHex(decoded.EncodedLengths);
-
-            // var previousValue = ds.GetValue(table, tableKey);
-            var previousValue = new RxRecord
-            (
-                tableKey,
-                tableKey,
-                new Dictionary<string, object>()
-                {
-                    ["__staticData"] = "0x",
-                    ["__encodedLengths"] = "0x",
-                    ["__dynamicData"] = "0x"
-                }
-            );
-            var previousDynamicData = (string)previousValue?.value["__dynamicData"] ?? "0x";
-            var newDynamicData = Common.SpliceHex(previousDynamicData, (int)start, (int)deleteCount, data);
-            var newValue = DecodeValueArgs(
-                table.ValueSchema,
-                (string)previousValue?.value["__staticData"] ?? "0x",
-                (string)previousValue?.value["__encodedLengths"] ?? "0x",
-                newDynamicData);
-
             var entity = Common.ConcatHex(decoded.KeyTuple.Select(b => Common.BytesToHex(b)).ToArray());
 
+            var previousValue = ds.GetValue(table, entity);
+            object previousStaticData;
+            object previousEncodedLengths;
+            object previousDynamicData;
+
+            if (previousValue != null)
+            {
+                previousValue.value.TryGetValue("__staticData", out previousStaticData);
+                previousValue.value.TryGetValue("__encodedLengths", out previousEncodedLengths);
+                previousValue.value.TryGetValue("__dynamicData", out previousDynamicData);
+            }
+            else
+            {
+                previousStaticData = "0x";
+                previousEncodedLengths = "0x";
+                previousDynamicData = "0x";
+            }
+
+            previousStaticData ??= "0x";
+            previousEncodedLengths ??= "0x";
+            previousDynamicData ??= "0x";
+
+            var newDynamicData = Common.SpliceHex((string)previousDynamicData, (int)start, Common.Size(data), data);
+            var newValue = DecodeValueArgs(
+                table.Schema,
+                (string)previousStaticData,
+                (string)previousEncodedLengths,
+                newDynamicData);
+
+
             Debug.Log(
-                $"Setting table via splice dynamic: {table.Namespace}:{table.Name}, Key: {entity}, {previousDynamicData}, {newDynamicData}, {previousValue}, {newValue}");
-            // ds.Update(table, entity, new Dictionary<string, object>(newValue)
-            // {
-            //     ["__encodedLengths"] = encodedLengths,
-            //     ["__dynamicData"] = newDynamicData
-            // });
+                $"Setting table via splice dynamic: {tableResource.Namespace}:{tableResource.Name}, Key: {entity}, {previousDynamicData}, {newDynamicData}, {previousValue}, {newValue}");
+            ds.Update(table, entity, new Dictionary<string, object>(newValue)
+            {
+                ["__encodedLengths"] = encodedLengths,
+                ["__dynamicData"] = newDynamicData
+            });
         }
 
         private static void HandleStoreDeleteRecord(RxDatastore ds, FilterLog log, StoreDeleteRecordEventDTO decoded)
         {
-            var tableResource = Common.HexToResourceId(Common.BytesToHex(decoded.TableId));
-            var tableKey = mud.Client.Common.GetTableKey(log.Address, tableResource.Namespace, tableResource.Name);
-
-            if (!ds.registeredTables.TryGetValue(tableKey, out var table))
+            var tableId = Common.BytesToHex(decoded.TableId);
+            var tableResource = Common.HexToResourceId(tableId);
+            if (!ds.registeredTables.Contains(tableId))
             {
-                Debug.LogWarning("Skipping update for unknown table: " + tableKey);
+                Debug.LogWarning(
+                    $"Skipping update for unknown table: {tableId} at {log.Address}");
                 return;
             }
 
             var entity = Common.ConcatHex(decoded.KeyTuple.Select(b => Common.BytesToHex(b)).ToArray());
+            var hasTable = ds.store.TryGetValue(tableId, out var table);
+            if (!hasTable) return;
 
             Debug.Log(
-                $"Deleting key for table: {table.Namespace}:{table.Name}");
-            // ds.Delete(table, entity);
+                $"Deleting key for table: {tableResource.Namespace}:{tableResource.Name}");
+            ds.Delete(table, entity);
         }
     }
 }

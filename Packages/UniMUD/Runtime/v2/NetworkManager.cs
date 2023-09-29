@@ -1,15 +1,14 @@
 using System;
 using System.Collections;
-using System.Linq;
+using System.Numerics;
 using Cysharp.Threading.Tasks;
 using mud.Client;
 // using mud.Client.MudDefinitions;
-using mud.Network.schemas;
-using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Unity.Rpc;
 using Nethereum.Web3.Accounts;
 using UniRx;
 using UnityEngine;
+
 
 namespace v2
 {
@@ -26,9 +25,9 @@ namespace v2
         public string storeContract;
         private int startingBlockNumber = -1;
         private int streamStartBlockNumber = 0;
+        private BlockStream bs;
         public RxDatastore ds;
         private readonly CompositeDisposable _disposables = new();
-        private BlockStream _wsClient;
         public CreateContract world;
         public static NetworkManager Instance { get; private set; }
 
@@ -72,8 +71,8 @@ namespace v2
              */
 
             Debug.Log("Connecting to websocket...");
-            _wsClient = new BlockStream().AddTo(_disposables);
-            var blockNumberStream = await _wsClient.WatchBlocks(wsRpcUrl);
+            bs = new BlockStream().AddTo(_disposables);
+            await bs.WatchBlocks(wsRpcUrl);
 
             /*
              * ==== TX EXECUTOR ====
@@ -114,23 +113,29 @@ namespace v2
 
             if (startingBlockNumber < 0) await GetStartingBlockNumber().ToUniTask();
             // startingBlockNumber = 0;
-            Debug.Log("Starting sync...");
+            Debug.Log($"Starting sync from 0...{startingBlockNumber}");
 
             var storeSync = new StoreSync().AddTo(_disposables);
             var updateStream =
-                storeSync.StartSync(blockNumberStream, storeContract, rpcUrl, 0, startingBlockNumber);
+                storeSync.StartSync(ds, bs.subject, storeContract, rpcUrl, BigInteger.Zero, startingBlockNumber,
+                    opts =>
+                    {
+                        Debug.Log(opts.message);
+                        if (opts.step == SyncStep.Live)
+                        {
+                            Debug.Log(opts.message);
+                            m_NetworkInitialized = true;
+            
+                            OnNetworkInitialized(this);
+                            OnInitialized?.Invoke();
+                        }
+                    });
 
-            UniRx.ObservableExtensions.Subscribe(updateStream, b => RxStorageAdapter.ToStorage(ds, b))
-                .AddTo(_disposables);
+            UniRx.ObservableExtensions.Subscribe(updateStream).AddTo(_disposables);
 
             /*
              * ==== FAUCET ====
              */
-
-            m_NetworkInitialized = true;
-
-            OnNetworkInitialized(this);
-            OnInitialized?.Invoke();
         }
 
         private IEnumerator GetStartingBlockNumber()

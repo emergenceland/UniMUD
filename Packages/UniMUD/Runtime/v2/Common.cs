@@ -29,7 +29,7 @@ namespace v2
         public string Name;
         public ResourceType Type;
     }
-
+    
     public class Common
     {
         public static BigInteger HexToBigInt(string hexValue, bool signed = false)
@@ -71,11 +71,11 @@ namespace v2
 
         public static IObservable<T> AsyncEnumerableToObservable<T>(IAsyncEnumerable<T> source)
         {
-            return Observable.Create<T>(observer =>
+            return UniRx.Observable.Create<T>(observer =>
             {
                 var _ = IterateAsync(observer, source);
-                return Disposable.Empty;
-            });
+                return UniRx.Disposable.Empty;
+            }, true);
         }
 
         private static async UniTask IterateAsync<T>(IObserver<T> observer, IAsyncEnumerable<T> source)
@@ -94,7 +94,7 @@ namespace v2
                 observer.OnError(ex);
             }
         }
-
+        
         public class JsonEqualityComparer : IEqualityComparer<object>
         {
             public new bool Equals(object? x, object? y)
@@ -284,8 +284,8 @@ namespace v2
             return new ResourceID
             {
                 Type = type.Value,
-                Namespace = ns,
-                Name = name
+                Namespace = FormatGetRecordResult(ns)[0],
+                Name = FormatGetRecordResult(name)[0]
             };
         }
 
@@ -299,6 +299,16 @@ namespace v2
                 .Where(part => !string.IsNullOrWhiteSpace(part)).ToList();
 
             return parts.Count > 0 ? parts : new List<string> { string.Empty };
+        }
+
+        public static int Size(string value)
+        {
+            if (value.StartsWith("0x"))
+            {
+                return (int)Math.Ceiling(((double)value.Length - 2) / 2);
+            }
+
+            return value.Length;
         }
     }
 }

@@ -22,9 +22,8 @@ public class InputManager : MonoBehaviour
     
     private void SubscribeToCounter(v2.NetworkManager _)
     {
-        var tableKey = mud.Client.Common.GetTableKey(net.storeContract, "", "Counter");
-        Debug.Log("Subscribed to counter: " + tableKey);
-        var incrementQuery = new Query().In(new RxTable());
+        Debug.Log("Subscribed to counter.");
+        var incrementQuery = new Query().In(net.ds.tableNameIndex["Counter"]);
         _counterSub = ObservableExtensions.Subscribe(net.ds.RxQuery(incrementQuery).ObserveOnMainThread(), OnIncrement);
     }
 

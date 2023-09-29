@@ -20,7 +20,7 @@ namespace v2
             var schemasTableId = ResourceIDToHex(new ResourceID
             {
                 Type = ResourceType.Table,
-                Namespace = "mudstore",
+                Namespace = "store",
                 Name = "Tables"
             });
 

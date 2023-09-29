@@ -7,7 +7,9 @@ using Nethereum.ABI.Model;
 using Nethereum.Contracts;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.Unity.Rpc;
+using Newtonsoft.Json;
 using UniRx;
+using UnityEngine;
 using v2.IStore.ContractDefinition;
 using StoreDeleteRecordEventDTO = v2.IStore.ContractDefinition.StoreDeleteRecordEventDTO;
 using StoreSetRecordEventDTO = v2.IStore.ContractDefinition.StoreSetRecordEventDTO;
@@ -20,10 +22,52 @@ namespace v2
         public FilterLog[] Logs;
     }
 
-    public partial class Sync
+    public struct BlockRangeType
     {
-        public static async IAsyncEnumerable<FilterLog[]> FetchLogs(string storeContractAddress,
-            string rpcUrl, BigInteger fromBlock, BigInteger toBlock)
+        public BigInteger StartBlock;
+        public BigInteger EndBlock;
+    }
+
+    public struct FetchLogsResult
+    {
+        public BigInteger FromBlock;
+        public BigInteger ToBlock;
+        public FilterLog[] Logs;
+    }
+
+    public static partial class Sync
+    {
+        public static IObservable<FetchLogsResult> BlockRangeToLogs(this IObservable<BlockRangeType> source,
+            string contractAddress, string rpcUrl)
+        {
+           BigInteger fromBlock = default;
+           BigInteger toBlock = default; 
+           
+            return source.Scan(
+                    seed: new BlockRangeType(),
+                    accumulator: (acc, range) =>
+                    {
+                        fromBlock = fromBlock == null ? range.StartBlock : fromBlock;
+                        toBlock = range.EndBlock;
+                        Debug.Log($"From block {fromBlock} to block {toBlock}");
+                        return acc;
+                    }
+                )
+                .SelectMany(acc =>
+                {
+                    if (fromBlock > toBlock)
+                        return Observable.Empty<FetchLogsResult>();
+
+                    Debug.Log($"Fetching logs for block range {fromBlock} to {toBlock}");
+
+                    return Common
+                        .AsyncEnumerableToObservable(FetchLogs(contractAddress, rpcUrl, fromBlock, toBlock))
+                        .Do(_ => { fromBlock = toBlock + 1; });
+                }).Concat();
+        }
+
+        public static async IAsyncEnumerable<FetchLogsResult> FetchLogs(string storeContractAddress,
+            string rpcUrl, BigInteger? fromBlock, BigInteger? toBlock)
         {
             var storeEvents = new List<EventABI>
             {
@@ -34,54 +78,93 @@ namespace v2
                 // new StoreEphemeralRecordEventDTO().GetEventABI()
             };
             var events = storeEvents.Select(e => e.CreateFilterInput()).ToList();
-
-            events.ForEach(fi =>
+            var from = fromBlock ?? 0;
+            if (toBlock != null)
             {
-                fi.Address = new[] { storeContractAddress };
-                fi.FromBlock = new BlockParameter((ulong)fromBlock);
-                fi.ToBlock = new BlockParameter((ulong)toBlock);
-            });
+                var blockRange = BigInteger.Min(BigInteger.Parse("1000"), (BigInteger)(toBlock - from));
+                // var retryCount = 0;
+                // var maxRetryCount = 3;
 
-            var allLogs = new List<FilterLog>();
-            var getLogsRequest = new EthGetLogsUnityRequest(rpcUrl);
-
-            foreach (var fi in events)
-            {
-                await UniTask.SwitchToMainThread();
-                await getLogsRequest.SendRequest(fi).ToUniTask();
-                allLogs.AddRange(getLogsRequest.Result);
-            }
-
-            yield return allLogs.ToArray();
-        }
-
-        public static IObservable<StorageAdapterBlock> ToStorageAdapterBlock(IObservable<FilterLog[]> blockLogs)
-        {
-            return blockLogs.SelectMany(logs =>
-            {
-                return Observable.Create<StorageAdapterBlock>(observer =>
+                while (from <= toBlock)
                 {
-                    var blockNumbers = logs.Select(log => log.BlockNumber).Distinct().ToList();
-                    blockNumbers.Sort((a, b) => a.Value.CompareTo(b.Value));
-
-                    foreach (var blockNumber in blockNumbers)
+                    // try
+                    // {
+                    var to = from + blockRange;
+                    events.ForEach(fi =>
                     {
-                        var blockNumberLogs = logs.Where(log => log.BlockNumber == blockNumber).ToList();
+                        fi.Address = new[] { storeContractAddress };
+                        if (fromBlock != null) fi.FromBlock = new BlockParameter((ulong)from);
+                        fi.ToBlock = new BlockParameter((ulong)to);
+                    });
+                    var getLogsRequest = new EthGetLogsUnityRequest(rpcUrl);
+                    await UniTask.SwitchToMainThread();
+                    var results = new FilterLog[] { };
 
-                        blockNumberLogs.Sort((a, b) => a.LogIndex.Value.CompareTo(b.LogIndex.Value));
-
-                        if (blockNumberLogs.Count > 0)
-                        {
-                            var storageAdapterBlock = new StorageAdapterBlock
-                                { BlockNumber = blockNumber, Logs = blockNumberLogs.ToArray() };
-                            observer.OnNext(storageAdapterBlock);
-                        }
+                    foreach (var fi in events)
+                    {
+                        await getLogsRequest.SendRequest(fi).ToUniTask();
+                        results = results.Concat(getLogsRequest.Result).ToArray();
                     }
 
-                    observer.OnCompleted();
-                    return Disposable.Empty;
-                });
+                    yield return new FetchLogsResult
+                    {
+                        FromBlock = from,
+                        ToBlock = to,
+                        Logs = results
+                    };
+
+                    from = to + 1;
+                    blockRange = BigInteger.Min(BigInteger.Parse("1000"), (BigInteger)(toBlock - from));
+                }
+            }
+
+            // catch (Exception error)
+            // {
+            //     if (error.Message.Contains("rate limit exceeded") && retryCount < maxRetryCount)
+            //     {
+            //         var seconds = 2 * retryCount;
+            //         Debug.Log($"Rate limit exceeded, retrying in {seconds} seconds...");
+            //         await UniTask.Delay(TimeSpan.FromSeconds(seconds));
+            //         retryCount++;
+            //         continue;
+            //     }
+            //     throw;
+            // }
+
+            // }
+        }
+
+        public static IEnumerable<StorageAdapterBlock> ToStorageAdapterBlock(FilterLog[] logs, BigInteger toBlock)
+        {
+            Debug.Log($"ToBlock: {toBlock}");
+            var blockNumbers = logs.Select(log => log.BlockNumber).Distinct().ToList();
+            blockNumbers.Sort((a, b) => a.Value.CompareTo(b.Value));
+
+            var groupedBlocks = blockNumbers.Select(blockNumber =>
+            {
+                var blockNumberLogs = logs.Where(log => log.BlockNumber == blockNumber).ToList();
+                blockNumberLogs.Sort((a, b) => a.LogIndex.Value.CompareTo(b.LogIndex.Value));
+
+                if (blockNumberLogs.Count > 0)
+                {
+                    return new StorageAdapterBlock
+                        { BlockNumber = blockNumber, Logs = blockNumberLogs.ToArray() };
+                }
+
+                return default;
             });
+            var groupedBlocksList = groupedBlocks.ToList();
+            var lastBlockNumber = blockNumbers.Count > 0 ? blockNumbers[^1] : null;
+            if (lastBlockNumber == null || toBlock > lastBlockNumber)
+            {
+                groupedBlocksList.Add(new StorageAdapterBlock()
+                {
+                    BlockNumber = toBlock,
+                    Logs = new FilterLog[] { }
+                });
+            }
+
+            return groupedBlocksList;
         }
     }
 }

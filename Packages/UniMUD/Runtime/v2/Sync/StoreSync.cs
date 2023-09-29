@@ -1,52 +1,119 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Numerics;
-using Cysharp.Threading.Tasks;
-using Nethereum.RPC.Eth.DTOs;
+using mud.Client;
+using Newtonsoft.Json;
 using UniRx;
-using UniRx.Operators;
+using UniRx.Diagnostics;
 using UnityEngine;
+using ObservableExtensions = UniRx.ObservableExtensions;
 using Types = mud.Network.Types;
 
 namespace v2
 {
+    public enum SyncStep
+    {
+        Initialize,
+        Snapshot,
+        Rpc,
+        Live
+    }
+
+    public struct OnProgressOpts
+    {
+        public SyncStep step;
+        public int percentage;
+        public BigInteger latestBlockNumber;
+        public BigInteger lastBlockNumberProcessed;
+        public string message;
+    }
+
     public class StoreSync : IDisposable
     {
-        private readonly ReplaySubject<Types.NetworkTableUpdate> _outputStream = new();
-        public IObservable<Types.NetworkTableUpdate> OutputStream => _outputStream;
         private readonly CompositeDisposable _disposables = new();
 
-        public IObservable<StorageAdapterBlock> StartSync(IObservable<Block> blockStream,
+        // TODO: make RxDataStore something like IStorageAdapter
+        public IObservable<StorageAdapterBlock> StartSync(RxDatastore ds, IObservable<Block> blockStream,
             string storeContractAddress,
             string rpcUrl,
-            int initialBlockNumber, int streamStartBlockNumber)
+            BigInteger initialBlockNumber, int streamStartBlockNumber, Action<OnProgressOpts> onProgress = null)
         {
             // TODO: fetch initial state from indexer
 
-            Debug.Log("Fetching gap state events...");
-            var gapStateEvents = Common.AsyncEnumerableToObservable(Sync.FetchLogs(storeContractAddress,
-                rpcUrl, initialBlockNumber,
-                streamStartBlockNumber));
+            BigInteger? endBlock = null;
+            BigInteger? startBlock = null;
 
-            BigInteger endBlock = 0;
-            var latestBlockNumber = blockStream.Select(block =>
+            // TODO: Derive from initialState or deploy event
+            var startBlockObservable = Observable.Return(streamStartBlockNumber).Replay(1).RefCount();
+
+            Debug.Log("Fetching gap state events...");
+            var blockRangeObservable = Observable.Return(new BlockRangeType
+            {
+                StartBlock = initialBlockNumber,
+                EndBlock = streamStartBlockNumber
+            });
+            
+            IObservable<StorageAdapterBlock> gapStateEvents = blockRangeObservable.BlockRangeToLogs(storeContractAddress, rpcUrl).SelectMany(block =>
+                    Sync.ToStorageAdapterBlock(block.Logs, block.ToBlock).ToObservable()).Merge().Replay(1).RefCount();
+            
+            IObservable<StorageAdapterBlock> initialLogs = gapStateEvents.Select(block =>
+            {
+                Debug.Log($"Hydrating from initial state for block {block.BlockNumber}");
+                RxStorageAdapter.ToStorage(ds, block);
+                return block;
+            }).Concat().Replay(1).RefCount();
+            //
+            IObservable<BigInteger> latestBlockNumber = blockStream.Replay(1).RefCount().Select(block =>
             {
                 if (block.@params?.result.number == null) return 0;
                 return Common.HexToBigInt(block.@params.result.number);
-            }).Do(blockNum => { endBlock = blockNum; }).Share();
+            }).Replay(1).RefCount();
 
-            BigInteger startBlock = initialBlockNumber;
-            var blockLogs = latestBlockNumber.Select(_ => (Start: startBlock, End: endBlock))
-                .SelectMany(blockRange =>
+            BlockRangeType blockRange = new BlockRangeType();
+            IObservable<StorageAdapterBlock> blockLogs = startBlockObservable.CombineLatest(latestBlockNumber,
+                    (start, end) => new BlockRangeType { StartBlock = start, EndBlock = end })
+                .Do(blockRange =>
                 {
-                    if (blockRange.Start > blockRange.End) return Observable.Empty<FilterLog[]>();
+                    startBlock = blockRange.StartBlock;
+                    endBlock = blockRange.EndBlock;
+                }).BlockRangeToLogs(storeContractAddress, rpcUrl)
+                .SelectMany(block => Sync.ToStorageAdapterBlock(block.Logs, block.ToBlock).ToObservable()).Merge()
+                .Share();
 
-                    return Common.AsyncEnumerableToObservable(Sync.FetchLogs(storeContractAddress, rpcUrl,
-                            blockRange.Start, blockRange.End))
-                        .Do(_ => startBlock = blockRange.End + 1);
-                });
-            var orderedLogs = Sync.ToStorageAdapterBlock(blockLogs).Share();
+            BigInteger lastBlockNumberProcessed;
+            IObservable<StorageAdapterBlock> storedBlockLogs = initialLogs.Concat(blockLogs.Select(block =>
+            // IObservable<StorageAdapterBlock> storedBlockLogs = blockLogs.Select(block =>
+            {
+                RxStorageAdapter.ToStorage(ds, block);
+                return block;
+            }).Do(storageBlock =>
+            {
+                Debug.Log($"Stored {storageBlock.Logs.Length} logs for block {storageBlock.BlockNumber}");
+                lastBlockNumberProcessed = storageBlock.BlockNumber;
 
-            return orderedLogs.Concat(Sync.ToStorageAdapterBlock(gapStateEvents));
+                if (startBlock == null || endBlock == null) return;
+                if (storageBlock.BlockNumber < endBlock)
+                {
+                    var totalBlocks = endBlock - startBlock;
+                    var processedBlocks = lastBlockNumberProcessed - startBlock;
+                    var percentage = (int)((processedBlocks * 1000) / totalBlocks) / 1000;
+                    Debug.Log($"Percentage: {percentage}%");
+                    onProgress?.Invoke(new OnProgressOpts
+                    {
+                        step = SyncStep.Rpc,
+                        percentage = percentage,
+                        latestBlockNumber = endBlock ?? 0,
+                        lastBlockNumberProcessed = lastBlockNumberProcessed,
+                        message = "Hydrating from RPC"
+                    });
+                }
+                else
+                {
+                    Debug.Log("All caught up!");    
+                }
+            })).Share();
+            return storedBlockLogs;
         }
 
         public void Dispose()

@@ -30,16 +30,14 @@ namespace v2
     public class BlockStream : IDisposable
     {
         private WebSocket _ws;
-        Subject<Block> subject = new();
+        public Subject<Block> subject = new();
 
         private UniTaskCompletionSource<bool> _connectionComplete = new();
         private const int MaxRetryAttempts = 3;
         private int _currentRetryCount = 0;
         private const double BaseDelay = 1000; // Initial delay in milliseconds
-        private bool _intentionalClose = false;
-
-
-        public async UniTask<IObservable<Block>> WatchBlocks(string wsRpc)
+        
+        public async UniTask WatchBlocks(string wsRpc)
         {
             _ws = WebSocketFactory.CreateInstance(wsRpc);
 
@@ -80,20 +78,20 @@ namespace v2
             _ws.OnClose += code =>
             {
                 Debug.Log("WS closed with code: " + code);
-                TryReconnect(wsRpc);
-                // subject.OnCompleted();
+                if (code != WebSocketCloseCode.Normal)
+                {
+                    TryReconnect(wsRpc);
+                }
             };
 
             _ws.Connect();
             await _connectionComplete.Task;
             Debug.Log("WS Connected.");
-            return subject;
         }
 
 
         private void TryReconnect(string wsRpc)
         {
-            if (_intentionalClose) return;
             if (_currentRetryCount < MaxRetryAttempts)
             {
                 var delay = TimeSpan.FromMilliseconds(Math.Pow(2, _currentRetryCount) * BaseDelay); // Exponential delay
@@ -116,7 +114,6 @@ namespace v2
                 _ws.Close();
             }
 
-            _intentionalClose = true;
             subject?.Dispose();
         }
     }
