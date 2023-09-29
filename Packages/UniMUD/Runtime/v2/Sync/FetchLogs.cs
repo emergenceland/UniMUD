@@ -7,9 +7,7 @@ using Nethereum.ABI.Model;
 using Nethereum.Contracts;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.Unity.Rpc;
-using Newtonsoft.Json;
 using UniRx;
-using UnityEngine;
 using v2.IStore.ContractDefinition;
 using StoreDeleteRecordEventDTO = v2.IStore.ContractDefinition.StoreDeleteRecordEventDTO;
 using StoreSetRecordEventDTO = v2.IStore.ContractDefinition.StoreSetRecordEventDTO;
@@ -49,7 +47,6 @@ namespace v2
                     {
                         fromBlock = fromBlock == null ? range.StartBlock : fromBlock;
                         toBlock = range.EndBlock;
-                        Debug.Log($"From block {fromBlock} to block {toBlock}");
                         return acc;
                     }
                 )
@@ -57,8 +54,6 @@ namespace v2
                 {
                     if (fromBlock > toBlock)
                         return Observable.Empty<FetchLogsResult>();
-
-                    Debug.Log($"Fetching logs for block range {fromBlock} to {toBlock}");
 
                     return Common
                         .AsyncEnumerableToObservable(FetchLogs(contractAddress, rpcUrl, fromBlock, toBlock))
@@ -136,7 +131,6 @@ namespace v2
 
         public static IEnumerable<StorageAdapterBlock> ToStorageAdapterBlock(FilterLog[] logs, BigInteger toBlock)
         {
-            Debug.Log($"ToBlock: {toBlock}");
             var blockNumbers = logs.Select(log => log.BlockNumber).Distinct().ToList();
             blockNumbers.Sort((a, b) => a.Value.CompareTo(b.Value));
 

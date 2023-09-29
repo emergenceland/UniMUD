@@ -54,7 +54,9 @@ namespace v2
                 }
                 else
                 {
-                    var tableName = $"{newTable.Namespace}:{newTable.Name}";
+                    // var tableName = $"{newTable.Namespace}:{newTable.Name}";
+                    // TODO: figure out what to do with namespaces
+                    var tableName = $"{newTable.Name}";
                     ds.RegisterTable(newRxTable, tableName);
                 }
             }
@@ -92,7 +94,7 @@ namespace v2
             var value = DecodeValueArgs(table.Schema, staticData, encodedLengths, dynamicData);
 
             Debug.Log(
-                $"Setting table: {tableResource.Namespace}:{tableResource.Name}, Key: {entity}, Value: {JsonConvert.SerializeObject(value)}");
+                $"Setting table: {tableResource.Namespace}:{tableResource.Name}, Value: {JsonConvert.SerializeObject(value)}");
             ds.Set(table, entity, new Dictionary<string, object>(value)
             {
                 ["__staticData"] = staticData,
@@ -152,9 +154,7 @@ namespace v2
                 (string)previousDynamicData);
 
             Debug.Log(
-                $"Setting table via splice static: {tableResource.Namespace}:{tableResource.Name}");
-            Debug.Log(
-                $"Key: {entity}, {previousStaticData}, {newStaticData}, {JsonConvert.SerializeObject(previousValue)}, {JsonConvert.SerializeObject(newValue)}");
+                $"Setting table via splice static: {tableResource.Namespace}:{tableResource.Name}, {JsonConvert.SerializeObject(newValue)}");
             ds.Update(table, entity, new Dictionary<string, object>(newValue)
             {
                 ["__StaticData"] = newStaticData
@@ -213,7 +213,7 @@ namespace v2
 
 
             Debug.Log(
-                $"Setting table via splice dynamic: {tableResource.Namespace}:{tableResource.Name}, Key: {entity}, {previousDynamicData}, {newDynamicData}, {previousValue}, {newValue}");
+                $"Setting table via splice dynamic: {tableResource.Namespace}:{tableResource.Name}, {JsonConvert.SerializeObject(newValue)}");
             ds.Update(table, entity, new Dictionary<string, object>(newValue)
             {
                 ["__encodedLengths"] = encodedLengths,

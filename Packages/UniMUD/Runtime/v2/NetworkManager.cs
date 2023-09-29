@@ -25,6 +25,7 @@ namespace v2
         public string storeContract;
         private int startingBlockNumber = -1;
         private int streamStartBlockNumber = 0;
+        private bool networkReady = false;
         private BlockStream bs;
         public RxDatastore ds;
         private readonly CompositeDisposable _disposables = new();
@@ -120,18 +121,18 @@ namespace v2
                 storeSync.StartSync(ds, bs.subject, storeContract, rpcUrl, BigInteger.Zero, startingBlockNumber,
                     opts =>
                     {
-                        Debug.Log(opts.message);
-                        if (opts.step == SyncStep.Live)
+                        if (opts.step == SyncStep.Live && !networkReady)
                         {
+                            networkReady = true;
                             Debug.Log(opts.message);
-                            m_NetworkInitialized = true;
-            
                             OnNetworkInitialized(this);
-                            OnInitialized?.Invoke();
-                        }
+                        } 
                     });
 
-            UniRx.ObservableExtensions.Subscribe(updateStream).AddTo(_disposables);
+            UniRx.ObservableExtensions.Subscribe(updateStream, x =>
+            {
+                // Do nothing
+            }, onError: Debug.LogError ).AddTo(_disposables);
 
             /*
              * ==== FAUCET ====

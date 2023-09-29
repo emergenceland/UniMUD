@@ -59,7 +59,6 @@ namespace v2
             
             IObservable<StorageAdapterBlock> initialLogs = gapStateEvents.Select(block =>
             {
-                Debug.Log($"Hydrating from initial state for block {block.BlockNumber}");
                 RxStorageAdapter.ToStorage(ds, block);
                 return block;
             }).Concat().Replay(1).RefCount();
@@ -83,13 +82,11 @@ namespace v2
 
             BigInteger lastBlockNumberProcessed;
             IObservable<StorageAdapterBlock> storedBlockLogs = initialLogs.Concat(blockLogs.Select(block =>
-            // IObservable<StorageAdapterBlock> storedBlockLogs = blockLogs.Select(block =>
             {
                 RxStorageAdapter.ToStorage(ds, block);
                 return block;
             }).Do(storageBlock =>
             {
-                Debug.Log($"Stored {storageBlock.Logs.Length} logs for block {storageBlock.BlockNumber}");
                 lastBlockNumberProcessed = storageBlock.BlockNumber;
 
                 if (startBlock == null || endBlock == null) return;
@@ -98,7 +95,7 @@ namespace v2
                     var totalBlocks = endBlock - startBlock;
                     var processedBlocks = lastBlockNumberProcessed - startBlock;
                     var percentage = (int)((processedBlocks * 1000) / totalBlocks) / 1000;
-                    Debug.Log($"Percentage: {percentage}%");
+                    // TODO: fix percentage
                     onProgress?.Invoke(new OnProgressOpts
                     {
                         step = SyncStep.Rpc,
@@ -110,7 +107,14 @@ namespace v2
                 }
                 else
                 {
-                    Debug.Log("All caught up!");    
+                    onProgress?.Invoke(new OnProgressOpts
+                    {
+                        step = SyncStep.Live,
+                        percentage = 100,
+                        latestBlockNumber = endBlock ?? 0,
+                        lastBlockNumberProcessed = lastBlockNumberProcessed,
+                        message = "All caught up"
+                    });
                 }
             })).Share();
             return storedBlockLogs;

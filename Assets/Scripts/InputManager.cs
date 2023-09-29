@@ -5,6 +5,7 @@ using IWorld.ContractDefinition;
 using UniRx;
 using mud.Client;
 using mud.Network.schemas;
+using Newtonsoft.Json;
 using UnityEngine;
 using ObservableExtensions = UniRx.ObservableExtensions;
 
@@ -12,6 +13,7 @@ public class InputManager : MonoBehaviour
 {
     private IDisposable _counterSub;
     private v2.NetworkManager net;
+    public GameObject prefab;
 
     // Start is called before the first frame update
     void Start()
@@ -36,7 +38,15 @@ public class InputManager : MonoBehaviour
             var currentValue = record.value;
             if (currentValue == null) return;
             Debug.Log("Counter is now: " + currentValue["value"]);
+            SpawnPrefab();
         }
+    }
+
+    private void SpawnPrefab()
+    {
+        var randomX = UnityEngine.Random.Range(-1, 1);
+        var randomZ = UnityEngine.Random.Range(-1, 1);
+        Instantiate(prefab, new Vector3(randomX, 5, randomZ), Quaternion.identity);
     }
 
     private void Update()
