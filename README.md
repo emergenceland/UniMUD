@@ -1,13 +1,11 @@
 # UniMUD
 
-Low-level networking utilities for interacting with the [MUD v2](https://v2.mud.dev) framework in [Unity](https://unity3d.com).
+Low-level networking utilities for interacting with the [MUD 2.0.0-next.9](https://mud.dev) framework in [Unity](https://unity3d.com).
 
 ⚠️ If your goal is to just make a game, **you should not use UniMUD directly.**
-Instead, use the higher-level abstractions from [MUD Template Unity](https://github.com/emergenceland/mud-template-unity).
+Instead, use [MUD Template Unity](https://github.com/emergenceland/mud-template-unity).
 
 ## Getting Started
-
-UniMUD is under active development. Expect the API to change.
 
 ### Installation
 
@@ -94,7 +92,7 @@ To fetch a record by key, use `GetValue` on the datastore:
 ```csharp
 RxRecord? GetMonstersWithKey(string monsterKey) {
 	RxDatastore ds = NetworkManager.Instance.ds;
-	string monstersTable = ds.GetTableKey("", "Monsters");
+	RxTable monstersTable = ds.tableNameIndex["Monsters"];
 
 	return ds.GetValue(monstersTable, monsterKey);
 }
@@ -107,7 +105,7 @@ Use the `Set` method on the datastore:
 ```csharp
 void SetMonsterName(string monsterKey, string name) {
   var ds = NetworkManager.Instance.ds;
-  var monstersTable = new TableId("", "Monsters");
+	RxTable monstersTable = ds.tableNameIndex["Monsters"];
 
   ds.Set(monstersTable, monsterKey, new Dictionary<string, object> {
     { "name", name }
@@ -122,6 +120,9 @@ For queries that are useful in an ECS context, you can use the `Query` class to 
 **Get all records of entities that have Component X and Component Y**
 
 ```csharp
+RxTable Health = ds.tableNameIndex["Health"];
+RxTable Position ds.tableNameIndex["Position"];
+
 var hasHealthAndPosition = new Query().In(Health).In(Position)
 
 // -> [ { table: "Position", key: "0x1234", value: { x: 1, y: 2 } },
@@ -186,6 +187,8 @@ public class Health : MonoBehaviour
     private void Awake()
     {
       // get the health table value from all entities that have health, initialHealth, and a position.
+      RxTable Health = ds.tableNameIndex["Health"];
+      // ... other tables here
       var healthValues = new Query().Select(Health).In(InitialHealth).In(Health).In(TilePosition);
 
       _disposable = NetworkManager.Instance.ds
@@ -239,9 +242,10 @@ UniMUD currently does not implement a faucet service, so you must manually send 
 
 ## Future work
 
-- MODE integration
-- Unity DOTS integration
-- SQLite as a backend for persistence
+- Indexer
+- Unity DOTS storage
+- Caching/persistence
+- Faucet
 
 ## License
 
