@@ -5,7 +5,6 @@ using IWorld.ContractDefinition;
 using UniRx;
 using mud.Client;
 using UnityEngine;
-using ObservableExtensions = UniRx.ObservableExtensions;
 
 public class InputManager : MonoBehaviour
 {
@@ -24,7 +23,7 @@ public class InputManager : MonoBehaviour
     {
         Debug.Log("Subscribed to counter.");
         var incrementQuery = new Query().In(net.ds.tableNameIndex["Counter"]);
-        _counterSub = ObservableExtensions.Subscribe(net.ds.RxQuery(incrementQuery).ObserveOnMainThread(), OnIncrement);
+        _counterSub = net.ds.RxQuery(incrementQuery).ObserveOnMainThread().Subscribe(OnIncrement);
     }
 
 

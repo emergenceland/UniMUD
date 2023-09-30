@@ -1,10 +1,10 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Nethereum.ABI.FunctionEncoding;
 using Nethereum.ABI.Model;
 using Nethereum.Contracts;
 using Nethereum.RPC.Eth.DTOs;
-using Newtonsoft.Json;
 using UnityEngine;
 using v2.IStore.ContractDefinition;
 using static v2.Common;
@@ -35,9 +35,8 @@ namespace v2
                 new StoreSetRecordEventDTO().GetEventABI().Sha3Signature;
             if (!log.IsLogForEvent(storeSetRecordSignature)) return false;
             var decoded = Event<StoreSetRecordEventDTO>.DecodeEvent(log);
-            var tableId = BytesToHex(decoded.Event.TableId);
-            var tableResource = HexToResourceId(tableId);
-            return tableId == schemasTableId.ToLower() || tableId == schemasTableIdOffchain;
+            var tableId = BytesToHex(decoded.Event.TableId, 32);
+            return string.Equals(tableId, schemasTableId, StringComparison.CurrentCultureIgnoreCase) || string.Equals(tableId, schemasTableIdOffchain, StringComparison.CurrentCultureIgnoreCase);
         }
 
         public static readonly Dictionary<string, SchemaType> RegisterValueSchema = new()
@@ -89,7 +88,7 @@ namespace v2
                 .Select((schemaType, index) => new { Key = fieldNames[index], Value = schemaType })
                 .ToDictionary(pair => pair.Key, pair => pair.Value);
 
-            return new Table
+            return new v2.ProtocolParser.Table
             {
                 Address = log.Address,
                 TableId = keyTuple[0],

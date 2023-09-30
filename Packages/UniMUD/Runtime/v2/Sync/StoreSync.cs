@@ -114,6 +114,7 @@ namespace v2
             return storedBlockLogs;
         }
 
+        // TODO: this doesn't do anything
         public void Dispose()
         {
             _disposables.Dispose();

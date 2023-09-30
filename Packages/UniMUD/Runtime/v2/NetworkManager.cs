@@ -40,11 +40,10 @@ namespace v2
         public static NetworkManager Instance { get; private set; }
         private readonly CompositeDisposable _disposables = new();
 
-        // initialization
         public event Action<NetworkManager> OnNetworkInitialized = delegate { };
         private bool _networkReady = false;
 
-        protected async void Awake()
+        protected void Awake()
         {
             if (Instance != null)
             {
@@ -155,7 +154,7 @@ namespace v2
                         }
                     });
 
-            UniRx.ObservableExtensions.Subscribe(updateStream, onNext: _ => { }, onError: Debug.LogError)
+            updateStream.Subscribe(onNext: _ => { }, onError: Debug.LogError)
                 .AddTo(_disposables);
 
             /*

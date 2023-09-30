@@ -262,13 +262,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   pk: 
-  chainId: 31337
-  rpcUrl: http://localhost:8545
-  wsRpcUrl: ws://localhost:8545
   uniqueWallets: 0
+  networkType: 0
+  local: {fileID: 11400000, guid: 8f9de2d4a845cd9409aa4027b0fdc8b4, type: 2}
+  testnet: {fileID: 11400000, guid: 81361fd2f55627647aa60811fe3080ac, type: 2}
+  mainnet: {fileID: 11400000, guid: 526c97e7537d6274cb7a496684db0980, type: 2}
   address: 
   addressKey: 
-  storeContract: 0x5FbDB2315678afecb367f032d93F642f64180aa3
 --- !u!1 &963194225
 GameObject:
   m_ObjectHideFlags: 0

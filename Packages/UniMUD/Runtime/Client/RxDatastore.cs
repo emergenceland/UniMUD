@@ -2,10 +2,10 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reactive.Linq;
-using System.Reactive.Subjects;
+using UniRx;
 using UnityEngine;
 using v2;
+using ObservableExtensions = UniRx.ObservableExtensions;
 
 namespace mud.Client
 {
