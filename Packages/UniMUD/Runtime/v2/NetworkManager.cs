@@ -3,7 +3,6 @@ using System.Collections;
 using System.Numerics;
 using Cysharp.Threading.Tasks;
 using mud.Client;
-// using mud.Client.MudDefinitions;
 using Nethereum.Unity.Rpc;
 using Nethereum.Web3.Accounts;
 using UniRx;
@@ -14,28 +13,36 @@ namespace v2
 {
     public class NetworkManager : MonoBehaviour
     {
+        [Header("Dev settings")] 
         public string pk;
-        public Account account;
-        public int chainId;
-        public string rpcUrl;
-        public string wsRpcUrl;
+        [Tooltip("Generate new wallet every time instead of loading from PlayerPrefs")]
         public bool uniqueWallets;
-        public string address;
+
+        private NetworkData activeNetwork;
+        [Header("Network")] public NetworkTypes.NetworkType networkType;
+        public NetworkData local;
+        public NetworkData testnet;
+        public NetworkData mainnet;
+        private int _chainId;
+        private string _rpcUrl;
+        private string _wsRpcUrl;
+        private string _worldAddress;
+
+        [Header("Debug")] public string address;
         public string addressKey;
-        public string storeContract;
+
+        public Account account;
         private int startingBlockNumber = -1;
-        private int streamStartBlockNumber = 0;
-        private bool networkReady = false;
+        private int streamStartBlockNumber = 0; // TODO: get from indexer
         private BlockStream bs;
         public RxDatastore ds;
-        private readonly CompositeDisposable _disposables = new();
         public CreateContract world;
         public static NetworkManager Instance { get; private set; }
+        private readonly CompositeDisposable _disposables = new();
 
-        // initialization events
-        private static bool m_NetworkInitialized = false;
+        // initialization
         public event Action<NetworkManager> OnNetworkInitialized = delegate { };
-        public static Action OnInitialized;
+        private bool _networkReady = false;
 
         protected async void Awake()
         {
@@ -46,6 +53,26 @@ namespace v2
             }
 
             Instance = this;
+            activeNetwork = networkType switch
+            {
+                NetworkTypes.NetworkType.Local => local,
+                NetworkTypes.NetworkType.Testnet => testnet,
+                NetworkTypes.NetworkType.Mainnet => mainnet,
+                _ => activeNetwork
+            };
+
+            if (activeNetwork == null)
+            {
+                Debug.LogError("No network data", this);
+            }
+
+            if (activeNetwork != null)
+            {
+                _rpcUrl = activeNetwork.jsonRpcUrl;
+                _wsRpcUrl = activeNetwork.wsRpcUrl;
+                _chainId = activeNetwork.chainId;
+                _worldAddress = activeNetwork.contractAddress;
+            }
         }
 
         private async void Start()
@@ -55,13 +82,14 @@ namespace v2
              */
             if (!string.IsNullOrWhiteSpace(pk))
             {
-                account = new Account(pk, chainId);
+                account = new Account(pk, _chainId);
                 Debug.Log("Loaded account from pk: " + account.Address);
             }
             else
             {
-                // TODO: Unique wallets
-                account = new Account(Common.GetBurnerPrivateKey(chainId), chainId);
+                account = uniqueWallets
+                    ? new Account(Common.GeneratePrivateKey(), _chainId)
+                    : new Account(Common.GetBurnerPrivateKey(), _chainId);
                 address = account.Address;
                 Debug.Log("Burner wallet created/loaded: " + address);
                 addressKey = "0x" + address.Replace("0x", "").PadLeft(64, '0').ToLower();
@@ -73,14 +101,14 @@ namespace v2
 
             Debug.Log("Connecting to websocket...");
             bs = new BlockStream().AddTo(_disposables);
-            await bs.WatchBlocks(wsRpcUrl);
+            await bs.WatchBlocks(_wsRpcUrl);
 
             /*
              * ==== TX EXECUTOR ====
              */
 
             world = new CreateContract();
-            await world.CreateTxExecutor(account, storeContract, rpcUrl, chainId);
+            await world.CreateTxExecutor(account, _worldAddress, _rpcUrl, _chainId);
 
             /*
              * ==== CLIENT CACHE ====
@@ -104,25 +132,24 @@ namespace v2
             //     ds.RegisterTable(tableId);
             // }
             //
-            MudDefinitions.DefineWorldConfig(storeContract, ds);
-            MudDefinitions.DefineStoreConfig(storeContract, ds);
+            MudDefinitions.DefineWorldConfig(_worldAddress, ds);
+            MudDefinitions.DefineStoreConfig(_worldAddress, ds);
 
             /*
              * ==== SYNC ====
              */
 
             if (startingBlockNumber < 0) await GetStartingBlockNumber().ToUniTask();
-            // startingBlockNumber = 0;
             Debug.Log($"Starting sync from 0...{startingBlockNumber}");
 
             var storeSync = new StoreSync().AddTo(_disposables);
             var updateStream =
-                storeSync.StartSync(ds, bs.subject, storeContract, rpcUrl, BigInteger.Zero, startingBlockNumber,
+                storeSync.StartSync(ds, bs.subject, _worldAddress, _rpcUrl, BigInteger.Zero, startingBlockNumber,
                     opts =>
                     {
-                        if (opts.step == SyncStep.Live && !networkReady)
+                        if (opts.step == SyncStep.Live && !_networkReady)
                         {
-                            networkReady = true;
+                            _networkReady = true;
                             Debug.Log(opts.message);
                             OnNetworkInitialized(this);
                         }
@@ -139,7 +166,7 @@ namespace v2
 
         private IEnumerator GetStartingBlockNumber()
         {
-            var blockNumberRequest = new EthBlockNumberUnityRequest(rpcUrl);
+            var blockNumberRequest = new EthBlockNumberUnityRequest(_rpcUrl);
             yield return blockNumberRequest.SendRequest();
             startingBlockNumber = (int)blockNumberRequest.Result.Value;
         }

@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using System.Linq;
-using mud.Network.schemas;
 using Nethereum.ABI.FunctionEncoding;
 using Nethereum.ABI.Model;
 using Nethereum.Contracts;
@@ -36,7 +35,8 @@ namespace v2
                 new StoreSetRecordEventDTO().GetEventABI().Sha3Signature;
             if (!log.IsLogForEvent(storeSetRecordSignature)) return false;
             var decoded = Event<StoreSetRecordEventDTO>.DecodeEvent(log);
-            var tableId = TableId.FromBytes32(decoded.Event.TableId).ToHexString(); // TODO: get rid of the old TableId
+            var tableId = BytesToHex(decoded.Event.TableId);
+            var tableResource = HexToResourceId(tableId);
             return tableId == schemasTableId.ToLower() || tableId == schemasTableIdOffchain;
         }
 

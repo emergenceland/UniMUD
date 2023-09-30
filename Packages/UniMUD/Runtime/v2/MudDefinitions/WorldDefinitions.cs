@@ -1,7 +1,5 @@
 using System.Collections.Generic;
 using mud.Client;
-using mud.Network.schemas;
-using Newtonsoft.Json;
 using UnityEngine;
 using static v2.ProtocolParser;
 using static v2.SchemaAbiTypes;

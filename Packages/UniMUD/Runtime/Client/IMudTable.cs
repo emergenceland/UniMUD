@@ -1,12 +1,9 @@
 #nullable enable
 using System;
-using System.Collections.Generic;
 
-using mud.Network.schemas;
 using Property = System.Collections.Generic.Dictionary<string, object>;
 using UnityEngine;
 using v2;
-using NetworkManager = mud.Unity.NetworkManager;
 
 #if UNITY_EDITOR
 using UnityEditor;

@@ -1,6 +1,4 @@
 using UnityEngine;
-using mud.Client;
-using mud.Unity;
 using System;
 
 #if UNITY_EDITOR

@@ -13,6 +13,13 @@ using UnityEngine;
 
 namespace v2
 {
+    
+    public class GasConfig
+    {
+        public BigInteger MaxPriorityFeePerGas { get; set; } = 0;
+        public BigInteger MaxFeePerGas { get; set; } = 0;
+    }
+    
     public class CreateContract
     {
         private Account _signer;

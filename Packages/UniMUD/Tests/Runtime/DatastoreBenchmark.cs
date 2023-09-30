@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using mud.Client;
 using mud.Network;
-using mud.Network.schemas;
 using NUnit.Framework;
 using UniRx;
 using v2;

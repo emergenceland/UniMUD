@@ -19,9 +19,7 @@ namespace mud.Client
         public readonly Dictionary<string, RxTable> tableNameIndex = new();
         public HashSet<string> registeredTables = new();
 
-        private readonly ReplaySubject<RecordUpdate> _onDataStoreUpdate = new();
         private readonly Subject<RecordUpdate> _onRxDataStoreUpdate = new();
-        public IObservable<RecordUpdate> OnDataStoreUpdate => _onDataStoreUpdate;
 
         public void RegisterTable(RxTable table, string? name = null)
         {
@@ -156,14 +154,6 @@ namespace mud.Client
         private void EmitUpdate(UpdateType type, string tableId, string keyIndex, Property? value,
             Property? previousValue = null)
         {
-            _onDataStoreUpdate.OnNext(new RecordUpdate
-            {
-                Type = type,
-                TableId = tableId,
-                Key = keyIndex,
-                Value = new Tuple<Property?, Property?>(value, previousValue)
-            });
-
             _onRxDataStoreUpdate.OnNext(new RecordUpdate
             {
                 Type = type,

@@ -108,7 +108,13 @@ namespace v2
             }
         }
 
-        public static string GetBurnerPrivateKey(int chainId)
+        public static string GeneratePrivateKey()
+        {
+            var ecKey = Nethereum.Signer.EthECKey.GenerateKey();
+            return ecKey.GetPrivateKeyAsBytes().ToHex(); 
+        }
+
+        public static string GetBurnerPrivateKey()
         {
             {
                 var savedBurnerWallet = PlayerPrefs.GetString("burnerWallet");
@@ -116,12 +122,8 @@ namespace v2
                 {
                     return savedBurnerWallet;
                 }
-
-                var ecKey = Nethereum.Signer.EthECKey.GenerateKey();
-                var newPrivateKey = ecKey.GetPrivateKeyAsBytes().ToHex();
-                // TODO: Insecure.
-                // We can use Nethereum's KeyStoreScryptService
-                // However, this requires user to set a password
+                // TODO: Insecure
+                var newPrivateKey = GeneratePrivateKey();
                 PlayerPrefs.SetString("burnerWallet", newPrivateKey);
                 PlayerPrefs.Save();
                 return newPrivateKey;

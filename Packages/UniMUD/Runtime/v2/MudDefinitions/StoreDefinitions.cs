@@ -1,8 +1,5 @@
 using System.Collections.Generic;
-using System.Linq;
 using mud.Client;
-using mud.Network.schemas;
-using UnityEngine;
 using static v2.ProtocolParser;
 using static v2.SchemaAbiTypes;
 
