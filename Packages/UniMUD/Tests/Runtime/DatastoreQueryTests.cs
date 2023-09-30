@@ -1,10 +1,8 @@
 using System.Collections.Generic;
-using mud.Client;
-using mud.Network;
 using NUnit.Framework;
 using UniRx;
 using UnityEngine;
-using v2;
+using mud;
 
 namespace Tests.Runtime
 {
@@ -49,8 +47,8 @@ namespace Tests.Runtime
         [Test]
         public void QueryAnd()
         {
-            var position = Utils.CreateProperty(("x", 1), ("y", 2));
-            var health = Utils.CreateProperty(("value", 100));
+            var position = Common.CreateProperty(("x", 1), ("y", 2));
+            var health = Common.CreateProperty(("value", 100));
 
             _ds.Set(_components["Position"], "a", position);
             _ds.Set(_components["Position"], "b", position);
@@ -69,9 +67,9 @@ namespace Tests.Runtime
         [Test]
         public void QueryNot()
         {
-            var position = Utils.CreateProperty(("x", 1), ("y", 2));
-            var health = Utils.CreateProperty(("value", 100));
-            var player = Utils.CreateProperty(("value", true));
+            var position = Common.CreateProperty(("x", 1), ("y", 2));
+            var health = Common.CreateProperty(("value", 100));
+            var player = Common.CreateProperty(("value", true));
 
             _ds.Set(_components["Position"], "a", position);
             _ds.Set(_components["Position"], "b", position);
@@ -95,8 +93,8 @@ namespace Tests.Runtime
         // Get all records of entities that have Component X and Component Y, return only rows from Component X
         public void QuerySelect()
         {
-            var position = Utils.CreateProperty(("x", 1), ("y", 2));
-            var h1 = Utils.CreateProperty(("value", 100));
+            var position = Common.CreateProperty(("x", 1), ("y", 2));
+            var h1 = Common.CreateProperty(("value", 100));
 
             _ds.Set(_components["Position"], "a", position);
             _ds.Set(_components["Position"], "b", position);
@@ -116,9 +114,9 @@ namespace Tests.Runtime
         [Test]
         public void QueryAttribute()
         {
-            var position = Utils.CreateProperty(("x", 1), ("y", 2));
-            var h1 = Utils.CreateProperty(("value", 100));
-            var h2 = Utils.CreateProperty(("value", 50));
+            var position = Common.CreateProperty(("x", 1), ("y", 2));
+            var h1 = Common.CreateProperty(("value", 100));
+            var h2 = Common.CreateProperty(("value", 50));
 
             _ds.Set(_components["Position"], "a", position);
             _ds.Set(_components["Position"], "b", position);
@@ -139,8 +137,8 @@ namespace Tests.Runtime
         [Test]
         public void RxQuerySimple()
         {
-            var position = Utils.CreateProperty(("x", 1), ("y", 2));
-            var position2 = Utils.CreateProperty(("x", 1), ("y", 1));
+            var position = Common.CreateProperty(("x", 1), ("y", 2));
+            var position2 = Common.CreateProperty(("x", 1), ("y", 1));
 
             _ds.Set(_components["Position"], "a", position);
             _ds.Set(_components["Position"], "b", position);
@@ -176,10 +174,10 @@ namespace Tests.Runtime
         [Test]
         public void RxQueryWithCondition()
         {
-            var position = Utils.CreateProperty(("x", 1), ("y", 2));
-            var position2 = Utils.CreateProperty(("x", 1), ("y", 1));
-            var h1 = Utils.CreateProperty(("value", 100));
-            var h2 = Utils.CreateProperty(("value", 50));
+            var position = Common.CreateProperty(("x", 1), ("y", 2));
+            var position2 = Common.CreateProperty(("x", 1), ("y", 1));
+            var h1 = Common.CreateProperty(("value", 100));
+            var h2 = Common.CreateProperty(("value", 50));
 
             _ds.Set(_components["Position"], "a", position);
             _ds.Set(_components["Position"], "b", position);
@@ -220,10 +218,10 @@ namespace Tests.Runtime
         [Test]
         public void RxQueryNoCondition()
         {
-            var position = Utils.CreateProperty(("x", 1), ("y", 2));
-            var position2 = Utils.CreateProperty(("x", 1), ("y", 1));
-            var h1 = Utils.CreateProperty(("value", 100));
-            var h2 = Utils.CreateProperty(("value", 50));
+            var position = Common.CreateProperty(("x", 1), ("y", 2));
+            var position2 = Common.CreateProperty(("x", 1), ("y", 1));
+            var h1 = Common.CreateProperty(("value", 100));
+            var h2 = Common.CreateProperty(("value", 50));
 
             _ds.Set(_components["Position"], "a", position);
             _ds.Set(_components["Position"], "b", position);

@@ -2,24 +2,25 @@ using System;
 using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
 using IWorld.ContractDefinition;
+using mud;
 using UniRx;
-using mud.Client;
 using UnityEngine;
+using Random = UnityEngine.Random;
 
 public class InputManager : MonoBehaviour
 {
     private IDisposable _counterSub;
-    private v2.NetworkManager net;
+    private NetworkManager net;
     public GameObject prefab;
 
     // Start is called before the first frame update
     void Start()
     {
-        net = v2.NetworkManager.Instance;
+        net = NetworkManager.Instance;
         net.OnNetworkInitialized += SubscribeToCounter;
     }
     
-    private void SubscribeToCounter(v2.NetworkManager _)
+    private void SubscribeToCounter(NetworkManager _)
     {
         Debug.Log("Subscribed to counter.");
         var incrementQuery = new Query().In(net.ds.tableNameIndex["Counter"]);
@@ -41,8 +42,8 @@ public class InputManager : MonoBehaviour
 
     private void SpawnPrefab()
     {
-        var randomX = UnityEngine.Random.Range(-1, 1);
-        var randomZ = UnityEngine.Random.Range(-1, 1);
+        var randomX = Random.Range(-1, 1);
+        var randomZ = Random.Range(-1, 1);
         Instantiate(prefab, new Vector3(randomX, 5, randomZ), Quaternion.identity);
     }
 

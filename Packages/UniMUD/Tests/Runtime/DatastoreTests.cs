@@ -1,8 +1,6 @@
 using System.Collections.Generic;
-using mud.Client;
-using mud.Network;
 using NUnit.Framework;
-using v2;
+using mud;
 
 namespace Tests.Runtime
 {
@@ -41,8 +39,8 @@ namespace Tests.Runtime
         [Test]
         public void SetValue()
         {
-            var position = Utils.CreateProperty(("x", 1), ("y", 2));
-            var health = Utils.CreateProperty(("value", 100));
+            var position = Common.CreateProperty(("x", 1), ("y", 2));
+            var health = Common.CreateProperty(("value", 100));
             
             _ds.Set(_components["Position"], "a", position);
             _ds.Set(_components["Position"], "b", position);
@@ -58,7 +56,7 @@ namespace Tests.Runtime
         [Test]
         public void UpdateValue()
         {
-            var position = Utils.CreateProperty(("x", 1), ("y", 2));
+            var position = Common.CreateProperty(("x", 1), ("y", 2));
 
             _ds.Set(_components["Position"], "a", position);
 
@@ -68,7 +66,7 @@ namespace Tests.Runtime
             Assert.AreEqual(2, _ds.GetValue(_components["Position"], "a")?.value["y"]);
 
             // update the value
-            var position2 = Utils.CreateProperty(("x", 3), ("y", 4));
+            var position2 = Common.CreateProperty(("x", 3), ("y", 4));
             _ds.Update(_components["Position"], "a", position2, position);
 
             // use GetValue
@@ -79,7 +77,7 @@ namespace Tests.Runtime
         [Test]
         public void DeleteValue()
         {
-            var position = Utils.CreateProperty(("x", 1), ("y", 2));
+            var position = Common.CreateProperty(("x", 1), ("y", 2));
 
             _ds.Set(_components["Position"], "a", position);
             Assert.AreEqual(1, _ds.store[_components["Position"].Id].Values.Count);

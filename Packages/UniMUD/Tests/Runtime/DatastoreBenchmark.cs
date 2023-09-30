@@ -1,11 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using mud.Client;
-using mud.Network;
 using NUnit.Framework;
 using UniRx;
-using v2;
+using mud;
 using Debug = UnityEngine.Debug;
 
 namespace Tests.Runtime
@@ -65,7 +63,7 @@ namespace Tests.Runtime
             {
                 for (var i = 0; i < 10000; i++)
                 {
-                    var position = Utils.CreateProperty(("x", randomWriteData[i]), ("y", randomWriteData[i]));
+                    var position = Common.CreateProperty(("x", randomWriteData[i]), ("y", randomWriteData[i]));
                     _ds.Set(_components["Position"], $"Key{i}", position);
                 }
             });
@@ -104,7 +102,7 @@ namespace Tests.Runtime
             {
                 for (var i = 0; i < 10000; i++)
                 {
-                    var position = Utils.CreateProperty(("x", randomWriteData[i]), ("y", randomWriteData[i]));
+                    var position = Common.CreateProperty(("x", randomWriteData[i]), ("y", randomWriteData[i]));
                     _ds.Update(_components["Position"], $"Key{i}", position);
                 }
             });
