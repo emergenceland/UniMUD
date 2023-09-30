@@ -1,6 +1,8 @@
 using System.Collections.Generic;
 using mud.Client;
 using mud.Network.schemas;
+using Newtonsoft.Json;
+using UnityEngine;
 using static v2.ProtocolParser;
 using static v2.SchemaAbiTypes;
 
@@ -8,36 +10,24 @@ namespace v2
 {
     public partial class MudDefinitions
     {
-        public static void DefineWorldConfig(string address)
+        public static void DefineWorldConfig(string address, RxDatastore ds)
         {
-            /************************************************************************
-             *
-             *    CORE TABLES
-             *
-             ************************************************************************/
-
             Table NamespaceOwner = new Table
             {
                 Address = address,
-                Namespace = "",
+                Namespace = "world",
                 Name = "NamespaceOwner",
                 KeySchema = new Dictionary<string, SchemaType>
-                {
-                    { "namespaceId", SchemaType.BYTES32 }
-                },
+                    { { "namespaceId", SchemaType.BYTES32 } },
                 ValueSchema = new Dictionary<string, SchemaType>
-                {
-                    {
-                        "owner", SchemaType.ADDRESS
-                    }
-                }
+                    { { "owner", SchemaType.ADDRESS } }
             };
-            
-            Table ResourceOwner = new Table
+
+            Table ResourceAccess = new Table
             {
                 Address = address,
-                Namespace = "",
-                Name = "ResourceOwner",
+                Namespace = "world",
+                Name = "ResourceAccess",
                 KeySchema = new Dictionary<string, SchemaType>
                 {
                     { "resourceId", SchemaType.BYTES32 },
@@ -50,11 +40,11 @@ namespace v2
                     }
                 }
             };
-            
+
             Table InstalledModules = new Table
             {
                 Address = address,
-                Namespace = "",
+                Namespace = "world",
                 Name = "InstalledModules",
                 KeySchema = new Dictionary<string, SchemaType>
                 {
@@ -68,12 +58,12 @@ namespace v2
                     }
                 }
             };
-            
-            Table Delegations = new Table
+
+            Table UserDelegationControl = new Table
             {
                 Address = address,
-                Namespace = "",
-                Name = "Delegations",
+                Namespace = "world",
+                Name = "UserDelegationControl",
                 KeySchema = new Dictionary<string, SchemaType>
                 {
                     { "delegator", SchemaType.ADDRESS },
@@ -86,79 +76,146 @@ namespace v2
                     }
                 }
             };
-            
-            /************************************************************************
-             *
-             *    MODULE TABLES
-             *
-             ************************************************************************/
 
-            // TableId nsOwnerId = new TableId("", "NamespaceOwner");
-            // TableId resourceAccessId = new TableId("", "ResourceAccess");
-            // TableId installedModulesId = new TableId("", "InstalledModules");
-            // TableId systemsId = new TableId("", "Systems");
-            // TableId systemRegistryId = new TableId("", "SystemRegistry");
-            // TableId resourceTypeId = new TableId("", "ResourceType");
-            // TableId funcSelectorId = new TableId("", "funcSelectors");
-            //
-            // dataStore.RegisterTable(
-            //     nsOwnerId,
-            //     new Dictionary<string, Types.Type>
-            //     {
-            //         { "owner", Types.Type.String }
-            //     }
-            // );
-            //
-            // dataStore.RegisterTable(
-            //     resourceAccessId,
-            //     new Dictionary<string, Types.Type>
-            //     {
-            //         { "access", Types.Type.Boolean }
-            //     }
-            // );
-            //
-            // dataStore.RegisterTable(
-            //     installedModulesId,
-            //     new Dictionary<string, Types.Type>
-            //     {
-            //         { "moduleAddress", Types.Type.String }
-            //     }
-            // );
-            //
-            // dataStore.RegisterTable(
-            //     systemsId,
-            //     new Dictionary<string, Types.Type>
-            //     {
-            //         { "system", Types.Type.String },
-            //         { "publicAccess", Types.Type.Boolean }
-            //     }
-            // );
-            //
-            // dataStore.RegisterTable(
-            //     systemRegistryId,
-            //     new Dictionary<string, Types.Type>
-            //     {
-            //         { "resourceSelector", Types.Type.String }
-            //     }
-            // );
-            //
-            // dataStore.RegisterTable(
-            //     resourceTypeId,
-            //     new Dictionary<string, Types.Type>
-            //     {
-            //         { "resourceType", Types.Type.Number },
-            //     }
-            // );
-            //
-            // dataStore.RegisterTable(
-            //     funcSelectorId,
-            //     new Dictionary<string, Types.Type>
-            //     {
-            //         { "namespace", Types.Type.String },
-            //         { "name", Types.Type.String },
-            //         { "systemFunctionSelector", Types.Type.String },
-            //     }
-            // );
+            Table NamespaceDelegationControl = new Table()
+            {
+                Address = address,
+                Namespace = "world",
+                Name = "NamespaceDelegationControl",
+                KeySchema = new Dictionary<string, SchemaType>
+                {
+                    { "namespaceId", SchemaType.BYTES32 },
+                },
+                ValueSchema = new Dictionary<string, SchemaType>()
+                {
+                    { "DelegationControlId", SchemaType.BYTES32 }
+                }
+            };
+
+            Table Balances = new Table
+            {
+                Address = address,
+                Namespace = "world",
+                Name = "Balances",
+                KeySchema = new Dictionary<string, SchemaType>
+                {
+                    { "namespaceId", SchemaType.BYTES32 },
+                },
+                ValueSchema = new Dictionary<string, SchemaType>
+                {
+                    { "balance", SchemaType.UINT256 }
+                }
+            };
+
+            Table Systems = new Table
+            {
+                Address = address,
+                Namespace = "world",
+                Name = "Systems",
+                KeySchema = new Dictionary<string, SchemaType>
+                {
+                    { "systemId", SchemaType.BYTES32 },
+                },
+                ValueSchema = new Dictionary<string, SchemaType>
+                {
+                    { "system", SchemaType.ADDRESS },
+                    { "publicAccess", SchemaType.BOOL }
+                }
+            };
+
+            Table SystemRegistry = new Table
+            {
+                Address = address,
+                Namespace = "world",
+                Name = "SystemRegistry",
+                KeySchema = new Dictionary<string, SchemaType>
+                {
+                    { "system", SchemaType.ADDRESS },
+                },
+                ValueSchema = new Dictionary<string, SchemaType>
+                {
+                    { "systemId", SchemaType.BYTES32 },
+                }
+            };
+
+            Table SystemHooks = new Table
+            {
+                Address = address,
+                Namespace = "world",
+                Name = "SystemHooks",
+                KeySchema = new Dictionary<string, SchemaType>
+                {
+                    { "systemId", SchemaType.BYTES32 },
+                },
+                ValueSchema = new Dictionary<string, SchemaType>
+                {
+                    { "valueSchema", SchemaType.BYTES21_ARRAY }
+                }
+            };
+
+            Table FunctionSelectors = new Table
+            {
+                Address = address,
+                Namespace = "world",
+                Name = "FunctionSelectors",
+                KeySchema = new Dictionary<string, SchemaType>
+                {
+                    { "functionSelector", SchemaType.BYTES4 },
+                },
+                ValueSchema = new Dictionary<string, SchemaType>
+                {
+                    { "systemId", SchemaType.BYTES32 },
+                    { "systemIdFunctionSelector", SchemaType.BYTES4 }
+                }
+            };
+
+            Table FunctionSignatures = new Table
+            {
+                Address = address,
+                Namespace = "world",
+                Name = "FunctionSignatures",
+                KeySchema = new Dictionary<string, SchemaType>
+                {
+                    { "functionSelector", SchemaType.BYTES4 },
+                },
+                ValueSchema = new Dictionary<string, SchemaType>
+                {
+                    { "functionSignature", SchemaType.STRING },
+                }
+            };
+
+            var tables = new List<Table>()
+            {
+                NamespaceOwner,
+                ResourceAccess,
+                InstalledModules,
+                UserDelegationControl,
+                NamespaceDelegationControl,
+                Balances,
+                Systems,
+                SystemRegistry,
+                SystemHooks,
+                // FunctionSignatures,
+                FunctionSelectors
+            };
+
+            tables.ForEach(table =>
+            {
+                var newRxTable = ds.CreateTable(table.Namespace, table.Name, table.ValueSchema);
+                Debug.Log($"{table.Name} - {newRxTable.Id}");
+                if (ds.registeredTables.Contains(newRxTable.Id)) return;
+                // var tableName = $"{newTable.Namespace}:{newTable.Name}";
+                // TODO: figure out what to do with namespaces
+                var tableName = $"{table.Name}";
+                Debug.Log($"Registering table: {tableName}");
+                ds.RegisterTable(newRxTable, tableName);
+            });
+
+            // TODO: handle offchain tables properly
+            // This is dumb
+            var functionSigRxTable = ds.CreateTable(FunctionSignatures.Namespace, FunctionSignatures.Name,
+                FunctionSignatures.ValueSchema, true);
+            ds.RegisterTable(functionSigRxTable, FunctionSignatures.Name);
         }
     }
 }

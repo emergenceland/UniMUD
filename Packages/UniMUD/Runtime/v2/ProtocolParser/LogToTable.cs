@@ -5,6 +5,7 @@ using Nethereum.ABI.FunctionEncoding;
 using Nethereum.ABI.Model;
 using Nethereum.Contracts;
 using Nethereum.RPC.Eth.DTOs;
+using Newtonsoft.Json;
 using UnityEngine;
 using v2.IStore.ContractDefinition;
 using static v2.Common;
@@ -23,13 +24,20 @@ namespace v2
                 Namespace = "store",
                 Name = "Tables"
             });
+            
+            var schemasTableIdOffchain = ResourceIDToHex(new ResourceID
+            {
+                Type = ResourceType.OffchainTable,
+                Namespace = "store",
+                Name = "Tables"
+            });
 
             var storeSetRecordSignature =
                 new StoreSetRecordEventDTO().GetEventABI().Sha3Signature;
             if (!log.IsLogForEvent(storeSetRecordSignature)) return false;
             var decoded = Event<StoreSetRecordEventDTO>.DecodeEvent(log);
-            var tableId = TableId.FromBytes32(decoded.Event.TableId);
-            return tableId.ToHexString() == schemasTableId.ToLower();
+            var tableId = TableId.FromBytes32(decoded.Event.TableId).ToHexString(); // TODO: get rid of the old TableId
+            return tableId == schemasTableId.ToLower() || tableId == schemasTableIdOffchain;
         }
 
         public static readonly Dictionary<string, SchemaType> RegisterValueSchema = new()

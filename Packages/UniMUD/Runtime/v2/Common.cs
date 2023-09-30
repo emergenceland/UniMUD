@@ -29,7 +29,7 @@ namespace v2
         public string Name;
         public ResourceType Type;
     }
-    
+
     public class Common
     {
         public static BigInteger HexToBigInt(string hexValue, bool signed = false)
@@ -94,7 +94,7 @@ namespace v2
                 observer.OnError(ex);
             }
         }
-        
+
         public class JsonEqualityComparer : IEqualityComparer<object>
         {
             public new bool Equals(object? x, object? y)
@@ -255,6 +255,7 @@ namespace v2
         public static string ResourceIDToHex(ResourceID resourceId)
         {
             var typeId = ResourceTypeIds[resourceId.Type];
+
             return ConcatHex(new[]
             {
                 StringToHex(typeId, 2),

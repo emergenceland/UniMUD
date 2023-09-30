@@ -104,9 +104,8 @@ namespace v2
             //     ds.RegisterTable(tableId);
             // }
             //
-            // WorldDefinitions.DefineDataStoreConfig(ds);
-            // StoreDefinitions.DefineDataStoreConfig(ds);
-            // ds.RegisterTable(new TableId("mudstore", "schema"));
+            MudDefinitions.DefineWorldConfig(storeContract, ds);
+            MudDefinitions.DefineStoreConfig(storeContract, ds);
 
             /*
              * ==== SYNC ====
@@ -126,17 +125,16 @@ namespace v2
                             networkReady = true;
                             Debug.Log(opts.message);
                             OnNetworkInitialized(this);
-                        } 
+                        }
                     });
 
-            UniRx.ObservableExtensions.Subscribe(updateStream, x =>
-            {
-                // Do nothing
-            }, onError: Debug.LogError ).AddTo(_disposables);
+            UniRx.ObservableExtensions.Subscribe(updateStream, onNext: _ => { }, onError: Debug.LogError)
+                .AddTo(_disposables);
 
             /*
              * ==== FAUCET ====
              */
+            // TODO
         }
 
         private IEnumerator GetStartingBlockNumber()

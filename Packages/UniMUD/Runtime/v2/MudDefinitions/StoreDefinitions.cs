@@ -1,6 +1,8 @@
 using System.Collections.Generic;
+using System.Linq;
 using mud.Client;
 using mud.Network.schemas;
+using UnityEngine;
 using static v2.ProtocolParser;
 using static v2.SchemaAbiTypes;
 
@@ -8,34 +10,27 @@ namespace v2
 {
     public partial class MudDefinitions
     {
-        public static void DefineStoreConfig(string address)
+        public static void DefineStoreConfig(string address, RxDatastore ds)
         {
             Table StoreHooks = new Table
             {
                 Address = address,
-                Namespace = "mudstore",
+                Namespace = "store",
                 Name = "StoreHooks",
+                KeySchema = new Dictionary<string, SchemaType>
+                {
+                    { "tableId", SchemaType.BYTES32 }
+                },
                 ValueSchema = new Dictionary<string, SchemaType>
                 {
-                    { "value", SchemaType.BYTES21_ARRAY }
-                }
-            };
-
-            Table Callbacks = new Table
-            {
-                Address = address,
-                Namespace = "mudstore",
-                Name = "Callbacks",
-                ValueSchema = new Dictionary<string, SchemaType>
-                {
-                    { "value", SchemaType.BYTES21_ARRAY }
+                    { "hooks", SchemaType.BYTES21_ARRAY }
                 }
             };
 
             Table Tables = new Table
             {
                 Address = address,
-                Namespace = "mudstore",
+                Namespace = "store",
                 Name = "Tables",
                 KeySchema = new Dictionary<string, SchemaType>
                 {
@@ -54,7 +49,7 @@ namespace v2
             Table ResourceIds = new Table
             {
                 Address = address,
-                Namespace = "mudstore",
+                Namespace = "store",
                 Name = "ResourceIds",
                 KeySchema = new Dictionary<string, SchemaType>
                 {
@@ -69,13 +64,35 @@ namespace v2
             Table Hooks = new Table
             {
                 Address = address,
-                Namespace = "mudstore",
+                Namespace = "store",
                 Name = "Hooks",
+                KeySchema = new Dictionary<string, SchemaType>
+                {
+                    { "resourceId", SchemaType.BYTES32 }
+                },
                 ValueSchema = new Dictionary<string, SchemaType>
                 {
                     { "value", SchemaType.BYTES21_ARRAY }
                 }
             };
+
+            var tables = new List<Table>
+            {
+                StoreHooks,
+                Tables,
+                ResourceIds,
+                Hooks
+            };
+
+            tables.ForEach(table =>
+            {
+                var newRxTable = ds.CreateTable(table.Namespace, table.Name, table.ValueSchema);
+                if (ds.registeredTables.Contains(newRxTable.Id)) return;
+                // var tableName = $"{newTable.Namespace}:{newTable.Name}";
+                // TODO: figure out what to do with namespaces
+                var tableName = $"{table.Name}";
+                ds.RegisterTable(newRxTable, tableName);
+            });
         }
     }
 }

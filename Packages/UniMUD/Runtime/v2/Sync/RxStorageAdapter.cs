@@ -50,7 +50,7 @@ namespace v2
                 var newRxTable = ds.CreateTable(newTable.Namespace, newTable.Name, newTable.ValueSchema);
                 if (ds.registeredTables.Contains(newRxTable.Id))
                 {
-                    Debug.LogWarning($"Skipping registration for already registered table: {newTable.Name}");
+                    Debug.LogWarning($"Skipping registration for already registered table: {JsonConvert.SerializeObject(newTable)}");
                 }
                 else
                 {
@@ -81,7 +81,7 @@ namespace v2
             if (!ds.registeredTables.Contains(tableId))
             {
                 Debug.LogWarning(
-                    $"Skipping update for unknown table: {tableId} at {log.Address}");
+                    $"Skipping update for unknown table: {JsonConvert.SerializeObject(tableResource)} at {log.Address}, {tableId}");
                 return;
             }
 
@@ -112,7 +112,7 @@ namespace v2
             if (!ds.registeredTables.Contains(tableId))
             {
                 Debug.LogWarning(
-                    $"Skipping update for unknown table: {tableId} at {log.Address}");
+                    $"Skipping update for unknown table: {JsonConvert.SerializeObject(tableResource)} at {log.Address}");
                 return;
             }
 
