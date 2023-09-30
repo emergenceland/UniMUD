@@ -1,10 +1,11 @@
+#nullable enable
 using System.Collections.Generic;
 
 namespace mud
 {
     public static partial class MudDefinitions
     {
-        public static void DefineStoreConfig(string address, RxDatastore ds)
+        public static Dictionary<string, ProtocolParser.Table> DefineStoreConfig(string? address)
         {
             ProtocolParser.Table StoreHooks = new ProtocolParser.Table
             {
@@ -70,23 +71,13 @@ namespace mud
                 }
             };
 
-            var tables = new List<ProtocolParser.Table>
+            return new Dictionary<string, ProtocolParser.Table>
             {
-                StoreHooks,
-                Tables,
-                ResourceIds,
-                Hooks
+                { "StoreHooks", StoreHooks },
+                { "Tables", Tables },
+                { "ResourceIds", ResourceIds },
+                { "Hooks", Hooks }
             };
-
-            tables.ForEach(table =>
-            {
-                var newRxTable = ds.CreateTable(table.Namespace, table.Name, table.ValueSchema);
-                if (ds.registeredTables.Contains(newRxTable.Id)) return;
-                // var tableName = $"{newTable.Namespace}:{newTable.Name}";
-                // TODO: figure out what to do with namespaces
-                var tableName = $"{table.Name}";
-                ds.RegisterTable(newRxTable, tableName);
-            });
         }
     }
 }

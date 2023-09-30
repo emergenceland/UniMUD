@@ -1,3 +1,4 @@
+#nullable enable
 using System;
 using System.Collections.Generic;
 using System.Numerics;
@@ -14,7 +15,7 @@ namespace mud
     {
         public struct Table
         {
-            public string Address;
+            public string? Address;
             public string TableId;
             public string Namespace;
 
@@ -22,6 +23,7 @@ namespace mud
 
             public Dictionary<string, SchemaAbiTypes.SchemaType> KeySchema;
             public Dictionary<string, SchemaAbiTypes.SchemaType> ValueSchema;
+            public bool? OffchainOnly;
         }
     }
 }

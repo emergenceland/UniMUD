@@ -31,7 +31,7 @@ namespace mud
         public FilterLog[] Logs;
     }
 
-    public static partial class Sync
+    public static class Sync
     {
         public static IObservable<FetchLogsResult> BlockRangeToLogs(this IObservable<BlockRangeType> source,
             string contractAddress, string rpcUrl)
@@ -66,9 +66,8 @@ namespace mud
             {
                 new StoreSpliceDynamicDataEventDTO().GetEventABI(),
                 new StoreSpliceStaticDataEventDTO().GetEventABI(),
-                new IStore.ContractDefinition.StoreSetRecordEventDTO().GetEventABI(),
-                new IStore.ContractDefinition.StoreDeleteRecordEventDTO().GetEventABI(),
-                // new StoreEphemeralRecordEventDTO().GetEventABI()
+                new StoreSetRecordEventDTO().GetEventABI(),
+                new StoreDeleteRecordEventDTO().GetEventABI(),
             };
             var events = storeEvents.Select(e => e.CreateFilterInput()).ToList();
             var from = fromBlock ?? 0;
@@ -149,7 +148,7 @@ namespace mud
             var lastBlockNumber = blockNumbers.Count > 0 ? blockNumbers[^1] : null;
             if (lastBlockNumber == null || toBlock > lastBlockNumber)
             {
-                groupedBlocksList.Add(new StorageAdapterBlock()
+                groupedBlocksList.Add(new StorageAdapterBlock
                 {
                     BlockNumber = toBlock,
                     Logs = new FilterLog[] { }

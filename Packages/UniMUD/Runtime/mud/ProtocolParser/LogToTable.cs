@@ -15,27 +15,20 @@ namespace mud
     {
         public static bool IsTableRegistrationLog(FilterLog log)
         {
-            // TODO: make this configurable via storeConfig
+            var storeConfig = MudDefinitions.DefineStoreConfig(null); 
+            var schemasTable = storeConfig["Tables"];
             var schemasTableId = ResourceIDToHex(new ResourceID
             {
-                Type = ResourceType.Table,
-                Namespace = "store",
-                Name = "Tables"
+                Type = schemasTable.OffchainOnly != null ? ResourceType.OffchainTable : ResourceType.Table,
+                Namespace = schemasTable.Namespace,
+                Name = schemasTable.Name
             });
-            
-            var schemasTableIdOffchain = ResourceIDToHex(new ResourceID
-            {
-                Type = ResourceType.OffchainTable,
-                Namespace = "store",
-                Name = "Tables"
-            });
-
             var storeSetRecordSignature =
                 new StoreSetRecordEventDTO().GetEventABI().Sha3Signature;
             if (!log.IsLogForEvent(storeSetRecordSignature)) return false;
             var decoded = Event<StoreSetRecordEventDTO>.DecodeEvent(log);
             var tableId = BytesToHex(decoded.Event.TableId, 32);
-            return string.Equals(tableId, schemasTableId, StringComparison.CurrentCultureIgnoreCase) || string.Equals(tableId, schemasTableIdOffchain, StringComparison.CurrentCultureIgnoreCase);
+            return string.Equals(tableId, schemasTableId, StringComparison.CurrentCultureIgnoreCase);
         }
 
         public static readonly Dictionary<string, SchemaAbiTypes.SchemaType> RegisterValueSchema = new()

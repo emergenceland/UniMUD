@@ -30,7 +30,7 @@ namespace mud
         public RxTable CreateTable(string tNamespace, string tName,
             Dictionary<string, SchemaAbiTypes.SchemaType> schema, bool offchain = false)
         {
-            var id = mud.Common.ResourceIDToHex(new ResourceID
+            var id = Common.ResourceIDToHex(new ResourceID
             {
                 Type = offchain ? ResourceType.OffchainTable : ResourceType.Table,
                 Namespace = tNamespace,
@@ -42,6 +42,22 @@ namespace mud
                 Schema = schema,
                 Values = new Dictionary<string, RxRecord>()
             };
+        }
+
+        public RxTable CreateTable(ProtocolParser.Table table)
+        {
+            var id = Common.ResourceIDToHex(new ResourceID
+            {
+                Type = table.OffchainOnly != null ? ResourceType.OffchainTable : ResourceType.Table,
+                Namespace = table.Namespace,
+                Name = table.Name,
+            });
+            return new RxTable()
+            {
+                Id = id,
+                Schema = table.ValueSchema,
+                Values = new Dictionary<string, RxRecord>()
+            }; 
         }
 
         public void Set(RxTable table, string entity, Property value)

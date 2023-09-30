@@ -1,12 +1,12 @@
+#nullable enable
 using System.Collections.Generic;
-using UnityEngine;
 
 
 namespace mud
 {
     public static partial class MudDefinitions
     {
-        public static void DefineWorldConfig(string address, RxDatastore ds)
+        public static Dictionary<string, ProtocolParser.Table> DefineWorldConfig(string? address)
         {
             ProtocolParser.Table NamespaceOwner = new ProtocolParser.Table
             {
@@ -177,41 +177,27 @@ namespace mud
                 ValueSchema = new Dictionary<string, SchemaAbiTypes.SchemaType>
                 {
                     { "functionSignature", SchemaAbiTypes.SchemaType.STRING },
-                }
+                },
+                OffchainOnly = true
             };
 
-            var tables = new List<ProtocolParser.Table>()
+            return new Dictionary<string, ProtocolParser.Table>
             {
-                NamespaceOwner,
-                ResourceAccess,
-                InstalledModules,
-                UserDelegationControl,
-                NamespaceDelegationControl,
-                Balances,
-                Systems,
-                SystemRegistry,
-                SystemHooks,
-                // FunctionSignatures,
-                FunctionSelectors
+                { "NamespaceOwner", NamespaceOwner },
+                { "ResourceAccess", ResourceAccess },
+                { "InstalledModules", InstalledModules },
+                { "UserDelegationControl", UserDelegationControl },
+                { "NamespaceDelegationControl", NamespaceDelegationControl },
+                { "Balances", Balances },
+                { "Systems", Systems },
+                { "SystemRegistry", SystemRegistry },
+                { "SystemHooks", SystemHooks },
+                { "FunctionSignatures", FunctionSignatures },
+                { "FunctionSelectors", FunctionSelectors }
             };
-
-            tables.ForEach(table =>
-            {
-                var newRxTable = ds.CreateTable(table.Namespace, table.Name, table.ValueSchema);
-                Debug.Log($"{table.Name} - {newRxTable.Id}");
-                if (ds.registeredTables.Contains(newRxTable.Id)) return;
-                // var tableName = $"{newTable.Namespace}:{newTable.Name}";
-                // TODO: figure out what to do with namespaces
-                var tableName = $"{table.Name}";
-                Debug.Log($"Registering table: {tableName}");
-                ds.RegisterTable(newRxTable, tableName);
-            });
-
-            // TODO: handle offchain tables properly
-            // This is dumb
-            var functionSigRxTable = ds.CreateTable(FunctionSignatures.Namespace, FunctionSignatures.Name,
-                FunctionSignatures.ValueSchema, true);
-            ds.RegisterTable(functionSigRxTable, FunctionSignatures.Name);
         }
+
+  
+
     }
 }

@@ -46,18 +46,14 @@ namespace mud
             var newTables = logs.Logs.Where(IsTableRegistrationLog).Select(LogToTable);
             foreach (var newTable in newTables)
             {
-                var newRxTable = ds.CreateTable(newTable.Namespace, newTable.Name, newTable.ValueSchema);
-                if (ds.registeredTables.Contains(newRxTable.Id))
-                {
-                    Debug.LogWarning($"Skipping registration for already registered table: {JsonConvert.SerializeObject(newTable)}");
-                }
-                else
-                {
-                    // var tableName = $"{newTable.Namespace}:{newTable.Name}";
-                    // TODO: figure out what to do with namespaces
-                    var tableName = $"{newTable.Name}";
-                    ds.RegisterTable(newRxTable, tableName);
-                }
+                var newRxTable = ds.CreateTable(newTable);
+                if (ds.registeredTables.Contains(newRxTable.Id)) continue;
+                //     Debug.LogWarning($"Skipping registration for already registered table: {JsonConvert.SerializeObject(newTable)}");
+                
+                // var tableName = $"{newTable.Namespace}:{newTable.Name}";
+                // TODO: figure out what to do with namespaces
+                var tableName = $"{newTable.Name}";
+                ds.RegisterTable(newRxTable, tableName);
             }
 
             foreach (var log in logs.Logs)

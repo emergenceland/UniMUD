@@ -131,8 +131,10 @@ namespace mud
             //     ds.RegisterTable(tableId);
             // }
             //
-            MudDefinitions.DefineWorldConfig(_worldAddress, ds);
-            MudDefinitions.DefineStoreConfig(_worldAddress, ds);
+            var worldConfig = MudDefinitions.DefineWorldConfig(_worldAddress);
+            var storeConfig = MudDefinitions.DefineStoreConfig(_worldAddress);
+            Common.LoadConfig(worldConfig, ds);
+            Common.LoadConfig(storeConfig, ds);
 
             /*
              * ==== SYNC ====
