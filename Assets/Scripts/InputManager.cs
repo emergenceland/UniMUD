@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
+using DefaultNamespace;
 using IWorld.ContractDefinition;
 using mud;
 using UniRx;
@@ -23,7 +24,7 @@ public class InputManager : MonoBehaviour
     private void SubscribeToCounter(NetworkManager _)
     {
         Debug.Log("Subscribed to counter.");
-        var incrementQuery = new Query().In(net.ds.tableNameIndex["Counter"]);
+        var incrementQuery = new Query().In(CounterTable.CounterRxTable);
         _counterSub = net.ds.RxQuery(incrementQuery).ObserveOnMainThread().Subscribe(OnIncrement);
     }
 

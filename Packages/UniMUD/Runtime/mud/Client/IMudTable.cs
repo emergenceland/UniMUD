@@ -12,25 +12,25 @@ namespace mud {
     
     [System.Serializable]
     public abstract class IMudTable {
-        public RxTable TableId { get { return GetTableId(); } }
-        public abstract RxTable GetTableId();
 
+        public string TableId { get { return GetTableId(); } }
+        public RxTable Table { get { return NetworkManager.Instance.ds.tableNameIndex[GetTableId()]; } }
 
+        public abstract string GetTableId();
         public abstract Type TableType();
         public abstract Type TableUpdateType();
         public abstract void RecordToTable(RxRecord rxRecord);
 
         public static T? GetValueFromTable<T>(string key) where T : IMudTable, new() {
             var table = new T();
-            var record = NetworkManager.Instance.ds.GetValue(table.TableId, key);
-
-            if (record == null) { return null; }
-            else { table.RecordToTable(record); return table; }
+            // var record = NetworkManager.Instance.ds.GetValue(Table, key);
+            //
+            // if (record == null) { return null; }
+            // else { table.RecordToTable(record); return table; }
+            return table;
         }
 
         public abstract void SetValues(params object[] values);
-        public abstract RecordUpdate CreateTypedRecord(RecordUpdate newUpdate);
-        public abstract IMudTable RecordUpdateToTable(RecordUpdate recordUpdate);
 
 
 
