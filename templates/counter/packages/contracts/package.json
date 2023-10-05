@@ -8,13 +8,22 @@
     "build:abi": "forge clean && forge build --skip test script",
     "build:abi-ts": "mud abi-ts && prettier --write '**/*.abi.json.d.ts'",
     "build:mud": "rimraf src/codegen && mud tablegen && mud worldgen",
+    "build:unity": "pnpm run dev:unity",
     "deploy:local": "pnpm run build && mud deploy",
     "deploy:testnet": "pnpm run build && mud deploy --profile=lattice-testnet",
     "dev": "pnpm mud dev-contracts",
     "lint": "pnpm run prettier && pnpm run solhint",
     "prettier": "prettier --write 'src/**/*.sol'",
     "solhint": "solhint --config ./.solhint.json 'src/**/*.sol' --fix",
-    "test": "tsc --noEmit && mud test"
+    "test": "tsc --noEmit && mud test",
+    "dev:unity": "pnpm run csgen && pnpm run resources",
+    "deploy:unity": "pnpm run dev && pnpm run deploy:unity",
+    "csgen": "dotnet tool restore && pnpm run csBindings && pnpm run csTables",
+    "csBindings": "ts-node unity/csBindings.ts ../client/Assets/Scripts",
+    "csTables": "rimraf ../client/Assets/Scripts/codegen && tsx unity/csDataStore.ts ../client/Assets/Scripts/codegen",
+    "resources": "ts-node unity/moveDeployToResources.ts ../client/Assets/Resources ./deploys/31337",
+    "resources:testnet": "ts-node unity/moveDeployToResources.ts ../client/Assets/Resources ./deploys/4242",
+    "resources:hackathon": "ts-node unity/moveDeployToResources.ts ../client/Assets/Resources ./deploys/371337"
   },
   "dependencies": {
     "@latticexyz/cli": "2.0.0-next.10",
@@ -24,13 +33,16 @@
     "@latticexyz/world-modules": "2.0.0-next.10"
   },
   "devDependencies": {
+    "@types/ejs": "^3.1.3",
     "@types/node": "^18.15.11",
     "ds-test": "https://github.com/dapphub/ds-test.git#e282159d5170298eb2455a6c05280ab5a73a4ef0",
+    "ejs": "^3.1.9",
     "forge-std": "https://github.com/foundry-rs/forge-std.git#74cfb77e308dd188d2f58864aaf44963ae6b88b1",
     "prettier": "^2.6.2",
     "prettier-plugin-solidity": "^1.0.0-beta.19",
     "solhint": "^3.3.7",
     "solhint-config-mud": "2.0.0-next.10",
-    "solhint-plugin-mud": "2.0.0-next.10"
+    "solhint-plugin-mud": "2.0.0-next.10",
+    "ts-node": "^10.9.1"
   }
 }

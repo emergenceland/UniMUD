@@ -1,0 +1,11 @@
+{
+  "ABIConfigurations": [
+    {
+      "ContractName": "IWorld",
+      "ABIFile": "IWorld.abi",
+      "BaseNamespace": "",
+      "CodeGenLanguage": "CSharp",
+      "BaseOutputPath": "../client/Assets/Scripts"
+    }
+  ]
+}
