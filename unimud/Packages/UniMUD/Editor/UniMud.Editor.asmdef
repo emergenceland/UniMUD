@@ -1,0 +1,19 @@
+{
+    "name": "UniMud.Editor",
+    "rootNamespace": "",
+    "references": [
+        "UniMud",
+        "DefaultNamespace"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
