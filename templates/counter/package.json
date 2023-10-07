@@ -1,5 +1,5 @@
 {
-  "name": "mud-template-vanilla",
+  "name": "mud-template-unity",
   "private": true,
   "scripts": {
     "build": "pnpm recursive run build",
