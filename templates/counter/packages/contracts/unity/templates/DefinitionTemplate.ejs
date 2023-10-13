@@ -64,13 +64,10 @@ namespace <%= namespace %>
 				});
 		}
 
-
 		public override void PropertyToTable(Property property) {
-
 			<% for (const field of fields) { -%>
 				<%= field.key %> = (<%= field.type %>)property["<%= field.key %>"];
 			<% } -%>
-
 		}
 
 		public override RecordUpdate RecordUpdateToTyped(RecordUpdate recordUpdate) {

@@ -38,8 +38,6 @@ namespace mud {
                 });
         }
 
-
-
         public static T? GetValueFromTable<T>(string key) where T : IMudTable, new() {
             var table = new T();
             // var record = NetworkManager.Instance.ds.GetValue(Table, key);
