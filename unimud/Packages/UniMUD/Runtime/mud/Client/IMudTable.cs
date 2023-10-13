@@ -20,12 +20,15 @@ namespace mud {
         public abstract string GetTableId();
         public abstract Type TableType();
         public abstract Type TableUpdateType();
-        public abstract void RecordToTable(RxRecord rxRecord);
+        public abstract void PropertyToTable(Property property);
+        public abstract RecordUpdate RecordUpdateToTyped(RecordUpdate rxRecord);
 
+        public static IObservable<RecordUpdate> GetUpdates<T>() where T : IMudTable, new() {return GetUpdates(typeof(T));}
+        public static IObservable<RecordUpdate> GetUpdates(Type table) {
 
-        public static IObservable<RecordUpdate> GetUpdates<T>() where T : IMudTable, new() {
+            if(table != typeof(IMudTable)) {Debug.LogError("Table is not of type IMudTable"); return null;}
 
-            IMudTable mudTable = (IMudTable)Activator.CreateInstance(typeof(T));
+            IMudTable mudTable = (IMudTable)Activator.CreateInstance(table.GetType());
 
             return NetworkManager.Instance.sync.onUpdate
                 .Where(update => update.Table.Name == mudTable.TableId)
@@ -35,7 +38,6 @@ namespace mud {
                 });
         }
 
-        public abstract RecordUpdate RecordUpdateToTyped(RecordUpdate rxRecord);
 
 
         public static T? GetValueFromTable<T>(string key) where T : IMudTable, new() {
