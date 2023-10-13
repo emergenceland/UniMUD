@@ -38,24 +38,6 @@ namespace mud {
                 });
         }
 
-
-
-
-        public static IObservable<RecordUpdate> GetUpdates<T>() where T : IMudTable, new() {
-
-            IMudTable mudTable = (IMudTable)Activator.CreateInstance(typeof(T));
-
-            return NetworkManager.Instance.sync.onUpdate
-                .Where(update => update.Table.Name == mudTable.TableId)
-                .Select(recordUpdate =>
-                { 
-                    return mudTable.RecordUpdateToTyped(recordUpdate); 
-                });
-        }
-
-        public abstract RecordUpdate RecordUpdateToTyped(RecordUpdate rxRecord);
-
-
         public static T? GetValueFromTable<T>(string key) where T : IMudTable, new() {
             var table = new T();
             // var record = NetworkManager.Instance.ds.GetValue(Table, key);
