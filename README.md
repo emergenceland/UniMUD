@@ -175,7 +175,7 @@ You can do reactive queries on the datastore, with the `RxQuery(yourQuery)` meth
 using System;
 using UniRx;
 using mud;
-using mud.Unity;
+using mud;
 using UnityEngine;
 
 public class Health : MonoBehaviour
