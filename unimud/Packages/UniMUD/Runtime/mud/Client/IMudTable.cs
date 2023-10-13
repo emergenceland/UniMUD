@@ -28,7 +28,7 @@ namespace mud {
 
             if(table.IsSubclassOf(typeof(IMudTable)) == false) {Debug.LogError("Table is not of type IMudTable"); return null;}
 
-            IMudTable mudTable = (IMudTable)Activator.CreateInstance(table.GetType());
+            IMudTable mudTable = (IMudTable)Activator.CreateInstance(table);
 
             return NetworkManager.Instance.sync.onUpdate
                 .Where(update => update.Table.Name == mudTable.TableId)
