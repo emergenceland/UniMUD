@@ -20,7 +20,25 @@ namespace mud {
         public abstract string GetTableId();
         public abstract Type TableType();
         public abstract Type TableUpdateType();
-        public abstract void RecordToTable(RxRecord rxRecord);
+        public abstract void PropertyToTable(Property property);
+        public abstract RecordUpdate RecordUpdateToTyped(RecordUpdate rxRecord);
+
+        public static IObservable<RecordUpdate> GetUpdates<T>() where T : IMudTable, new() {return GetUpdates(typeof(T));}
+        public static IObservable<RecordUpdate> GetUpdates(Type table) {
+
+            if(table.IsSubclassOf(typeof(IMudTable)) == false) {Debug.LogError($"{table.Name} is not of type IMudTable"); return null;}
+
+            IMudTable mudTable = (IMudTable)Activator.CreateInstance(table);
+
+            return NetworkManager.Instance.sync.onUpdate
+                .Where(update => update.Table.Name == mudTable.TableId)
+                .Select(recordUpdate =>
+                { 
+                    return mudTable.RecordUpdateToTyped(recordUpdate); 
+                });
+        }
+
+
 
 
         public static IObservable<RecordUpdate> GetUpdates<T>() where T : IMudTable, new() {

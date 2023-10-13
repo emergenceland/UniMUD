@@ -64,6 +64,12 @@ namespace <%= namespace %>
 				});
 		}
 
+		public override void PropertyToTable(Property property) {
+			<% for (const field of fields) { -%>
+				<%= field.key %> = (<%= field.type %>)property["<%= field.key %>"];
+			<% } -%>
+		}
+
 		public override RecordUpdate RecordUpdateToTyped(RecordUpdate recordUpdate) {
 
 			var currentValue = recordUpdate.CurrentValue as Property;
@@ -95,16 +101,6 @@ namespace <%= namespace %>
 			};
 		}
 
-		public override void RecordToTable(RxRecord record) {
-
-			var table = record.RawValue;
-
-			<% for (const field of fields) { -%>
-				var <%= field.key %>Value = (<%= field.type %>)table["<%= field.key %>"];
-				<%= field.key %> = <%= field.key %>Value;	
-			<% } -%>
-
-		}
 
 	}
 }
