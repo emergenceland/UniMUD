@@ -72,6 +72,8 @@ namespace <%= namespace %>
 			return new <%= tableClassName %>Update
 			{
 				Table = recordUpdate.Table,
+				CurrentValue = recordUpdate.CurrentValue,
+				PreviousValue = recordUpdate.PreviousValue,				
 				CurrentRecordKey = recordUpdate.CurrentRecordKey,
 				PreviousRecordKey = recordUpdate.PreviousRecordKey,
 				Type = recordUpdate.Type,
