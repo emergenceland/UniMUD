@@ -153,7 +153,7 @@ var allMonstersNamedChuck = new Query().In(MonsterTable).In(MonsterTable, new Co
 Make sure you actually run the query after building it, with `NetworkManager.Instance.ds.RunQuery(yourQuery)`
 
 ```csharp
-using mud.Client;
+using mud;
 
 void RenderHealth() {
   var hasHealth = new Query().Select(Health).In(InitialHealth).In(Health).In(TilePosition);
@@ -174,7 +174,7 @@ You can do reactive queries on the datastore, with the `RxQuery(yourQuery)` meth
 ```csharp
 using System;
 using UniRx;
-using mud.Client;
+using mud;
 using mud.Unity;
 using UnityEngine;
 

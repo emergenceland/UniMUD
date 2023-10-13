@@ -7,7 +7,7 @@ using UnityEditor;
 using System.Linq;
 using Object = UnityEngine.Object;
 
-namespace mud.Client {
+namespace mud {
 
     public class TablePostprocessor : AssetPostprocessor {
 
