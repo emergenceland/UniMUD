@@ -3,6 +3,7 @@ using System;
 
 using Property = System.Collections.Generic.Dictionary<string, object>;
 using UnityEngine;
+using UniRx;
 
 #if UNITY_EDITOR
 using UnityEditor;
@@ -20,6 +21,22 @@ namespace mud {
         public abstract Type TableType();
         public abstract Type TableUpdateType();
         public abstract void RecordToTable(RxRecord rxRecord);
+
+
+        public static IObservable<RecordUpdate> GetUpdates<T>() where T : IMudTable, new() {
+
+            IMudTable mudTable = (IMudTable)Activator.CreateInstance(typeof(T));
+
+            return NetworkManager.Instance.sync.onUpdate
+                .Where(update => update.Table.Name == mudTable.TableId)
+                .Select(recordUpdate =>
+                { 
+                    return mudTable.RecordUpdateToTyped(recordUpdate); 
+                });
+        }
+
+        public abstract RecordUpdate RecordUpdateToTyped(RecordUpdate rxRecord);
+
 
         public static T? GetValueFromTable<T>(string key) where T : IMudTable, new() {
             var table = new T();

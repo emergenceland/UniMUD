@@ -64,8 +64,8 @@ namespace mud
         public RxTable Table;
         public object CurrentValue;
         public object PreviousValue;
-        public string CurrentKey { get; set; }
-        public string PreviousKey { get; set; }
+        public string CurrentRecordKey { get; set; }
+        public string PreviousRecordKey { get; set; }
     }
     
     public interface IRxRecord
