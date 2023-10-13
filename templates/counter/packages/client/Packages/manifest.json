@@ -1,7 +1,7 @@
 {
   "dependencies": {
     "com.cysharp.unitask": "https://github.com/Cysharp/UniTask.git?path=src/UniTask/Assets/Plugins/UniTask",
-    "com.emergenceland.unimud": "file:/Users/lil/dev/UniMUD-dev/unimud/Packages/UniMUD",
+    "com.emergenceland.unimud": "file:../../../../../unimud/Packages/UniMUD",
     "com.unity.collab-proxy": "2.0.4",
     "com.unity.feature.development": "1.0.1",
     "com.unity.textmeshpro": "3.0.6",
