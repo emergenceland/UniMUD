@@ -5,18 +5,22 @@ using System;
 using mud;
 using UniRx;
 using Property = System.Collections.Generic.Dictionary<string, object>;
-using System.Collections.Generic;
-using UnityEngine;
 
 namespace <%= namespace %>
 {
-	public class <%= tableClassName %>Update : TypedRecordUpdate<Tuple<<%= tableClassName %>?, <%= tableClassName %>?>> { }
 
 	public class <%= tableClassName %> : IMudTable
 	{
 
+		public class <%= tableClassName %>Update : RecordUpdate {
+			<% for (const field of fields) { -%>
+				public <%= field.type %>? <%= field.key %>;
+				public <%= field.type %>? Previous<%= field.key %>;
+			<% } -%>
+		}
+
 		public readonly static string ID = "<%= tableName %>";
-		public static RxTable <%= tableName %>RxTable {get{return NetworkManager.Datastore.tableNameIndex[ID]; } }
+		public static RxTable Table {get{return NetworkManager.Instance.ds.store[ID]; } }
 		public override string GetTableId() {return ID;}
 
 		<% for (const field of fields) { -%>
@@ -48,10 +52,41 @@ namespace <%= namespace %>
 			<% } -%>
 		}
 
+		public static IObservable<<%= tableClassName %>Update> GetUpdates()
+			{
+					return NetworkManager.Instance.sync.onUpdate
+					.Where(update => update.Table.Name == ID)
+					.Select(
+							recordUpdate => {
+										var currentValue = recordUpdate.CurrentValue as Property;
+										var previousValue = recordUpdate.PreviousValue as Property;
+										return new <%= tableClassName %>Update
+										{
+											Table = recordUpdate.Table,
+											CurrentKey = recordUpdate.CurrentKey,
+											PreviousKey = recordUpdate.PreviousKey,
+											Type = recordUpdate.Type,
+											<% for (const field of fields) { -%>
+												<% if (field.type.startsWith("uint") || field.type.startsWith("Uint")) { -%>
+													<%= field.key %> = (<%= field.type %>)(<%= field.type.charAt(0).toUpperCase() === field.type.charAt(0) ? field.type.slice(1).toUpperCase() : field.type.slice(1) %>)(currentValue?["<%= field.key.toLowerCase() %>"] ?? null),
+												<% } else { -%>
+													<%= field.key %> = (<%= field.type %>)(currentValue?["<%= field.key.toLowerCase() %>"] ?? null),
+												<% } -%>
+											<% } -%>
+											<% for (const field of fields) { -%>
+												<% if (field.type.startsWith("uint") || field.type.startsWith("Uint")) { -%>
+													Previous<%= field.key %> = (<%= field.type %>)(<%= field.type.charAt(0).toUpperCase() === field.type.charAt(0) ? field.type.slice(1).toUpperCase() : field.type.slice(1) %>)(previousValue?["<%= field.key.toLowerCase() %>"] ?? null),
+												<% } else { -%>
+													Previous<%= field.key %> = (<%= field.type %>)(previousValue?["<%= field.key.toLowerCase() %>"] ?? null),
+												<% } -%>
+											<% } -%>
+										};
+							});
+			}
+
 		public override void RecordToTable(RxRecord record) {
 
-			var table = record.value;
-			//bool hasValues = false;
+			var table = record.RawValue;
 
 			<% for (const field of fields) { -%>
 				var <%= field.key %>Value = (<%= field.type %>)table["<%= field.key %>"];
@@ -60,54 +95,5 @@ namespace <%= namespace %>
 
 		}
 
-		public static Tuple<<%= tableClassName %>?, <%= tableClassName %>?> MapUpdates(Tuple<Property?, Property?> value) {
-			<%= tableClassName %>? current = null;
-			<%= tableClassName %>? previous = null;
-
-			if (value.Item1 != null) 
-			{
-				try {
-					current = new <%= tableClassName %>
-					{
-						<% for (const field of fields) { -%>
-							<%= field.key %> = value.Item1.TryGetValue("<%= field.key %>", out var <%= field.key %>Val) 
-									? (<%= field.type %>)<%= field.key %>Val : default,
-						<% } -%>
-					};
-				} catch (InvalidCastException)
-				{
-					current = new <%= tableClassName %> 
-					{
-						<% for (const field of fields) { -%>
-							<%= field.key %> = 	null,
-						<% } -%>	
-					};
-				}
-			}
-
-			if (value.Item2 != null)
-			{
-				try {
-					previous = new <%= tableClassName %>
-					{
-						<% for (const field of fields) { -%>
-							<%= field.key %> = value.Item2.TryGetValue("<%= field.key %>", out var <%= field.key %>Val) 
-									? (<%= field.type %>)<%= field.key %>Val : default,
-						<% } -%>
-					};
-				} catch (InvalidCastException)
-				{
-					previous = new  <%= tableClassName %>
-					{
-						<% for (const field of fields) { -%>
-							<%= field.key %> = 	null,
-						<% } -%>	
-					};
-				}
-		
-			}
-
-			return new Tuple<<%= tableClassName %>?, <%= tableClassName %>?> (current, previous);
-		}
 	}
 }

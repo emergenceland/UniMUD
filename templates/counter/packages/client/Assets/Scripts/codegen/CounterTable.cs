@@ -3,24 +3,31 @@
 #nullable enable
 using System;
 using mud;
+using UniRx;
 using Property = System.Collections.Generic.Dictionary<string, object>;
 
 namespace DefaultNamespace
 {
-    public class CounterTableUpdate : TypedRecordUpdate<Tuple<CounterTable?, CounterTable?>> { }
-
     public class CounterTable : IMudTable
     {
-        public readonly static string ID = "Counter";
-        public static RxTable CounterRxTable
+        public class CounterTableUpdate : RecordUpdate
         {
-            get { return NetworkManager.Instance.ds.tableNameIndex[ID]; }
+            public uint? Value;
+            public uint? PreviousValue;
+        }
+
+        public readonly static string ID = "Counter";
+        public static RxTable Table
+        {
+            get { return NetworkManager.Instance.ds.store[ID]; }
         }
 
         public override string GetTableId()
         {
             return ID;
         }
+
+        public uint? Value;
 
         public override Type TableType()
         {
@@ -40,49 +47,44 @@ namespace DefaultNamespace
             {
                 return false;
             }
+            if (Value != other.Value)
+            {
+                return false;
+            }
             return true;
         }
 
-        public override void SetValues(params object[] functionParameters) { }
+        public override void SetValues(params object[] functionParameters)
+        {
+            Value = (uint)functionParameters[0];
+        }
+
+        public static IObservable<CounterTableUpdate> GetUpdates()
+        {
+            return NetworkManager.Instance.sync.onUpdate
+                .Where(update => update.Table.Name == ID)
+                .Select(recordUpdate =>
+                {
+                    var currentValue = recordUpdate.CurrentValue as Property;
+                    var previousValue = recordUpdate.PreviousValue as Property;
+                    return new CounterTableUpdate
+                    {
+                        Table = recordUpdate.Table,
+                        CurrentKey = recordUpdate.CurrentKey,
+                        PreviousKey = recordUpdate.PreviousKey,
+                        Type = recordUpdate.Type,
+                        Value = (uint)(int)(currentValue?["value"] ?? null),
+                        PreviousValue = (uint)(int)(previousValue?["value"] ?? null),
+                    };
+                });
+        }
 
         public override void RecordToTable(RxRecord record)
         {
-            var table = record.value;
-            //bool hasValues = false;
-        }
+            var table = record.RawValue;
 
-        public static Tuple<CounterTable?, CounterTable?> MapUpdates(
-            Tuple<Property?, Property?> value
-        )
-        {
-            CounterTable? current = null;
-            CounterTable? previous = null;
-
-            if (value.Item1 != null)
-            {
-                try
-                {
-                    current = new CounterTable { };
-                }
-                catch (InvalidCastException)
-                {
-                    current = new CounterTable { };
-                }
-            }
-
-            if (value.Item2 != null)
-            {
-                try
-                {
-                    previous = new CounterTable { };
-                }
-                catch (InvalidCastException)
-                {
-                    previous = new CounterTable { };
-                }
-            }
-
-            return new Tuple<CounterTable?, CounterTable?>(current, previous);
+            var ValueValue = (uint)table["Value"];
+            Value = ValueValue;
         }
     }
 }

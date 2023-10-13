@@ -16,14 +16,11 @@
     "prettier": "prettier --write 'src/**/*.sol'",
     "solhint": "solhint --config ./.solhint.json 'src/**/*.sol' --fix",
     "test": "tsc --noEmit && mud test",
-    "dev:unity": "pnpm run csgen && pnpm run resources",
+    "dev:unity": "pnpm run csgen && cp worlds.json ../client/Assets/Resources",
     "deploy:unity": "pnpm run dev && pnpm run deploy:unity",
-    "csgen": "dotnet tool restore && pnpm run csBindings && pnpm run csTables",
+    "csgen": "wait-on ./out/IWorld.sol/IWorld.abi.json && dotnet tool restore && pnpm run csBindings && pnpm run csTables",
     "csBindings": "ts-node unity/csBindings.ts ../client/Assets/Scripts",
-    "csTables": "rimraf ../client/Assets/Scripts/codegen && tsx unity/csDataStore.ts ../client/Assets/Scripts/codegen",
-    "resources": "ts-node unity/moveDeployToResources.ts ../client/Assets/Resources ./deploys/31337",
-    "resources:testnet": "ts-node unity/moveDeployToResources.ts ../client/Assets/Resources ./deploys/4242",
-    "resources:hackathon": "ts-node unity/moveDeployToResources.ts ../client/Assets/Resources ./deploys/371337"
+    "csTables": "rimraf ../client/Assets/Scripts/codegen && tsx unity/csDataStore.ts ../client/Assets/Scripts/codegen"
   },
   "dependencies": {
     "@latticexyz/cli": "2.0.0-next.10",
@@ -43,6 +40,8 @@
     "solhint": "^3.3.7",
     "solhint-config-mud": "2.0.0-next.10",
     "solhint-plugin-mud": "2.0.0-next.10",
-    "ts-node": "^10.9.1"
+    "ts-node": "^10.9.1",
+    "tsx": "^3.13.0",
+    "wait-on": "^7.0.1"
   }
 }

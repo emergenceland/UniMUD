@@ -1,26 +1,9 @@
 import { exec } from "child_process";
 import fs from "fs";
-import path from "path";
+import { GeneratorConfig, ABIGenerator } from "./types";
+import { copyAndRenameFileExtension, getFilesWithExtension } from "./utils";
 
-interface GeneratorConfig {
-  ContractName?: string;
-  ABI?: string;
-  ABIFile?: string;
-  ByteCode?: string;
-  BinFile?: string;
-  BaseNamespace?: string;
-  CQSNamespace?: string;
-  DTONamespace?: string;
-  ServiceNamespace?: string;
-  CodeGenLanguage?: string;
-  BaseOutputPath?: string;
-}
-
-interface Generator {
-  ABIConfigurations: GeneratorConfig[];
-}
-
-export function createConfig(abiDir: string, baseName: string, outputPath: string, world?: boolean): Generator {
+export function createConfig(abiDir: string, baseName: string, outputPath: string, world?: boolean): ABIGenerator {
   const generatorConfigTemplate: GeneratorConfig = {
     ContractName: undefined,
     ABI: undefined,
@@ -35,7 +18,7 @@ export function createConfig(abiDir: string, baseName: string, outputPath: strin
     BaseOutputPath: outputPath,
   };
 
-  const generatedConfig: Generator = { ABIConfigurations: [] };
+  const generatedConfig: ABIGenerator = { ABIConfigurations: [] };
 
   if (world) {
     generatedConfig.ABIConfigurations.push({
@@ -66,52 +49,6 @@ export function createConfig(abiDir: string, baseName: string, outputPath: strin
   return generatedConfig;
 }
 
-// Helper function to get all files with the specified extension recursively
-function getFilesWithExtension(dir: string, ext: string, files: string[] = []) {
-  fs.readdirSync(dir).forEach((file) => {
-    const filePath = path.join(dir, file);
-
-    if (fs.statSync(filePath).isDirectory()) {
-      getFilesWithExtension(filePath, ext, files);
-    } else if (path.extname(file) === ext) {
-      files.push(filePath);
-    }
-  });
-  return files;
-}
-
-function copyAndRenameFile(srcPath: string, destDir: string, newExtension: string): void {
-  fs.readFile(srcPath, (readErr, data) => {
-    if (readErr) {
-      console.error(readErr);
-      return;
-    }
-
-    // Create the destination directory if it doesn't exist
-    fs.mkdir(destDir, { recursive: true }, (mkdirErr) => {
-      if (mkdirErr) {
-        console.error(mkdirErr);
-        return;
-      }
-
-      // Get the new file name with the new extension
-      const fileName = srcPath.endsWith(".abi.json")
-        ? path.basename(srcPath, ".abi.json") + newExtension
-        : path.basename(srcPath, path.extname(srcPath)) + newExtension;
-      const destPath = path.join(destDir, fileName);
-
-      // Write the file to the new path with the new extension
-      fs.writeFile(destPath, data, (writeErr) => {
-        if (writeErr) {
-          console.error(writeErr);
-          return;
-        }
-        console.log("Successfully copied and renamed file", srcPath, "to", destPath);
-      });
-    });
-  });
-}
-
 function main() {
   const args = process.argv.slice(2);
   const outputPath = args[0] ?? "../client/Assets/Scripts";
@@ -123,7 +60,7 @@ function main() {
     }
   });
   const abis = "./out/IWorld.sol/IWorld.abi.json";
-  copyAndRenameFile(abis, abiDir, ".abi");
+  copyAndRenameFileExtension(abis, abiDir, ".abi.json", ".abi");
   const baseName = "";
   const generatedConfig = createConfig(abiDir, baseName, outputPath, true);
 
@@ -134,6 +71,7 @@ function main() {
   exec("dotnet tool run Nethereum.Generator.Console generate from-project", (err, stdout, stderr) => {
     if (err) {
       console.error(err);
+      console.error(stderr);
       return;
     }
     console.log(stdout);

@@ -1,14 +1,32 @@
-import { SchemaAbiType, schemaAbiTypes } from "@latticexyz/schema-type";
+import { SchemaAbiType } from "@latticexyz/schema-type";
+
+export interface GeneratorConfig {
+  ContractName?: string;
+  ABI?: string;
+  ABIFile?: string;
+  ByteCode?: string;
+  BinFile?: string;
+  BaseNamespace?: string;
+  CQSNamespace?: string;
+  DTONamespace?: string;
+  ServiceNamespace?: string;
+  CodeGenLanguage?: string;
+  BaseOutputPath?: string;
+}
+
+export interface ABIGenerator {
+  ABIConfigurations: GeneratorConfig[];
+}
 
 export const schemaTypesToCSTypeStrings: Record<SchemaAbiType, string> = {
-  uint8: "byte",
-  uint16: "ushort",
+  uint8: "uint",
+  uint16: "uint",
   uint24: "uint",
-  uint32: "ulong",
-  uint40: "ulong",
-  uint48: "ulong",
-  uint56: "ulong",
-  uint64: "ulong",
+  uint32: "uint",
+  uint40: "UInt64",
+  uint48: "UInt64",
+  uint56: "System.Numerics.BigInteger",
+  uint64: "System.Numerics.BigInteger",
   uint72: "System.Numerics.BigInteger",
   uint80: "System.Numerics.BigInteger",
   uint88: "System.Numerics.BigInteger",
@@ -33,14 +51,14 @@ export const schemaTypesToCSTypeStrings: Record<SchemaAbiType, string> = {
   uint240: "System.Numerics.BigInteger",
   uint248: "System.Numerics.BigInteger",
   uint256: "System.Numerics.BigInteger",
-  int8: "byte",
-  int16: "short",
+  int8: "int",
+  int16: "int",
   int24: "int",
-  int32: "long",
-  int40: "long",
-  int48: "long",
-  int56: "long",
-  int64: "long",
+  int32: "int",
+  int40: "Int64",
+  int48: "Int64",
+  int56: "System.Numerics.BigInteger",
+  int64: "System.Numerics.BigInteger",
   int72: "System.Numerics.BigInteger",
   int80: "System.Numerics.BigInteger",
   int88: "System.Numerics.BigInteger",
@@ -99,14 +117,14 @@ export const schemaTypesToCSTypeStrings: Record<SchemaAbiType, string> = {
   bytes32: "string",
   bool: "bool",
   address: "string",
-  "uint8[]": "byte[]",
-  "uint16[]": "ushort[]",
+  "uint8[]": "uint[]",
+  "uint16[]": "uint[]",
   "uint24[]": "uint[]",
   "uint32[]": "uint[]",
-  "uint40[]": "ulong[]",
-  "uint48[]": "ulong[]",
-  "uint56[]": "ulong[]",
-  "uint64[]": "ulong[]",
+  "uint40[]": "UInt64[]",
+  "uint48[]": "UInt64[]",
+  "uint56[]": "System.Numerics.BigInteger[]",
+  "uint64[]": "System.Numerics.BigInteger[]",
   "uint72[]": "System.Numerics.BigInteger[]",
   "uint80[]": "System.Numerics.BigInteger[]",
   "uint88[]": "System.Numerics.BigInteger[]",
@@ -131,14 +149,14 @@ export const schemaTypesToCSTypeStrings: Record<SchemaAbiType, string> = {
   "uint240[]": "System.Numerics.BigInteger[]",
   "uint248[]": "System.Numerics.BigInteger[]",
   "uint256[]": "System.Numerics.BigInteger[]",
-  "int8[]": "sbyte[]",
-  "int16[]": "short[]",
+  "int8[]": "int[]",
+  "int16[]": "int[]",
   "int24[]": "int[]",
   "int32[]": "int[]",
-  "int40[]": "long[]",
-  "int48[]": "long[]",
-  "int56[]": "long[]",
-  "int64[]": "long[]",
+  "int40[]": "Int64[]",
+  "int48[]": "Int64[]",
+  "int56[]": "System.Numerics.BigInteger[]",
+  "int64[]": "System.Numerics.BigInteger[]",
   "int72[]": "System.Numerics.BigInteger[]",
   "int80[]": "System.Numerics.BigInteger[]",
   "int88[]": "System.Numerics.BigInteger[]",
@@ -195,8 +213,18 @@ export const schemaTypesToCSTypeStrings: Record<SchemaAbiType, string> = {
   "bytes30[]": "string[]",
   "bytes31[]": "string[]",
   "bytes32[]": "string[]",
-  "bool[]": "object", // no boolean array
+  "bool[]": "bool[]",
   "address[]": "string[]",
   bytes: "string",
   string: "string",
 };
+
+export interface TableField {
+  key: string;
+  type: string;
+}
+
+export interface TableDefinitionConfig {
+  namespace: string;
+  tableName: string;
+}
