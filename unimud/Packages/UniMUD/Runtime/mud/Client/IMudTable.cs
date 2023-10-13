@@ -26,7 +26,7 @@ namespace mud {
         public static IObservable<RecordUpdate> GetUpdates<T>() where T : IMudTable, new() {return GetUpdates(typeof(T));}
         public static IObservable<RecordUpdate> GetUpdates(Type table) {
 
-            if(table.IsSubclassOf(typeof(IMudTable)) == false) {Debug.LogError("Table is not of type IMudTable"); return null;}
+            if(table.IsSubclassOf(typeof(IMudTable)) == false) {Debug.LogError($"{table.Name} is not of type IMudTable"); return null;}
 
             IMudTable mudTable = (IMudTable)Activator.CreateInstance(table);
 
