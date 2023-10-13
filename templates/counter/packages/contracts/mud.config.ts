@@ -6,5 +6,6 @@ export default mudConfig({
       keySchema: {},
       valueSchema: "uint32",
     },
+    Test : "bool",
   },
 });

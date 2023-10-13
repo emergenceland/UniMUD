@@ -13,10 +13,24 @@ namespace mud
 {
     public class NetworkManager : MonoBehaviour
     {
+        public static string LocalKey {get{return Instance.addressKey;}}
+        public static string LocalAddress {get{return Instance.address;}}
+        public static string WorldAddress {get{return Instance._worldAddress;}}
+        public static NetworkManager Instance { get; private set; }
+        public static CreateContract World { get {return Instance.world;}}
+        public static RxDatastore Datastore { get {return Instance.ds;}}
+        public static NetworkData Network { get {return Instance.activeNetwork;}}
+        public event Action<NetworkManager> OnNetworkInitialized = delegate { };
+        public static Action OnInitialized;
+        public static bool Initialized;
+
         [Header("Dev settings")] 
-        public string pk;
+        [SerializeField] bool autoConnect = true;
         [Tooltip("Generate new wallet every time instead of loading from PlayerPrefs")]
-        public bool uniqueWallets;
+        [SerializeField] bool burnerWallet = true;
+        [SerializeField] bool uniqueWallets = false;
+        public string pk;
+        
 
         private NetworkData activeNetwork;
         [Header("Network")] public NetworkTypes.NetworkType networkType;
@@ -38,10 +52,8 @@ namespace mud
         public RxDatastore ds;
         public StoreSync sync;
         public CreateContract world;
-        public static NetworkManager Instance { get; private set; }
         private readonly CompositeDisposable _disposables = new();
         
-        public event Action<NetworkManager> OnNetworkInitialized = delegate { };
         private bool _networkReady = false;
 
         protected void Awake()
@@ -77,9 +89,18 @@ namespace mud
 
         private async void Start()
         {
-            /*
-             * ==== ACCOUNT CREATION ====
-             */
+
+            if(burnerWallet) {
+                CreateAccount();
+            }
+
+            if(autoConnect) {
+                await Connect();
+            }
+        }
+
+        public void CreateAccount() {
+
             if (!string.IsNullOrWhiteSpace(pk))
             {
                 account = new Account(pk, _chainId);
@@ -94,6 +115,9 @@ namespace mud
                 Debug.Log("Burner wallet created/loaded: " + address);
                 addressKey = "0x" + address.Replace("0x", "").PadLeft(64, '0').ToLower();
             }
+        }
+
+        public async UniTask Connect() {
 
             /*
              * ==== PROVIDER ====
@@ -136,6 +160,9 @@ namespace mud
                         {
                             _networkReady = true;
                             Debug.Log(opts.message);
+
+                            Initialized = true;
+                            OnInitialized?.Invoke();
                             OnNetworkInitialized(this);
                         }
                     });
@@ -143,10 +170,7 @@ namespace mud
             updateStream.Subscribe(onNext: _ => { }, onError: Debug.LogError)
                 .AddTo(_disposables);
 
-            /*
-             * ==== FAUCET ====
-             */
-            // TODO
+
         }
 
         private IEnumerator GetStartingBlockNumber()
@@ -158,6 +182,7 @@ namespace mud
 
         private void OnDestroy()
         {
+            Initialized = false;
             _disposables?.Dispose();
         }
     }

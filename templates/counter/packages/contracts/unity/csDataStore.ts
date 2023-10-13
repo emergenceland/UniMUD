@@ -17,19 +17,19 @@ export function createTableDefinition(
   for (const key in keySchema) {
     const keyType = keySchema[key];
     if (!keyType) throw new Error(`[${tableName}]: Unknown type for field ${key}`);
-    fields.push({ key: key[0].toUpperCase() + key.slice(1), type: schemaTypesToCSTypeStrings[keyType] });
+    fields.push({ key: key[0] + key.slice(1), type: schemaTypesToCSTypeStrings[keyType] });
   }
 
   for (const key in valueSchema) {
     const valueType = valueSchema[key];
     if (!valueType) throw new Error(`[${tableName}]: Unknown type for field ${key}`);
-    fields.push({ key: key[0].toUpperCase() + key.slice(1), type: schemaTypesToCSTypeStrings[valueType] });
+    fields.push({ key: key[0] + key.slice(1), type: schemaTypesToCSTypeStrings[valueType] });
   }
 
   renderFile(
     "./unity/templates/DefinitionTemplate.ejs",
     {
-      namespace: "DefaultNamespace",
+      namespace: "mudworld",
       tableClassName: tableName + "Table",
       tableName,
       fields,

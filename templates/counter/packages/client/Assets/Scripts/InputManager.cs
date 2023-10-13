@@ -1,9 +1,9 @@
 using System;
 using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
-using DefaultNamespace;
 using IWorld.ContractDefinition;
 using mud;
+using mudworld;
 using Newtonsoft.Json;
 using UniRx;
 using UnityEngine;
@@ -25,17 +25,20 @@ public class InputManager : MonoBehaviour
     private void SubscribeToCounter(NetworkManager _)
     {
         Debug.Log("Subscribed to counter.");
-        _counterSub = CounterTable.GetUpdates().ObserveOnMainThread().Subscribe(OnIncrement);
+        _counterSub = IMudTable.GetUpdates<CounterTable>().ObserveOnMainThread().Subscribe(OnIncrement);
     }
 
 
-    private void OnIncrement(CounterTable.CounterTableUpdate update)
+    private void OnIncrement(RecordUpdate update)
     {
-        Debug.Log("UDPATE: " + JsonConvert.SerializeObject(update));
-        if (update.Type != UpdateType.DeleteRecord)
+
+        CounterTable.CounterTableUpdate updateType = (CounterTable.CounterTableUpdate)update;
+
+        Debug.Log("UDPATE: " + JsonConvert.SerializeObject(update), this);
+        if (updateType.Type != UpdateType.DeleteRecord)
         {
-            var currentValue = update.Value;
-            if (currentValue == null) return;
+            var currentValue = updateType.CurrentValue;
+            if (currentValue == null) {Debug.LogError("Null CurrentValue", this); return;}
             Debug.Log("Counter is now: " + currentValue);
             SpawnPrefab(); 
         }

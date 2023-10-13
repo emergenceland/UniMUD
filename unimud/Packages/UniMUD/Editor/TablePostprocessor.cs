@@ -7,11 +7,12 @@ using UnityEditor;
 using System.Linq;
 using Object = UnityEngine.Object;
 
-namespace mud.Client {
+namespace mud {
 
     public class TablePostprocessor : AssetPostprocessor {
 
         
+        //TODO, file that defines these
         static string Namespace = "DefaultNamespace";
         static string CodePath = "Assets/Scripts/codegen/";
         static string TablePath = "Assets/Resources/MUD/Tables/";

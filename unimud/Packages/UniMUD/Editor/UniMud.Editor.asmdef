@@ -3,7 +3,7 @@
     "rootNamespace": "",
     "references": [
         "UniMud",
-        "DefaultNamespace"
+        "mudworld"
     ],
     "includePlatforms": [
         "Editor"
