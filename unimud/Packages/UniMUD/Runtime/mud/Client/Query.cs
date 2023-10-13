@@ -82,7 +82,7 @@ namespace mud
                 {
                     // populate context with first table
                     if (table.IsNegative) throw new Exception("Negative table filter cannot be first");
-                    context = new HashSet<RxRecord>(candidates.Values.Values);
+                    context = new HashSet<RxRecord>(candidates.Entries.Values);
                 }
                 else
                 {
@@ -91,7 +91,7 @@ namespace mud
 
                     foreach (var record in context)
                     {
-                        var recordInTable = candidates.Values.TryGetValue(record.key, out var newRecord);
+                        var recordInTable = candidates.Entries.TryGetValue(record.Key, out var newRecord);
                         if (table.IsNegative)
                         {
                             if (recordInTable)
@@ -124,7 +124,7 @@ namespace mud
                     {
                         foreach (var record in context)
                         {
-                            if (!record.value.TryGetValue(condition.Attribute, out var value)) continue;
+                            if (!record.RawValue.TryGetValue(condition.Attribute, out var value)) continue;
                             if (value.Equals(condition.Value)) continue;
                             recordsToRemove.Add(record);
                         }
@@ -139,7 +139,7 @@ namespace mud
 
             if (_queryVariables.Count > 0 && context != null)
             {
-                context.RemoveWhere(record => !_queryVariables.All(record.tableId.Contains));
+                context.RemoveWhere(record => !_queryVariables.All(record.TableId.Contains));
             }
 
             return context ?? new HashSet<RxRecord>();

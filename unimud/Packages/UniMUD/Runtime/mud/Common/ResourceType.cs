@@ -19,6 +19,13 @@ namespace mud
         public string Namespace;
         public string Name;
         public ResourceType Type;
+        
+        public ResourceID(string ns, string name, ResourceType type)
+        {
+            Namespace = ns;
+            Name = name;
+            Type = type;
+        }
     }
 
     public static partial class Common

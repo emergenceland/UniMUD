@@ -6,11 +6,11 @@ namespace mud
     using Property = Dictionary<string, object>;
 
 
-    public class RxRecord
+    public class RxRecord : IRxRecord
     {
-        public string tableId;
-        public string key;
-        public Property value;
+        public string TableId { get; set; }
+        public string Key { get; set; }
+        public Property RawValue { get; set; }
 
         private static bool PropEquals(Property x, Property y)
         {
@@ -26,8 +26,8 @@ namespace mud
 
         public bool Equals(RxRecord other)
         {
-            var valueEquals = PropEquals(value, other.value);
-            return tableId == other.tableId && key == other.key && valueEquals;
+            var valueEquals = PropEquals(RawValue, other.RawValue);
+            return TableId == other.TableId && Key == other.Key && valueEquals;
         }
 
         public override bool Equals(object? obj)
@@ -40,14 +40,14 @@ namespace mud
 
         public override int GetHashCode()
         {
-            return HashCode.Combine(tableId, key, value);
+            return HashCode.Combine(TableId, Key, RawValue);
         }
 
         public RxRecord(string tableId, string key, Property value)
         {
-            this.tableId = tableId;
-            this.key = key;
-            this.value = value;
+            this.TableId = tableId;
+            this.Key = key;
+            this.RawValue = value;
         }
     }
 
@@ -60,16 +60,18 @@ namespace mud
 
     public class RecordUpdate
     {
-        public UpdateType Type { get; set; }
-        public string TableId { get; set; }
-        public string TableName { get; set; }
-        public string Key { get; set; }
-        public Tuple<Property?, Property?> Value { get; set; }
+        public UpdateType Type;
+        public RxTable Table;
+        public object CurrentValue;
+        public object PreviousValue;
+        public string CurrentKey { get; set; }
+        public string PreviousKey { get; set; }
     }
-
-
-    public class TypedRecordUpdate<T> : RecordUpdate
+    
+    public interface IRxRecord
     {
-        public T TypedValue { get; set; }
+        string TableId { get; }
+        string Key { get; }
+        Dictionary<string, object> RawValue { get; }
     }
 }

@@ -5,6 +5,7 @@ using mud.IStore.ContractDefinition;
 using Nethereum.Contracts;
 using Nethereum.RPC.Eth.DTOs;
 using Newtonsoft.Json;
+using UniRx;
 using UnityEngine;
 using static mud.ProtocolParser;
 
@@ -41,19 +42,20 @@ namespace mud
             throw new Exception("Unknown log type");
         }
 
-        public static void ToStorage(RxDatastore ds, StorageAdapterBlock logs)
+        public static void ToStorage(ReplaySubject<RecordUpdate> onUpdate, RxDatastore ds, StorageAdapterBlock logs)
         {
+            var dbUpdates = new List<RecordUpdate>();
+
             var newTables = logs.Logs.Where(IsTableRegistrationLog).Select(LogToTable);
             foreach (var newTable in newTables)
             {
-                var newRxTable = ds.CreateTable(newTable);
-                if (ds.registeredTables.Contains(newRxTable.Id)) continue;
-                //     Debug.LogWarning($"Skipping registration for already registered table: {JsonConvert.SerializeObject(newTable)}");
-                
-                // var tableName = $"{newTable.Namespace}:{newTable.Name}";
-                // TODO: figure out what to do with namespaces
-                var tableName = $"{newTable.Name}";
-                ds.RegisterTable(newRxTable, tableName);
+                var id = Common.ResourceIDToHex(new ResourceID
+                {
+                    Type = newTable.OffchainOnly != null ? ResourceType.OffchainTable : ResourceType.Table,
+                    Namespace = newTable.Namespace,
+                    Name = newTable.Name,
+                });
+                ds.RegisterTable(id, newTable.Name, newTable.ValueSchema);
             }
 
             foreach (var log in logs.Logs)
@@ -61,19 +63,50 @@ namespace mud
                 var decoded = DecodeEvent(log);
 
                 decoded.Match(
-                    setRecord => HandleStoreSetRecord(ds, log, setRecord),
-                    spliceStatic => HandleStoreSpliceStatic(ds, log, spliceStatic),
-                    spliceDynamic => HandleStoreSpliceDynamic(ds, log, spliceDynamic),
-                    deleteRecord => HandleStoreDeleteRecord(ds, log, deleteRecord)
+                    setRecord => HandleStoreSetRecord(dbUpdates, ds, log, setRecord),
+                    spliceStatic => HandleStoreSpliceStatic(dbUpdates, ds, log, spliceStatic),
+                    spliceDynamic => HandleStoreSpliceDynamic(dbUpdates, ds, log, spliceDynamic),
+                    deleteRecord => HandleStoreDeleteRecord(dbUpdates, ds, log, deleteRecord)
                 );
+            }
+
+            for (var i = 0; i < dbUpdates.Count; i++)
+            {
+                var update = dbUpdates[i];
+                switch (update.Type)
+                {
+                    case UpdateType.SetRecord:
+                        update.Table.Set(update.CurrentKey, update.CurrentValue);
+                        dbUpdates[i] = update;
+                        break;
+                    case UpdateType.SetField:
+                        update.PreviousValue = update.Table.Update(update.CurrentKey, update.CurrentValue)?.RawValue;
+                        update.PreviousKey = update.CurrentKey;
+                        dbUpdates[i] = update;
+                        break;
+                    case UpdateType.DeleteRecord:
+                        var previousValue = update.Table.Delete(update.CurrentKey);
+                        update.PreviousValue = previousValue?.RawValue;
+                        dbUpdates[i] = update;
+                        break;
+                    default:
+                        throw new ArgumentOutOfRangeException();
+                }
+            }
+
+            foreach (var t in dbUpdates)
+            {
+                onUpdate.OnNext(t);
             }
         }
 
-        private static void HandleStoreSetRecord(RxDatastore ds, FilterLog log, StoreSetRecordEventDTO decoded)
+        private static void HandleStoreSetRecord(List<RecordUpdate> updates, RxDatastore ds, FilterLog log,
+            StoreSetRecordEventDTO decoded)
         {
             var tableId = Common.BytesToHex(decoded.TableId);
             var tableResource = Common.HexToResourceId(tableId);
-            if (!ds.registeredTables.Contains(tableId))
+            var table = ds.TryGetTable(tableResource.Name);
+            if (table == null)
             {
                 Debug.LogWarning(
                     $"Skipping update for unknown table: {JsonConvert.SerializeObject(tableResource)} at {log.Address}, {tableId}");
@@ -84,41 +117,47 @@ namespace mud
             var staticData = Common.BytesToHex(decoded.StaticData);
             var encodedLengths = Common.BytesToHex(decoded.EncodedLengths);
             var dynamicData = Common.BytesToHex(decoded.DynamicData);
-            var hasTable = ds.store.TryGetValue(tableId, out var table);
-            if (!hasTable) return;
             var value = DecodeValueArgs(table.Schema, staticData, encodedLengths, dynamicData);
 
-            Debug.Log(
-                $"Setting table: {tableResource.Namespace}:{tableResource.Name}, Value: {JsonConvert.SerializeObject(value)}");
-            ds.Set(table, entity, new Dictionary<string, object>(value)
+            var expandedValue = new Dictionary<string, object>(value)
             {
                 ["__staticData"] = staticData,
                 ["__encodedLengths"] = encodedLengths,
                 ["__dynamicData"] = dynamicData
+            };
+
+            Debug.Log(
+                $"Setting table: {tableResource.Namespace}:{tableResource.Name}, Value: {JsonConvert.SerializeObject(value)}");
+            updates.Add(new RecordUpdate
+            {
+                Type = UpdateType.SetRecord,
+                Table = table,
+                CurrentValue = expandedValue,
+                PreviousValue = null,
+                CurrentKey = entity,
+                PreviousKey = null,
             });
         }
 
-        private static void HandleStoreSpliceStatic(RxDatastore ds, FilterLog log,
+        private static void HandleStoreSpliceStatic(List<RecordUpdate> updates, RxDatastore ds, FilterLog log,
             StoreSpliceStaticDataEventDTO decoded)
         {
             var tableId = Common.BytesToHex(decoded.TableId);
             var tableResource = Common.HexToResourceId(tableId);
-
-            if (!ds.registeredTables.Contains(tableId))
+            var table = ds.TryGetTable(tableResource.Name);
+            if (table == null)
             {
                 Debug.LogWarning(
-                    $"Skipping update for unknown table: {JsonConvert.SerializeObject(tableResource)} at {log.Address}");
+                    $"Skipping update for unknown table: {JsonConvert.SerializeObject(tableResource)} at {log.Address}, {tableId}");
                 return;
             }
-
-            var hasTable = ds.store.TryGetValue(tableId, out var table);
-            if (!hasTable) return;
 
             var start = (int)decoded.Start;
             var data = Common.BytesToHex(decoded.Data);
             var entity = Common.ConcatHex(decoded.KeyTuple.Select(b => Common.BytesToHex(b)).ToArray());
 
-            var previousValue = ds.GetValue(table, entity);
+            // var previousValue = ds.GetValue(table, entity);
+            var previousValue = table.GetValue(entity);
 
             object previousStaticData;
             object previousEncodedLengths;
@@ -126,9 +165,9 @@ namespace mud
 
             if (previousValue != null)
             {
-                previousValue.value.TryGetValue("__staticData", out previousStaticData);
-                previousValue.value.TryGetValue("__encodedLengths", out previousEncodedLengths);
-                previousValue.value.TryGetValue("__dynamicData", out previousDynamicData);
+                previousValue.RawValue.TryGetValue("__staticData", out previousStaticData);
+                previousValue.RawValue.TryGetValue("__encodedLengths", out previousEncodedLengths);
+                previousValue.RawValue.TryGetValue("__dynamicData", out previousDynamicData);
             }
             else
             {
@@ -148,45 +187,53 @@ namespace mud
                 (string)previousEncodedLengths,
                 (string)previousDynamicData);
 
+            var expandedValue = new Dictionary<string, object>(newValue)
+            {
+                ["__staticData"] = newStaticData,
+            };
+
             Debug.Log(
                 $"Setting table via splice static: {tableResource.Namespace}:{tableResource.Name}, {JsonConvert.SerializeObject(newValue)}");
-            ds.Update(table, entity, new Dictionary<string, object>(newValue)
+            updates.Add(new RecordUpdate
             {
-                ["__StaticData"] = newStaticData
+                Type = UpdateType.SetField,
+                Table = table,
+                CurrentValue = expandedValue,
+                PreviousValue = previousValue,
+                CurrentKey = entity,
+                PreviousKey = entity,
             });
         }
 
-        private static void HandleStoreSpliceDynamic(RxDatastore ds, FilterLog log,
+        private static void HandleStoreSpliceDynamic(List<RecordUpdate> updates, RxDatastore ds, FilterLog log,
             StoreSpliceDynamicDataEventDTO decoded)
         {
             var tableId = Common.BytesToHex(decoded.TableId);
             var tableResource = Common.HexToResourceId(tableId);
-
-            if (!ds.registeredTables.Contains(tableId))
+            var table = ds.TryGetTable(tableResource.Name);
+            if (table == null)
             {
                 Debug.LogWarning(
-                    $"Skipping update for unknown table: {tableId} at {log.Address}");
+                    $"Skipping update for unknown table: {JsonConvert.SerializeObject(tableResource)} at {log.Address}, {tableId}");
                 return;
             }
-
-            var hasTable = ds.store.TryGetValue(tableId, out var table);
-            if (!hasTable) return;
 
             var start = decoded.Start;
             var data = Common.BytesToHex(decoded.Data);
             var encodedLengths = Common.BytesToHex(decoded.EncodedLengths);
             var entity = Common.ConcatHex(decoded.KeyTuple.Select(b => Common.BytesToHex(b)).ToArray());
 
-            var previousValue = ds.GetValue(table, entity);
+            // var previousValue = ds.GetValue(table, entity);
+            var previousValue = table.GetValue(entity);
             object previousStaticData;
             object previousEncodedLengths;
             object previousDynamicData;
 
             if (previousValue != null)
             {
-                previousValue.value.TryGetValue("__staticData", out previousStaticData);
-                previousValue.value.TryGetValue("__encodedLengths", out previousEncodedLengths);
-                previousValue.value.TryGetValue("__dynamicData", out previousDynamicData);
+                previousValue.RawValue.TryGetValue("__staticData", out previousStaticData);
+                previousValue.RawValue.TryGetValue("__encodedLengths", out previousEncodedLengths);
+                previousValue.RawValue.TryGetValue("__dynamicData", out previousDynamicData);
             }
             else
             {
@@ -205,35 +252,52 @@ namespace mud
                 (string)previousStaticData,
                 (string)previousEncodedLengths,
                 newDynamicData);
+            var expandedValue = new Dictionary<string, object>(newValue)
+            {
+                ["__encodedLengths"] = encodedLengths,
+                ["__dynamicData"] = newDynamicData,
+            };
 
 
             Debug.Log(
                 $"Setting table via splice dynamic: {tableResource.Namespace}:{tableResource.Name}, {JsonConvert.SerializeObject(newValue)}");
-            ds.Update(table, entity, new Dictionary<string, object>(newValue)
+            updates.Add(new RecordUpdate
             {
-                ["__encodedLengths"] = encodedLengths,
-                ["__dynamicData"] = newDynamicData
+                Type = UpdateType.SetField,
+                Table = table,
+                CurrentValue = expandedValue,
+                PreviousValue = previousValue,
+                CurrentKey = entity,
+                PreviousKey = entity,
             });
         }
 
-        private static void HandleStoreDeleteRecord(RxDatastore ds, FilterLog log, StoreDeleteRecordEventDTO decoded)
+        private static void HandleStoreDeleteRecord(List<RecordUpdate> dbOps, RxDatastore ds, FilterLog log,
+            StoreDeleteRecordEventDTO decoded)
         {
             var tableId = Common.BytesToHex(decoded.TableId);
             var tableResource = Common.HexToResourceId(tableId);
-            if (!ds.registeredTables.Contains(tableId))
+            var table = ds.TryGetTable(tableResource.Name);
+            if (table == null)
             {
                 Debug.LogWarning(
-                    $"Skipping update for unknown table: {tableId} at {log.Address}");
+                    $"Skipping update for unknown table: {JsonConvert.SerializeObject(tableResource)} at {log.Address}, {tableId}");
                 return;
             }
 
             var entity = Common.ConcatHex(decoded.KeyTuple.Select(b => Common.BytesToHex(b)).ToArray());
-            var hasTable = ds.store.TryGetValue(tableId, out var table);
-            if (!hasTable) return;
 
             Debug.Log(
                 $"Deleting key for table: {tableResource.Namespace}:{tableResource.Name}");
-            ds.Delete(table, entity);
+            dbOps.Add(new RecordUpdate
+            {
+                Table = table,
+                Type = UpdateType.DeleteRecord,
+                CurrentKey = entity,
+                CurrentValue = null,
+                PreviousKey = entity,
+                PreviousValue = null, // TODO: get previous value later
+            });
         }
     }
 }

@@ -36,10 +36,11 @@ namespace mud
         private int streamStartBlockNumber = 0; // TODO: get from indexer
         private BlockStream bs;
         public RxDatastore ds;
+        public StoreSync sync;
         public CreateContract world;
         public static NetworkManager Instance { get; private set; }
         private readonly CompositeDisposable _disposables = new();
-
+        
         public event Action<NetworkManager> OnNetworkInitialized = delegate { };
         private bool _networkReady = false;
 
@@ -114,23 +115,6 @@ namespace mud
              */
             ds = new RxDatastore(); // TODO: add persistence
 
-            // TODO: do this.
-            // var types = AppDomain.CurrentDomain.GetAssemblies()
-            //     .SelectMany(s => s.GetTypes())
-            //     .Where(p => typeof(IMudTable).IsAssignableFrom(p) && p.IsClass);
-            // foreach (var t in types)
-            // {
-            //     //ignore exact IMudTable class
-            //     if (t == typeof(IMudTable))
-            //     {
-            //         continue;
-            //     }
-            //
-            //     Debug.Log($"Registering table: {t.Name}");
-            //     if (t.GetField("ID").GetValue(null) is not TableId tableId) return;
-            //     ds.RegisterTable(tableId);
-            // }
-            //
             var worldConfig = MudDefinitions.DefineWorldConfig(_worldAddress);
             var storeConfig = MudDefinitions.DefineStoreConfig(_worldAddress);
             Common.LoadConfig(worldConfig, ds);
@@ -143,9 +127,9 @@ namespace mud
             if (startingBlockNumber < 0) await GetStartingBlockNumber().ToUniTask();
             Debug.Log($"Starting sync from 0...{startingBlockNumber}");
 
-            var storeSync = new StoreSync().AddTo(_disposables);
+            sync = new StoreSync().AddTo(_disposables);
             var updateStream =
-                storeSync.StartSync(ds, bs.subject, _worldAddress, _rpcUrl, BigInteger.Zero, startingBlockNumber,
+                sync.StartSync(ds, bs.subject, _worldAddress, _rpcUrl, BigInteger.Zero, startingBlockNumber,
                     opts =>
                     {
                         if (opts.step == SyncStep.Live && !_networkReady)

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
 using IWorld.ContractDefinition;
 using mud;
+using Newtonsoft.Json;
 using UniRx;
 using UnityEngine;
 using Random = UnityEngine.Random;
@@ -23,20 +24,21 @@ public class InputManager : MonoBehaviour
     private void SubscribeToCounter(NetworkManager _)
     {
         Debug.Log("Subscribed to counter.");
-        var incrementQuery = new Query().In(net.ds.tableNameIndex["Counter"]);
-        _counterSub = net.ds.RxQuery(incrementQuery).ObserveOnMainThread().Subscribe(OnIncrement);
+        // var incrementQuery = new Query().In(net.ds.store["Counter"]);
+        _counterSub = net.sync.onUpdate.ObserveOnMainThread().Subscribe(OnIncrement);
+            // (incrementQuery).ObserveOnMainThread().Subscribe(OnIncrement);
     }
 
 
-    private void OnIncrement((List<RxRecord> SetRecords, List<RxRecord> RemovedRecords) update)
+    private void OnIncrement(RecordUpdate update)
     {
-        // first element of tuple is set records, second is deleted records
-        foreach (var record in update.SetRecords)
+        if (update.Type != UpdateType.DeleteRecord)
         {
-            var currentValue = record.value;
+            var currentValue = update.CurrentValue;
             if (currentValue == null) return;
-            Debug.Log("Counter is now: " + currentValue["value"]);
-            SpawnPrefab();
+            // Debug.Log("Counter is now: " + currentValue["value"]);
+            Debug.Log("Counter is now: " + JsonConvert.SerializeObject(currentValue));
+            // SpawnPrefab(); 
         }
     }
 

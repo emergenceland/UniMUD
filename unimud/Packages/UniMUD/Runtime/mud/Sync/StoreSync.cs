@@ -24,6 +24,7 @@ namespace mud
 
     public class StoreSync : IDisposable
     {
+        public readonly ReplaySubject<RecordUpdate> onUpdate = new(1);
         private readonly CompositeDisposable _disposables = new();
 
         // TODO: make RxDataStore something like IStorageAdapter
@@ -52,7 +53,7 @@ namespace mud
             
             IObservable<StorageAdapterBlock> initialLogs = gapStateEvents.Select(block =>
             {
-                RxStorageAdapter.ToStorage(ds, block);
+                RxStorageAdapter.ToStorage(onUpdate, ds, block);
                 return block;
             }).Concat().Replay(1).RefCount();
             //
@@ -76,7 +77,7 @@ namespace mud
             BigInteger lastBlockNumberProcessed;
             IObservable<StorageAdapterBlock> storedBlockLogs = initialLogs.Concat(blockLogs.Select(block =>
             {
-                RxStorageAdapter.ToStorage(ds, block);
+                RxStorageAdapter.ToStorage(onUpdate, ds, block);
                 return block;
             }).Do(storageBlock =>
             {

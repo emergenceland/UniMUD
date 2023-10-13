@@ -75,13 +75,9 @@ namespace mud
         
         public static void LoadConfig(Dictionary<string, ProtocolParser.Table> tables, RxDatastore ds)
         {
-            foreach (var (tableName, table) in tables)
+            foreach (var (_, table) in tables)
             {
-                var newRxTable = ds.CreateTable(table);
-                if (ds.registeredTables.Contains(newRxTable.Id)) return;
-                // var tableName = $"{newTable.Namespace}:{newTable.Name}";
-                // TODO: figure out what to do with namespaces
-                ds.RegisterTable(newRxTable, tableName);
+                ds.RegisterTable(table.TableId, table.Name, table.ValueSchema);
             }
         }
     }
