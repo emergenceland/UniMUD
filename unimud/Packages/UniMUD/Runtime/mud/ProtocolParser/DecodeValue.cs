@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
+using Newtonsoft.Json;
 using UnityEngine;
 using static mud.Common;
 using static mud.SchemaAbiTypes;
@@ -15,6 +16,10 @@ namespace mud
                 .ToList();
             var dynamicFields = valueSchema.Values.Where(value => DynamicAbiTypes.Contains(value))
                 .ToList();
+            
+            Debug.Log($"STATIC FIELDS : {JsonConvert.SerializeObject(staticFields)}");
+            Debug.Log($"DYNAMIC FIELDS : {JsonConvert.SerializeObject(dynamicFields)}");
+            Debug.Log($"DATA: {data}");
 
             var values = new List<object>();
 
@@ -40,7 +45,7 @@ namespace mud
 
             if (dynamicFields.Count > 0)
             {
-                var dataLayout = HexToPackedCounter(ReadHex(data, bytesOffset, bytesOffset + 32));
+               var dataLayout = HexToPackedCounter(ReadHex(data, bytesOffset, bytesOffset + 32));
                 bytesOffset += 32;
 
                 for (var i = 0; i < dynamicFields.Count; i++)

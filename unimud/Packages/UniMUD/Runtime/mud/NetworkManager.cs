@@ -141,8 +141,10 @@ namespace mud
 
             var worldConfig = MudDefinitions.DefineWorldConfig(_worldAddress);
             var storeConfig = MudDefinitions.DefineStoreConfig(_worldAddress);
+            var moduleConfig = MudDefinitions.DefineModuleConfig(_worldAddress);
             Common.LoadConfig(worldConfig, ds);
             Common.LoadConfig(storeConfig, ds);
+            Common.LoadConfig(moduleConfig, ds);
 
             /*
              * ==== SYNC ====

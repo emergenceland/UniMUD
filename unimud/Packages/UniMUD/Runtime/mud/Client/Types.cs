@@ -41,7 +41,6 @@ namespace mud
             if (Entries.TryGetValue(key, out var previousValue))
             {
                 Entries.Remove(key);
-                Debug.Log("Previous value: " + JsonConvert.SerializeObject(previousValue));
                 return previousValue;
             }
 

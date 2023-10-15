@@ -31,15 +31,14 @@ public class InputManager : MonoBehaviour
 
     private void OnIncrement(RecordUpdate update)
     {
-
+        Debug.Log($"HERE: {JsonConvert.SerializeObject(update)}");
         CounterTable.CounterTableUpdate updateType = (CounterTable.CounterTableUpdate)update;
 
-        Debug.Log("UDPATE: " + JsonConvert.SerializeObject(update), this);
-        if (updateType.Type != UpdateType.DeleteRecord)
+        if (updateType.Type != UpdateType.DeleteRecord && updateType.Table.Name == "Counter")
         {
             var currentValue = updateType.CurrentValue;
             if (currentValue == null) {Debug.LogError("Null CurrentValue", this); return;}
-            Debug.Log("Counter is now: " + currentValue);
+            Debug.Log("Counter is now: " + JsonConvert.SerializeObject(currentValue));
             SpawnPrefab(); 
         }
     }

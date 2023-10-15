@@ -8,17 +8,17 @@ using Property = System.Collections.Generic.Dictionary<string, object>;
 
 namespace mudworld
 {
-    public class TestTable : IMudTable
+    public class WeightTable : IMudTable
     {
-        public class TestTableUpdate : RecordUpdate
+        public class WeightTableUpdate : RecordUpdate
         {
             public string? key;
             public string? Previouskey;
-            public bool? value;
-            public bool? Previousvalue;
+            public int? value;
+            public int? Previousvalue;
         }
 
-        public readonly static string ID = "Test";
+        public readonly static string ID = "Weight";
         public static RxTable Table
         {
             get { return NetworkManager.Instance.ds.store[ID]; }
@@ -30,21 +30,21 @@ namespace mudworld
         }
 
         public string? key;
-        public bool? value;
+        public int? value;
 
         public override Type TableType()
         {
-            return typeof(TestTable);
+            return typeof(WeightTable);
         }
 
         public override Type TableUpdateType()
         {
-            return typeof(TestTableUpdate);
+            return typeof(WeightTableUpdate);
         }
 
         public override bool Equals(object? obj)
         {
-            TestTable other = (TestTable)obj;
+            WeightTable other = (WeightTable)obj;
 
             if (other == null)
             {
@@ -65,7 +65,7 @@ namespace mudworld
         {
             key = (string)functionParameters[0];
 
-            value = (bool)functionParameters[1];
+            value = (int)functionParameters[1];
         }
 
         public static IObservable<RecordUpdate> GetUpdates<T>()
@@ -86,7 +86,7 @@ namespace mudworld
             var currentValue = recordUpdate.CurrentValue as Property;
             var previousValue = recordUpdate.PreviousValue as Property;
 
-            return new TestTableUpdate
+            return new WeightTableUpdate
             {
                 Table = recordUpdate.Table,
                 CurrentValue = recordUpdate.CurrentValue,
@@ -95,9 +95,9 @@ namespace mudworld
                 PreviousRecordKey = recordUpdate.PreviousRecordKey,
                 Type = recordUpdate.Type,
                 key = (string)(currentValue?["key"] ?? null),
-                value = (bool)(currentValue?["value"] ?? null),
+                value = (int)(currentValue?["value"] ?? null),
                 Previouskey = (string)(previousValue?["key"] ?? null),
-                Previousvalue = (bool)(previousValue?["value"] ?? null),
+                Previousvalue = (int)(previousValue?["value"] ?? null),
             };
         }
 
@@ -107,7 +107,7 @@ namespace mudworld
 
             var keyValue = (string)table["key"];
             key = keyValue;
-            var valueValue = (bool)table["value"];
+            var valueValue = (int)table["value"];
             value = valueValue;
         }
     }

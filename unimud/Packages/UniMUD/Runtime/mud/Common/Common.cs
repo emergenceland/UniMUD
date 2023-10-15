@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using Cysharp.Threading.Tasks;
 using UniRx;
+using UnityEngine;
 
 namespace mud
 {
@@ -77,6 +78,7 @@ namespace mud
         {
             foreach (var (_, table) in tables)
             {
+                Debug.Log("Registering table: " + table.Name + " with id: " + table.TableId + " and schema: " + table.ValueSchema);
                 ds.RegisterTable(table.TableId, table.Name, table.ValueSchema);
             }
         }

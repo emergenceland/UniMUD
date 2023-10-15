@@ -20,14 +20,14 @@ import { PackedCounter, PackedCounterLib } from "@latticexyz/store/src/PackedCou
 import { ResourceId } from "@latticexyz/store/src/ResourceId.sol";
 import { RESOURCE_TABLE, RESOURCE_OFFCHAIN_TABLE } from "@latticexyz/store/src/storeResourceTypes.sol";
 
-ResourceId constant _tableId = ResourceId.wrap(bytes32(abi.encodePacked(RESOURCE_TABLE, bytes14(""), bytes16("Test"))));
-ResourceId constant TestTableId = _tableId;
+ResourceId constant _tableId = ResourceId.wrap(bytes32(abi.encodePacked(RESOURCE_TABLE, bytes14(""), bytes16("Row"))));
+ResourceId constant RowTableId = _tableId;
 
 FieldLayout constant _fieldLayout = FieldLayout.wrap(
-  0x0001010001000000000000000000000000000000000000000000000000000000
+  0x0004010004000000000000000000000000000000000000000000000000000000
 );
 
-library Test {
+library Row {
   /**
    * @notice Get the table values' field layout.
    * @return _fieldLayout The field layout for the table.
@@ -41,8 +41,7 @@ library Test {
    * @return _keySchema The key schema for the table.
    */
   function getKeySchema() internal pure returns (Schema) {
-    SchemaType[] memory _keySchema = new SchemaType[](1);
-    _keySchema[0] = SchemaType.BYTES32;
+    SchemaType[] memory _keySchema = new SchemaType[](0);
 
     return SchemaLib.encode(_keySchema);
   }
@@ -53,7 +52,7 @@ library Test {
    */
   function getValueSchema() internal pure returns (Schema) {
     SchemaType[] memory _valueSchema = new SchemaType[](1);
-    _valueSchema[0] = SchemaType.BOOL;
+    _valueSchema[0] = SchemaType.INT32;
 
     return SchemaLib.encode(_valueSchema);
   }
@@ -63,8 +62,7 @@ library Test {
    * @return keyNames An array of strings with the names of key fields.
    */
   function getKeyNames() internal pure returns (string[] memory keyNames) {
-    keyNames = new string[](1);
-    keyNames[0] = "key";
+    keyNames = new string[](0);
   }
 
   /**
@@ -100,75 +98,68 @@ library Test {
   /**
    * @notice Get value.
    */
-  function getValue(bytes32 key) internal view returns (bool value) {
-    bytes32[] memory _keyTuple = new bytes32[](1);
-    _keyTuple[0] = key;
+  function getValue() internal view returns (int32 value) {
+    bytes32[] memory _keyTuple = new bytes32[](0);
 
     bytes32 _blob = StoreSwitch.getStaticField(_tableId, _keyTuple, 0, _fieldLayout);
-    return (_toBool(uint8(bytes1(_blob))));
+    return (int32(uint32(bytes4(_blob))));
   }
 
   /**
    * @notice Get value.
    */
-  function _getValue(bytes32 key) internal view returns (bool value) {
-    bytes32[] memory _keyTuple = new bytes32[](1);
-    _keyTuple[0] = key;
+  function _getValue() internal view returns (int32 value) {
+    bytes32[] memory _keyTuple = new bytes32[](0);
 
     bytes32 _blob = StoreCore.getStaticField(_tableId, _keyTuple, 0, _fieldLayout);
-    return (_toBool(uint8(bytes1(_blob))));
+    return (int32(uint32(bytes4(_blob))));
   }
 
   /**
    * @notice Get value (using the specified store).
    */
-  function getValue(IStore _store, bytes32 key) internal view returns (bool value) {
-    bytes32[] memory _keyTuple = new bytes32[](1);
-    _keyTuple[0] = key;
+  function getValue(IStore _store) internal view returns (int32 value) {
+    bytes32[] memory _keyTuple = new bytes32[](0);
 
     bytes32 _blob = _store.getStaticField(_tableId, _keyTuple, 0, _fieldLayout);
-    return (_toBool(uint8(bytes1(_blob))));
+    return (int32(uint32(bytes4(_blob))));
   }
 
   /**
    * @notice Get value.
    */
-  function get(bytes32 key) internal view returns (bool value) {
-    bytes32[] memory _keyTuple = new bytes32[](1);
-    _keyTuple[0] = key;
+  function get() internal view returns (int32 value) {
+    bytes32[] memory _keyTuple = new bytes32[](0);
 
     bytes32 _blob = StoreSwitch.getStaticField(_tableId, _keyTuple, 0, _fieldLayout);
-    return (_toBool(uint8(bytes1(_blob))));
+    return (int32(uint32(bytes4(_blob))));
   }
 
   /**
    * @notice Get value.
    */
-  function _get(bytes32 key) internal view returns (bool value) {
-    bytes32[] memory _keyTuple = new bytes32[](1);
-    _keyTuple[0] = key;
+  function _get() internal view returns (int32 value) {
+    bytes32[] memory _keyTuple = new bytes32[](0);
 
     bytes32 _blob = StoreCore.getStaticField(_tableId, _keyTuple, 0, _fieldLayout);
-    return (_toBool(uint8(bytes1(_blob))));
+    return (int32(uint32(bytes4(_blob))));
   }
 
   /**
    * @notice Get value (using the specified store).
    */
-  function get(IStore _store, bytes32 key) internal view returns (bool value) {
-    bytes32[] memory _keyTuple = new bytes32[](1);
-    _keyTuple[0] = key;
+  function get(IStore _store) internal view returns (int32 value) {
+    bytes32[] memory _keyTuple = new bytes32[](0);
 
     bytes32 _blob = _store.getStaticField(_tableId, _keyTuple, 0, _fieldLayout);
-    return (_toBool(uint8(bytes1(_blob))));
+    return (int32(uint32(bytes4(_blob))));
   }
 
   /**
    * @notice Set value.
    */
-  function setValue(bytes32 key, bool value) internal {
-    bytes32[] memory _keyTuple = new bytes32[](1);
-    _keyTuple[0] = key;
+  function setValue(int32 value) internal {
+    bytes32[] memory _keyTuple = new bytes32[](0);
 
     StoreSwitch.setStaticField(_tableId, _keyTuple, 0, abi.encodePacked((value)), _fieldLayout);
   }
@@ -176,9 +167,8 @@ library Test {
   /**
    * @notice Set value.
    */
-  function _setValue(bytes32 key, bool value) internal {
-    bytes32[] memory _keyTuple = new bytes32[](1);
-    _keyTuple[0] = key;
+  function _setValue(int32 value) internal {
+    bytes32[] memory _keyTuple = new bytes32[](0);
 
     StoreCore.setStaticField(_tableId, _keyTuple, 0, abi.encodePacked((value)), _fieldLayout);
   }
@@ -186,9 +176,8 @@ library Test {
   /**
    * @notice Set value (using the specified store).
    */
-  function setValue(IStore _store, bytes32 key, bool value) internal {
-    bytes32[] memory _keyTuple = new bytes32[](1);
-    _keyTuple[0] = key;
+  function setValue(IStore _store, int32 value) internal {
+    bytes32[] memory _keyTuple = new bytes32[](0);
 
     _store.setStaticField(_tableId, _keyTuple, 0, abi.encodePacked((value)), _fieldLayout);
   }
@@ -196,9 +185,8 @@ library Test {
   /**
    * @notice Set value.
    */
-  function set(bytes32 key, bool value) internal {
-    bytes32[] memory _keyTuple = new bytes32[](1);
-    _keyTuple[0] = key;
+  function set(int32 value) internal {
+    bytes32[] memory _keyTuple = new bytes32[](0);
 
     StoreSwitch.setStaticField(_tableId, _keyTuple, 0, abi.encodePacked((value)), _fieldLayout);
   }
@@ -206,9 +194,8 @@ library Test {
   /**
    * @notice Set value.
    */
-  function _set(bytes32 key, bool value) internal {
-    bytes32[] memory _keyTuple = new bytes32[](1);
-    _keyTuple[0] = key;
+  function _set(int32 value) internal {
+    bytes32[] memory _keyTuple = new bytes32[](0);
 
     StoreCore.setStaticField(_tableId, _keyTuple, 0, abi.encodePacked((value)), _fieldLayout);
   }
@@ -216,9 +203,8 @@ library Test {
   /**
    * @notice Set value (using the specified store).
    */
-  function set(IStore _store, bytes32 key, bool value) internal {
-    bytes32[] memory _keyTuple = new bytes32[](1);
-    _keyTuple[0] = key;
+  function set(IStore _store, int32 value) internal {
+    bytes32[] memory _keyTuple = new bytes32[](0);
 
     _store.setStaticField(_tableId, _keyTuple, 0, abi.encodePacked((value)), _fieldLayout);
   }
@@ -226,9 +212,8 @@ library Test {
   /**
    * @notice Delete all data for given keys.
    */
-  function deleteRecord(bytes32 key) internal {
-    bytes32[] memory _keyTuple = new bytes32[](1);
-    _keyTuple[0] = key;
+  function deleteRecord() internal {
+    bytes32[] memory _keyTuple = new bytes32[](0);
 
     StoreSwitch.deleteRecord(_tableId, _keyTuple);
   }
@@ -236,9 +221,8 @@ library Test {
   /**
    * @notice Delete all data for given keys.
    */
-  function _deleteRecord(bytes32 key) internal {
-    bytes32[] memory _keyTuple = new bytes32[](1);
-    _keyTuple[0] = key;
+  function _deleteRecord() internal {
+    bytes32[] memory _keyTuple = new bytes32[](0);
 
     StoreCore.deleteRecord(_tableId, _keyTuple, _fieldLayout);
   }
@@ -246,9 +230,8 @@ library Test {
   /**
    * @notice Delete all data for given keys (using the specified store).
    */
-  function deleteRecord(IStore _store, bytes32 key) internal {
-    bytes32[] memory _keyTuple = new bytes32[](1);
-    _keyTuple[0] = key;
+  function deleteRecord(IStore _store) internal {
+    bytes32[] memory _keyTuple = new bytes32[](0);
 
     _store.deleteRecord(_tableId, _keyTuple);
   }
@@ -257,7 +240,7 @@ library Test {
    * @notice Tightly pack static (fixed length) data using this table's schema.
    * @return The static data, encoded into a sequence of bytes.
    */
-  function encodeStatic(bool value) internal pure returns (bytes memory) {
+  function encodeStatic(int32 value) internal pure returns (bytes memory) {
     return abi.encodePacked(value);
   }
 
@@ -267,7 +250,7 @@ library Test {
    * @return The lengths of the dynamic fields (packed into a single bytes32 value).
    * @return The dyanmic (variable length) data, encoded into a sequence of bytes.
    */
-  function encode(bool value) internal pure returns (bytes memory, PackedCounter, bytes memory) {
+  function encode(int32 value) internal pure returns (bytes memory, PackedCounter, bytes memory) {
     bytes memory _staticData = encodeStatic(value);
 
     PackedCounter _encodedLengths;
@@ -279,22 +262,9 @@ library Test {
   /**
    * @notice Encode keys as a bytes32 array using this table's field layout.
    */
-  function encodeKeyTuple(bytes32 key) internal pure returns (bytes32[] memory) {
-    bytes32[] memory _keyTuple = new bytes32[](1);
-    _keyTuple[0] = key;
+  function encodeKeyTuple() internal pure returns (bytes32[] memory) {
+    bytes32[] memory _keyTuple = new bytes32[](0);
 
     return _keyTuple;
-  }
-}
-
-/**
- * @notice Cast a value to a bool.
- * @dev Boolean values are encoded as uint8 (1 = true, 0 = false), but Solidity doesn't allow casting between uint8 and bool.
- * @param value The uint8 value to convert.
- * @return result The boolean value.
- */
-function _toBool(uint8 value) pure returns (bool result) {
-  assembly {
-    result := value
   }
 }

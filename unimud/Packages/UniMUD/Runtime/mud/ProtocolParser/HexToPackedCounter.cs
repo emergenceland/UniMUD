@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
+using UnityEngine;
 using static mud.Common;
 using static mud.SchemaAbiTypes;
 
@@ -11,6 +12,7 @@ namespace mud
     {
         public static PackedCounter HexToPackedCounter(string data)
         {
+            Debug.Log($"DECODING: {data}");
             if (data.Length != 66) throw InvalidHexLengthForPackedCounterError(data);
 
             // Last 7 bytes (uint56) are used for the total byte length of the dynamic data
