@@ -14,8 +14,8 @@ namespace <%= namespace %>
 
 		public class <%= tableClassName %>Update : RecordUpdate {
 			<% for (const field of fields) { -%>
-				public <%= field.type %>? <%= field.key %>;
-				public <%= field.type %>? Previous<%= field.key %>;
+				public <%= field.type %>? <%= field.key.charAt(0).toUpperCase() + field.key.slice(1) %>;
+				public <%= field.type %>? Previous<%= field.key.charAt(0).toUpperCase() + field.key.slice(1) %>;
 			<% } -%>
 		}
 
@@ -24,7 +24,7 @@ namespace <%= namespace %>
 		public override string GetTableId() {return ID;}
 
 		<% for (const field of fields) { -%>
-			public <%= field.type %>? <%= field.key %>;
+			public <%= field.type %>? <%= field.key.charAt(0).toUpperCase() + field.key.slice(1) %>;
 		<% } -%>
 
 		public override Type TableType() {return typeof(<%= tableClassName %>);}
@@ -35,7 +35,7 @@ namespace <%= namespace %>
 
 			if(other == null) {return false;}
 			<% for (const field of fields) { -%>
-				if(<%= field.key %> != other.<%= field.key %>) {return false;}
+				if(<%= field.key.charAt(0).toUpperCase() + field.key.slice(1) %> != other.<%= field.key.charAt(0).toUpperCase() + field.key.slice(1) %>) {return false;}
 			<% } -%>
 			return true;
 		}
@@ -44,9 +44,9 @@ namespace <%= namespace %>
 			<% var i = 0 -%>
 			<% for (const field of fields) { -%>
 				<% if (field.type === "long" || field.type === "ulong") { -%> 
-				<%= field.key %> = (<%= field.type %>)(int)functionParameters[<%= i -%>];
+				<%= field.key.charAt(0).toUpperCase() + field.key.slice(1) %> = (<%= field.type %>)(int)functionParameters[<%= i -%>];
 				<% } else { -%> 
-				<%= field.key %> = (<%= field.type %>)functionParameters[<%= i -%>];
+				<%= field.key.charAt(0).toUpperCase() + field.key.slice(1) %> = (<%= field.type %>)functionParameters[<%= i -%>];
 				<% } -%> 
 				<% i++ -%>
 			<% } -%>
@@ -66,37 +66,49 @@ namespace <%= namespace %>
 
 		public override void PropertyToTable(Property property) {
 			<% for (const field of fields) { -%>
-				<%= field.key %> = (<%= field.type %>)property["<%= field.key %>"];
+				<%= field.key.charAt(0).toUpperCase() + field.key.slice(1) %> = (<%= field.type %>)property["<%= field.key %>"];
 			<% } -%>
 		}
 
 		public override RecordUpdate RecordUpdateToTyped(RecordUpdate recordUpdate) {
 
-			var currentValue = recordUpdate.CurrentValue as Property;
-			var previousValue = recordUpdate.PreviousValue as Property;
+			var currentValue = recordUpdate.CurrentRecordValue as Property;
+			var previousValue = recordUpdate.PreviousRecordValue as Property;
+			 <% for (const field of fields) { -%>
+				  <%= field.type %>? current<%= field.key.charAt(0).toUpperCase() + field.key.slice(1) %>Typed = null;
+				  <%= field.type %>? previous<%= field.key.charAt(0).toUpperCase() + field.key.slice(1) %>Typed = null;
+				
+				  if (currentValue != null && currentValue.ContainsKey("<%= field.key.toLowerCase() %>")) {
+				    <% if (field.type.startsWith("uint") || field.type.startsWith("Uint")) { -%>
+				      current<%= field.key.charAt(0).toUpperCase() + field.key.slice(1) %>Typed = (<%= field.type %>)(<%= field.type.charAt(0).toUpperCase() === field.type.charAt(0) ? field.type.slice(1).toUpperCase() : field.type.slice(1) %>)currentValue["<%= field.key.toLowerCase() %>"];
+				    <% } else { -%>
+				      current<%= field.key.charAt(0).toUpperCase() + field.key.slice(1) %>Typed = (<%= field.type %>)currentValue["<%= field.key.toLowerCase() %>"];
+				    <% } -%>
+				  }
+				
+				  if (previousValue != null && previousValue.ContainsKey("<%= field.key.toLowerCase() %>")) {
+				    <% if (field.type.startsWith("uint") || field.type.startsWith("Uint")) { -%>
+				      previous<%= field.key.charAt(0).toUpperCase() + field.key.slice(1) %>Typed = (<%= field.type %>)(<%= field.type.charAt(0).toUpperCase() === field.type.charAt(0) ? field.type.slice(1).toUpperCase() : field.type.slice(1) %>)previousValue["<%= field.key.toLowerCase() %>"];
+				    <% } else { -%>
+				      previous<%= field.key.charAt(0).toUpperCase() + field.key.slice(1) %>Typed = (<%= field.type %>)currentValue["<%= field.key.toLowerCase() %>"];
+				    <% } -%>	
+				 }
+				<% } -%>
+	
+
 			
 			return new <%= tableClassName %>Update
 			{
 				Table = recordUpdate.Table,
-				CurrentValue = recordUpdate.CurrentValue,
-				PreviousValue = recordUpdate.PreviousValue,				
+				CurrentRecordValue = recordUpdate.CurrentRecordValue,
+				PreviousRecordValue = recordUpdate.PreviousRecordValue,				
 				CurrentRecordKey = recordUpdate.CurrentRecordKey,
 				PreviousRecordKey = recordUpdate.PreviousRecordKey,
 				Type = recordUpdate.Type,
 				
 				<% for (const field of fields) { -%>
-					<% if (field.type.startsWith("uint") || field.type.startsWith("Uint")) { -%>
-						<%= field.key %> = (<%= field.type %>)(<%= field.type.charAt(0).toUpperCase() === field.type.charAt(0) ? field.type.slice(1).toUpperCase() : field.type.slice(1) %>)(currentValue?["<%= field.key.toLowerCase() %>"] ?? null),
-					<% } else { -%>
-						<%= field.key %> = (<%= field.type %>)(currentValue?["<%= field.key.toLowerCase() %>"] ?? null),
-					<% } -%>
-				<% } -%>
-				<% for (const field of fields) { -%>
-					<% if (field.type.startsWith("uint") || field.type.startsWith("Uint")) { -%>
-						Previous<%= field.key %> = (<%= field.type %>)(<%= field.type.charAt(0).toUpperCase() === field.type.charAt(0) ? field.type.slice(1).toUpperCase() : field.type.slice(1) %>)(previousValue?["<%= field.key.toLowerCase() %>"] ?? null),
-					<% } else { -%>
-						Previous<%= field.key %> = (<%= field.type %>)(previousValue?["<%= field.key.toLowerCase() %>"] ?? null),
-					<% } -%>
+					<%= field.key.charAt(0).toUpperCase() + field.key.slice(1) %> = current<%= field.key.charAt(0).toUpperCase() + field.key.slice(1) %>Typed,
+					Previous<%= field.key.charAt(0).toUpperCase() + field.key.slice(1) %> = previous<%= field.key.charAt(0).toUpperCase() + field.key.slice(1) %>Typed,	
 				<% } -%>
 			};
 		}

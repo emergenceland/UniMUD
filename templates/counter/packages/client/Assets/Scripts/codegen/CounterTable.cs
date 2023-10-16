@@ -12,8 +12,8 @@ namespace mudworld
     {
         public class CounterTableUpdate : RecordUpdate
         {
-            public uint? value;
-            public uint? Previousvalue;
+            public uint? Value;
+            public uint? PreviousValue;
         }
 
         public readonly static string ID = "Counter";
@@ -27,7 +27,7 @@ namespace mudworld
             return ID;
         }
 
-        public uint? value;
+        public uint? Value;
 
         public override Type TableType()
         {
@@ -47,7 +47,7 @@ namespace mudworld
             {
                 return false;
             }
-            if (value != other.value)
+            if (Value != other.Value)
             {
                 return false;
             }
@@ -56,7 +56,7 @@ namespace mudworld
 
         public override void SetValues(params object[] functionParameters)
         {
-            value = (uint)functionParameters[0];
+            Value = (uint)functionParameters[0];
         }
 
         public static IObservable<RecordUpdate> GetUpdates<T>()
@@ -74,24 +74,36 @@ namespace mudworld
 
         public override void PropertyToTable(Property property)
         {
-            value = (uint)property["value"];
+            Value = (uint)property["value"];
         }
 
         public override RecordUpdate RecordUpdateToTyped(RecordUpdate recordUpdate)
         {
-            var currentValue = recordUpdate.CurrentValue as Property;
-            var previousValue = recordUpdate.PreviousValue as Property;
+            var currentValue = recordUpdate.CurrentRecordValue as Property;
+            var previousValue = recordUpdate.PreviousRecordValue as Property;
+            uint? currentValueTyped = null;
+            uint? previousValueTyped = null;
+
+            if (currentValue != null && currentValue.ContainsKey("value"))
+            {
+                currentValueTyped = (uint)(int)currentValue["value"];
+            }
+
+            if (previousValue != null && previousValue.ContainsKey("value"))
+            {
+                previousValueTyped = (uint)(int)previousValue["value"];
+            }
 
             return new CounterTableUpdate
             {
                 Table = recordUpdate.Table,
-                CurrentValue = recordUpdate.CurrentValue,
-                PreviousValue = recordUpdate.PreviousValue,
+                CurrentRecordValue = recordUpdate.CurrentRecordValue,
+                PreviousRecordValue = recordUpdate.PreviousRecordValue,
                 CurrentRecordKey = recordUpdate.CurrentRecordKey,
                 PreviousRecordKey = recordUpdate.PreviousRecordKey,
                 Type = recordUpdate.Type,
-                value = (uint)(int)(currentValue?["value"] ?? null),
-                Previousvalue = (uint)(int)(previousValue?["value"] ?? null),
+                Value = currentValueTyped,
+                PreviousValue = previousValueTyped,
             };
         }
     }

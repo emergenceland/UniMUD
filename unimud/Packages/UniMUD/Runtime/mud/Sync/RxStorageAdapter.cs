@@ -76,18 +76,18 @@ namespace mud
                 switch (update.Type)
                 {
                     case UpdateType.SetRecord:
-                        update.Table.Set(update.CurrentRecordKey, update.CurrentValue);
+                        update.Table.Set(update.CurrentRecordKey, update.CurrentRecordValue);
                         dbUpdates[i] = update;
                         break;
                     case UpdateType.SetField:
-                        update.PreviousValue =
-                            update.Table.Update(update.CurrentRecordKey, update.CurrentValue)?.RawValue;
+                        update.PreviousRecordValue =
+                            update.Table.Update(update.CurrentRecordKey, update.CurrentRecordValue)?.RawValue;
                         update.PreviousRecordKey = update.CurrentRecordKey;
                         dbUpdates[i] = update;
                         break;
                     case UpdateType.DeleteRecord:
                         var previousValue = update.Table.Delete(update.CurrentRecordKey);
-                        update.PreviousValue = previousValue?.RawValue;
+                        update.PreviousRecordValue = previousValue?.RawValue;
                         dbUpdates[i] = update;
                         break;
                     default:
@@ -133,8 +133,8 @@ namespace mud
             {
                 Type = UpdateType.SetRecord,
                 Table = table,
-                CurrentValue = expandedValue,
-                PreviousValue = null,
+                CurrentRecordValue = expandedValue,
+                PreviousRecordValue = null,
                 CurrentRecordKey = entity,
                 PreviousRecordKey = null,
             });
@@ -188,8 +188,8 @@ namespace mud
             {
                 Type = UpdateType.SetField,
                 Table = table,
-                CurrentValue = expandedValue,
-                PreviousValue = previousValue,
+                CurrentRecordValue = expandedValue,
+                PreviousRecordValue = previousValue,
                 CurrentRecordKey = entity,
                 PreviousRecordKey = entity,
             });
@@ -243,8 +243,8 @@ namespace mud
             {
                 Type = UpdateType.SetField,
                 Table = table,
-                CurrentValue = expandedValue,
-                PreviousValue = previousValue,
+                CurrentRecordValue = expandedValue,
+                PreviousRecordValue = previousValue,
                 CurrentRecordKey = entity,
                 PreviousRecordKey = entity,
             });
@@ -272,9 +272,9 @@ namespace mud
                 Table = table,
                 Type = UpdateType.DeleteRecord,
                 CurrentRecordKey = entity,
-                CurrentValue = null,
+                CurrentRecordValue = null,
                 PreviousRecordKey = entity,
-                PreviousValue = null, // TODO: get previous value later
+                PreviousRecordValue = null, // TODO: get previous value later
             });
         }
     }

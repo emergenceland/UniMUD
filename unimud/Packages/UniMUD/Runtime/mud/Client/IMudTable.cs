@@ -22,7 +22,6 @@ namespace mud {
         public abstract Type TableUpdateType();
         public abstract void PropertyToTable(Property property);
         public abstract RecordUpdate RecordUpdateToTyped(RecordUpdate rxRecord);
-
         public static IObservable<RecordUpdate> GetUpdates<T>() where T : IMudTable, new() {return GetUpdates(typeof(T));}
         public static IObservable<RecordUpdate> GetUpdates(Type table) {
 

@@ -62,8 +62,8 @@ namespace mud
     {
         public UpdateType Type;
         public RxTable Table;
-        public object CurrentValue;
-        public object PreviousValue;
+        public object CurrentRecordValue;
+        public object PreviousRecordValue;
         public string CurrentRecordKey { get; set; }
         public string PreviousRecordKey { get; set; }
     }

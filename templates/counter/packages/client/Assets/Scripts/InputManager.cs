@@ -1,7 +1,5 @@
 using System;
-using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
-using DefaultNamespace;
 using IWorld.ContractDefinition;
 using mud;
 using mudworld;
@@ -29,12 +27,12 @@ public class InputManager : MonoBehaviour
         _counterSub = IMudTable.GetUpdates<CounterTable>().ObserveOnMainThread().Subscribe(OnIncrement);
     }
 
-
     private void OnIncrement(RecordUpdate update)
     {
+        Debug.Log($"Update: {JsonConvert.SerializeObject(update)}");
         CounterTable.CounterTableUpdate counterUpdate = (CounterTable.CounterTableUpdate)update;
 
-        if (counterUpdate.Type != UpdateType.DeleteRecord)
+        if (counterUpdate.Type != UpdateType.DeleteRecord && counterUpdate.Table.Name == "Counter")
         {
             var currentValue = counterUpdate.Value;
             if (currentValue == null)
@@ -47,7 +45,7 @@ public class InputManager : MonoBehaviour
             SpawnPrefab();
         }
     }
-
+    
     private void SpawnPrefab()
     {
         var randomX = Random.Range(-1, 1);
