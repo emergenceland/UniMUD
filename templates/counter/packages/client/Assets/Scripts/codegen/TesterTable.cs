@@ -8,15 +8,17 @@ using Property = System.Collections.Generic.Dictionary<string, object>;
 
 namespace mudworld
 {
-    public class CounterTable : IMudTable
+    public class TesterTable : IMudTable
     {
-        public class CounterTableUpdate : RecordUpdate
+        public class TesterTableUpdate : RecordUpdate
         {
-            public uint? Value;
-            public uint? PreviousValue;
+            public string? Key;
+            public string? PreviousKey;
+            public int? Value;
+            public int? PreviousValue;
         }
 
-        public readonly static string ID = "Counter";
+        public readonly static string ID = "Tester";
         public static RxTable Table
         {
             get { return NetworkManager.Instance.ds.store[ID]; }
@@ -27,23 +29,28 @@ namespace mudworld
             return ID;
         }
 
-        public uint? Value;
+        public string? Key;
+        public int? Value;
 
         public override Type TableType()
         {
-            return typeof(CounterTable);
+            return typeof(TesterTable);
         }
 
         public override Type TableUpdateType()
         {
-            return typeof(CounterTableUpdate);
+            return typeof(TesterTableUpdate);
         }
 
         public override bool Equals(object? obj)
         {
-            CounterTable other = (CounterTable)obj;
+            TesterTable other = (TesterTable)obj;
 
             if (other == null)
+            {
+                return false;
+            }
+            if (Key != other.Key)
             {
                 return false;
             }
@@ -56,12 +63,14 @@ namespace mudworld
 
         public override void SetValues(params object[] functionParameters)
         {
-            Value = (uint)functionParameters[0];
+            Key = (string)functionParameters[0];
+
+            Value = (int)functionParameters[1];
         }
 
-        public static IObservable<RecordUpdate> GetCounterTableUpdates()
+        public static IObservable<RecordUpdate> GetTesterTableUpdates()
         {
-            CounterTable mudTable = new CounterTable();
+            TesterTable mudTable = new TesterTable();
 
             return NetworkManager.Instance.sync.onUpdate
                 .Where(update => update.Table.Name == ID)
@@ -73,27 +82,40 @@ namespace mudworld
 
         public override void PropertyToTable(Property property)
         {
-            Value = (uint)property["value"];
+            Key = (string)property["key"];
+            Value = (int)property["value"];
         }
 
         public override RecordUpdate RecordUpdateToTyped(RecordUpdate recordUpdate)
         {
             var currentValue = recordUpdate.CurrentRecordValue as Property;
             var previousValue = recordUpdate.PreviousRecordValue as Property;
-            uint? currentValueTyped = null;
-            uint? previousValueTyped = null;
+            string? currentKeyTyped = null;
+            string? previousKeyTyped = null;
+
+            if (currentValue != null && currentValue.ContainsKey("key"))
+            {
+                currentKeyTyped = (string)currentValue["key"];
+            }
+
+            if (previousValue != null && previousValue.ContainsKey("key"))
+            {
+                previousKeyTyped = (string)currentValue["key"];
+            }
+            int? currentValueTyped = null;
+            int? previousValueTyped = null;
 
             if (currentValue != null && currentValue.ContainsKey("value"))
             {
-                currentValueTyped = (uint)(int)currentValue["value"];
+                currentValueTyped = (int)currentValue["value"];
             }
 
             if (previousValue != null && previousValue.ContainsKey("value"))
             {
-                previousValueTyped = (uint)(int)previousValue["value"];
+                previousValueTyped = (int)currentValue["value"];
             }
 
-            return new CounterTableUpdate
+            return new TesterTableUpdate
             {
                 Table = recordUpdate.Table,
                 CurrentRecordValue = recordUpdate.CurrentRecordValue,
@@ -101,6 +123,8 @@ namespace mudworld
                 CurrentRecordKey = recordUpdate.CurrentRecordKey,
                 PreviousRecordKey = recordUpdate.PreviousRecordKey,
                 Type = recordUpdate.Type,
+                Key = currentKeyTyped,
+                PreviousKey = previousKeyTyped,
                 Value = currentValueTyped,
                 PreviousValue = previousValueTyped,
             };
