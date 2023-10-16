@@ -8,15 +8,15 @@ using Property = System.Collections.Generic.Dictionary<string, object>;
 
 namespace mudworld
 {
-    public class CounterTable : IMudTable
+    public class BallsTable : IMudTable
     {
-        public class CounterTableUpdate : RecordUpdate
+        public class BallsTableUpdate : RecordUpdate
         {
-            public uint? Value;
-            public uint? PreviousValue;
+            public int? Count;
+            public int? PreviousCount;
         }
 
-        public readonly static string ID = "Counter";
+        public readonly static string ID = "Balls";
         public static RxTable Table
         {
             get { return NetworkManager.Instance.ds.store[ID]; }
@@ -27,27 +27,27 @@ namespace mudworld
             return ID;
         }
 
-        public uint? Value;
+        public int? Count;
 
         public override Type TableType()
         {
-            return typeof(CounterTable);
+            return typeof(BallsTable);
         }
 
         public override Type TableUpdateType()
         {
-            return typeof(CounterTableUpdate);
+            return typeof(BallsTableUpdate);
         }
 
         public override bool Equals(object? obj)
         {
-            CounterTable other = (CounterTable)obj;
+            BallsTable other = (BallsTable)obj;
 
             if (other == null)
             {
                 return false;
             }
-            if (Value != other.Value)
+            if (Count != other.Count)
             {
                 return false;
             }
@@ -56,12 +56,12 @@ namespace mudworld
 
         public override void SetValues(params object[] functionParameters)
         {
-            Value = (uint)functionParameters[0];
+            Count = (int)functionParameters[0];
         }
 
-        public static IObservable<RecordUpdate> GetCounterTableUpdates()
+        public static IObservable<RecordUpdate> GetBallsTableUpdates()
         {
-            CounterTable mudTable = new CounterTable();
+            BallsTable mudTable = new BallsTable();
 
             return NetworkManager.Instance.sync.onUpdate
                 .Where(update => update.Table.Name == ID)
@@ -73,27 +73,27 @@ namespace mudworld
 
         public override void PropertyToTable(Property property)
         {
-            Value = (uint)property["value"];
+            Count = (int)property["count"];
         }
 
         public override RecordUpdate RecordUpdateToTyped(RecordUpdate recordUpdate)
         {
             var currentValue = recordUpdate.CurrentRecordValue as Property;
             var previousValue = recordUpdate.PreviousRecordValue as Property;
-            uint? currentValueTyped = null;
-            uint? previousValueTyped = null;
+            int? currentCountTyped = null;
+            int? previousCountTyped = null;
 
-            if (currentValue != null && currentValue.ContainsKey("value"))
+            if (currentValue != null && currentValue.ContainsKey("count"))
             {
-                currentValueTyped = (uint)(int)currentValue["value"];
+                currentCountTyped = (int)currentValue["count"];
             }
 
-            if (previousValue != null && previousValue.ContainsKey("value"))
+            if (previousValue != null && previousValue.ContainsKey("count"))
             {
-                previousValueTyped = (uint)(int)previousValue["value"];
+                previousCountTyped = (int)currentValue["count"];
             }
 
-            return new CounterTableUpdate
+            return new BallsTableUpdate
             {
                 Table = recordUpdate.Table,
                 CurrentRecordValue = recordUpdate.CurrentRecordValue,
@@ -101,8 +101,8 @@ namespace mudworld
                 CurrentRecordKey = recordUpdate.CurrentRecordKey,
                 PreviousRecordKey = recordUpdate.PreviousRecordKey,
                 Type = recordUpdate.Type,
-                Value = currentValueTyped,
-                PreviousValue = previousValueTyped,
+                Count = currentCountTyped,
+                PreviousCount = previousCountTyped,
             };
         }
     }

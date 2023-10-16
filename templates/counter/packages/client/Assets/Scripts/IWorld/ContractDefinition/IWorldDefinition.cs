@@ -303,6 +303,15 @@ namespace IWorld.ContractDefinition
         public virtual byte[] Args { get; set; }
     }
 
+    public partial class MoveBallFunction : MoveBallFunctionBase { }
+
+    [Function("moveBall")]
+    public class MoveBallFunctionBase : FunctionMessage
+    {
+        [Parameter("bytes32", "key", 1)]
+        public virtual byte[] Key { get; set; }
+    }
+
     public partial class PopFromDynamicFieldFunction : PopFromDynamicFieldFunctionBase { }
 
     [Function("popFromDynamicField")]
@@ -542,6 +551,14 @@ namespace IWorld.ContractDefinition
         public virtual byte[] FieldLayout { get; set; }
     }
 
+    public partial class SpawnBallFunction : SpawnBallFunctionBase { }
+
+    [Function("spawnBall")]
+    public class SpawnBallFunctionBase : FunctionMessage
+    {
+
+    }
+
     public partial class SpliceDynamicDataFunction : SpliceDynamicDataFunctionBase { }
 
     [Function("spliceDynamicData")]
@@ -574,6 +591,14 @@ namespace IWorld.ContractDefinition
         public virtual ulong Start { get; set; }
         [Parameter("bytes", "data", 4)]
         public virtual byte[] Data { get; set; }
+    }
+
+    public partial class StartTestFunction : StartTestFunctionBase { }
+
+    [Function("startTest")]
+    public class StartTestFunctionBase : FunctionMessage
+    {
+
     }
 
     public partial class StoreVersionFunction : StoreVersionFunctionBase { }
@@ -641,6 +666,14 @@ namespace IWorld.ContractDefinition
         public virtual byte[] SystemId { get; set; }
         [Parameter("address", "hookAddress", 2)]
         public virtual string HookAddress { get; set; }
+    }
+
+    public partial class UpdateAllBallsFunction : UpdateAllBallsFunctionBase { }
+
+    [Function("updateAllBalls")]
+    public class UpdateAllBallsFunctionBase : FunctionMessage
+    {
+
     }
 
     public partial class WorldVersionFunction : WorldVersionFunctionBase { }
@@ -1164,6 +1197,12 @@ namespace IWorld.ContractDefinition
 
 
 
+
+
+
+
+
+
     public partial class StoreVersionOutputDTO : StoreVersionOutputDTOBase { }
 
     [FunctionOutput]
@@ -1172,6 +1211,8 @@ namespace IWorld.ContractDefinition
         [Parameter("bytes32", "version", 1)]
         public virtual byte[] Version { get; set; }
     }
+
+
 
 
 
