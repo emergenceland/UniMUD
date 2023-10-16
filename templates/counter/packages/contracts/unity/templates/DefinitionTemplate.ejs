@@ -52,9 +52,9 @@ namespace <%= namespace %>
 			<% } -%>
 		}
 
-		public static IObservable<RecordUpdate> GetUpdates<T>() where T : IMudTable, new() {
+		public static IObservable<RecordUpdate> Get<%= tableClassName %>Updates() {
 
-			IMudTable mudTable = (IMudTable)Activator.CreateInstance(typeof(T));
+			<%= tableClassName %> mudTable = new <%= tableClassName %>();
 
 			return NetworkManager.Instance.sync.onUpdate
 			.Where(update => update.Table.Name == ID)
