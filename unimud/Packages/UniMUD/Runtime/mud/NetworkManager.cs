@@ -24,7 +24,7 @@ namespace mud
         public static Action OnInitialized;
         public static bool Initialized;
 
-        [Header("Dev settings")] 
+        [Header("Settings")] 
         [SerializeField] bool autoConnect = true;
         [Tooltip("Generate new wallet every time instead of loading from PlayerPrefs")]
         [SerializeField] bool burnerWallet = true;
@@ -118,6 +118,8 @@ namespace mud
         }
 
         public async UniTask Connect() {
+
+            if(bs != null) {Debug.LogError("Network Manager: Already connected", this); return;}
 
             /*
              * ==== PROVIDER ====
