@@ -3,6 +3,7 @@ using System.Globalization;
 using System.Linq;
 using System.Numerics;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace mud
 {
@@ -52,17 +53,26 @@ namespace mud
                 .PadRight(targetLength, '0');
         }
 
+        /**
+        * Get the hex value at start/end positions. This will always return a valid hex string.
+        *
+        * If `start` is out of range, this returns `"0x"`.
+        *
+        * If `end` is specified and out of range, the result is right zero-padded to the desired length (`end - start`).
+        */
         public static string ReadHex(string data, int start, int? end = null)
         {
-            data = data.StartsWith("0x", StringComparison.OrdinalIgnoreCase) ? data.Substring(2) : data;
-
-            if (start * 2 >= data.Length) return data;
-
-            int? endIndex = end * 2;
-            string result = data.Substring(start * 2,
-                endIndex.HasValue ? endIndex.Value - start * 2 : data.Length - start * 2);
-
-            return $"0x{result.PadRight(((end ?? start) - start) * 2, '0')}";
+            var dataNoPrefix = Regex.Replace(data, "^0x", "");
+            if (start * 2 >= dataNoPrefix.Length || start < 0) return "0x";
+            var length = ((end ?? start) - start) * 2;
+            
+            if (end != null && end.Value * 2 > dataNoPrefix.Length)
+            {
+                length = dataNoPrefix.Length - start * 2;
+            }
+            var dataSpan = dataNoPrefix.AsSpan();
+            var sliced = dataSpan.Slice(start * 2, length);
+            return $"0x{sliced.ToString().PadRight(((end ?? start) - start) * 2, '0')}";
         }
 
         public static string SliceHex(string value, int? start = null, int? end = null)

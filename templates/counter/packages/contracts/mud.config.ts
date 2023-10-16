@@ -1,4 +1,4 @@
-import { mudConfig } from "@latticexyz/world/register";
+import { mudConfig, resolveTableId } from "@latticexyz/world/register";
 
 export default mudConfig({
   tables: {
@@ -6,6 +6,17 @@ export default mudConfig({
       keySchema: {},
       valueSchema: "uint32",
     },
-    Test : "bool",
+    Test: "bool",
   },
+  modules: [
+    {
+      name: "UniqueEntityModule",
+      root: true,
+    },
+    {
+      name: "KeysWithValueModule",
+      root: true,
+      args: [resolveTableId("Counter")],
+    },
+  ],
 });

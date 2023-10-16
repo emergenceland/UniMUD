@@ -9,7 +9,8 @@ namespace mud
 {
     public partial class ProtocolParser
     {
-        public static Dictionary<string, object> DecodeValue(Dictionary<string, SchemaAbiTypes.SchemaType> valueSchema, string data)
+        public static Dictionary<string, object> DecodeValue(Dictionary<string, SchemaAbiTypes.SchemaType> valueSchema,
+            string data)
         {
             var staticFields = valueSchema.Values.Where(value => StaticAbiTypes.Contains(value))
                 .ToList();

@@ -6,14 +6,14 @@ using mud;
 using UniRx;
 using Property = System.Collections.Generic.Dictionary<string, object>;
 
-namespace DefaultNamespace
+namespace mudworld
 {
     public class CounterTable : IMudTable
     {
         public class CounterTableUpdate : RecordUpdate
         {
-            public uint? Value;
-            public uint? PreviousValue;
+            public uint? value;
+            public uint? Previousvalue;
         }
 
         public readonly static string ID = "Counter";
@@ -27,7 +27,7 @@ namespace DefaultNamespace
             return ID;
         }
 
-        public uint? Value;
+        public uint? value;
 
         public override Type TableType()
         {
@@ -47,7 +47,7 @@ namespace DefaultNamespace
             {
                 return false;
             }
-            if (Value != other.Value)
+            if (value != other.value)
             {
                 return false;
             }
@@ -56,35 +56,43 @@ namespace DefaultNamespace
 
         public override void SetValues(params object[] functionParameters)
         {
-            Value = (uint)functionParameters[0];
+            value = (uint)functionParameters[0];
         }
 
-        public static IObservable<CounterTableUpdate> GetUpdates()
+        public static IObservable<RecordUpdate> GetUpdates<T>()
+            where T : IMudTable, new()
         {
+            IMudTable mudTable = (IMudTable)Activator.CreateInstance(typeof(T));
+
             return NetworkManager.Instance.sync.onUpdate
                 .Where(update => update.Table.Name == ID)
                 .Select(recordUpdate =>
                 {
-                    var currentValue = recordUpdate.CurrentValue as Property;
-                    var previousValue = recordUpdate.PreviousValue as Property;
-                    return new CounterTableUpdate
-                    {
-                        Table = recordUpdate.Table,
-                        CurrentKey = recordUpdate.CurrentKey,
-                        PreviousKey = recordUpdate.PreviousKey,
-                        Type = recordUpdate.Type,
-                        Value = (uint)(int)(currentValue?["value"] ?? null),
-                        PreviousValue = (uint)(int)(previousValue?["value"] ?? null),
-                    };
+                    return mudTable.RecordUpdateToTyped(recordUpdate);
                 });
         }
 
-        public override void RecordToTable(RxRecord record)
+        public override void PropertyToTable(Property property)
         {
-            var table = record.RawValue;
+            value = (uint)property["value"];
+        }
 
-            var ValueValue = (uint)table["Value"];
-            Value = ValueValue;
+        public override RecordUpdate RecordUpdateToTyped(RecordUpdate recordUpdate)
+        {
+            var currentValue = recordUpdate.CurrentValue as Property;
+            var previousValue = recordUpdate.PreviousValue as Property;
+
+            return new CounterTableUpdate
+            {
+                Table = recordUpdate.Table,
+                CurrentValue = recordUpdate.CurrentValue,
+                PreviousValue = recordUpdate.PreviousValue,
+                CurrentRecordKey = recordUpdate.CurrentRecordKey,
+                PreviousRecordKey = recordUpdate.PreviousRecordKey,
+                Type = recordUpdate.Type,
+                value = (uint)(int)(currentValue?["value"] ?? null),
+                Previousvalue = (uint)(int)(previousValue?["value"] ?? null),
+            };
         }
     }
 }

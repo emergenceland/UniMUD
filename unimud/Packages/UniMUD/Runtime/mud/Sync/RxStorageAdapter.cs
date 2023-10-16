@@ -80,7 +80,8 @@ namespace mud
                         dbUpdates[i] = update;
                         break;
                     case UpdateType.SetField:
-                        update.PreviousValue = update.Table.Update(update.CurrentRecordKey, update.CurrentValue)?.RawValue;
+                        update.PreviousValue =
+                            update.Table.Update(update.CurrentRecordKey, update.CurrentValue)?.RawValue;
                         update.PreviousRecordKey = update.CurrentRecordKey;
                         dbUpdates[i] = update;
                         break;
@@ -156,36 +157,25 @@ namespace mud
             var data = Common.BytesToHex(decoded.Data);
             var entity = Common.ConcatHex(decoded.KeyTuple.Select(b => Common.BytesToHex(b)).ToArray());
 
-            // var previousValue = ds.GetValue(table, entity);
             var previousValue = table.GetValue(entity);
 
-            object previousStaticData;
-            object previousEncodedLengths;
-            object previousDynamicData;
+            object previousStaticData = null;
+            previousValue?.RawValue?.TryGetValue("__staticData", out previousStaticData);
+            string previousStaticResult = previousStaticData as string ?? "0x";
 
-            if (previousValue != null)
-            {
-                previousValue.RawValue.TryGetValue("__staticData", out previousStaticData);
-                previousValue.RawValue.TryGetValue("__encodedLengths", out previousEncodedLengths);
-                previousValue.RawValue.TryGetValue("__dynamicData", out previousDynamicData);
-            }
-            else
-            {
-                previousStaticData = "0x";
-                previousEncodedLengths = "0x";
-                previousDynamicData = "0x";
-            }
+            object previousEncodedLengths = null;
+            object previousDynamicData = null;
 
-            previousStaticData ??= "0x";
-            previousEncodedLengths ??= "0x";
-            previousDynamicData ??= "0x";
+            previousValue?.RawValue?.TryGetValue("__encodedLengths", out previousEncodedLengths);
+            previousValue?.RawValue?.TryGetValue("__staticData", out previousDynamicData);
 
-            var newStaticData = Common.SpliceHex((string)previousStaticData, start, Common.Size(data), data);
+            var newStaticData = Common.SpliceHex(previousStaticResult, start, Common.Size(data), data);
             var newValue = DecodeValueArgs(
                 table.Schema,
                 newStaticData,
-                (string)previousEncodedLengths,
-                (string)previousDynamicData);
+                previousEncodedLengths as string ?? "0x",
+                previousDynamicData as string ?? "0x"
+            );
 
             var expandedValue = new Dictionary<string, object>(newValue)
             {
@@ -220,38 +210,26 @@ namespace mud
 
             var start = decoded.Start;
             var data = Common.BytesToHex(decoded.Data);
+            var deleteCount = decoded.DeleteCount;
             var encodedLengths = Common.BytesToHex(decoded.EncodedLengths);
             var entity = Common.ConcatHex(decoded.KeyTuple.Select(b => Common.BytesToHex(b)).ToArray());
-
-            // var previousValue = ds.GetValue(table, entity);
+            
             var previousValue = table.GetValue(entity);
-            object previousStaticData;
-            object previousEncodedLengths;
-            object previousDynamicData;
 
-            if (previousValue != null)
-            {
-                previousValue.RawValue.TryGetValue("__staticData", out previousStaticData);
-                previousValue.RawValue.TryGetValue("__encodedLengths", out previousEncodedLengths);
-                previousValue.RawValue.TryGetValue("__dynamicData", out previousDynamicData);
-            }
-            else
-            {
-                previousStaticData = "0x";
-                previousEncodedLengths = "0x";
-                previousDynamicData = "0x";
-            }
+            object previousDynamicData = null;
+            previousValue?.RawValue?.TryGetValue("__dynamicValue", out previousDynamicData);
 
-            previousStaticData ??= "0x";
-            previousEncodedLengths ??= "0x";
-            previousDynamicData ??= "0x";
+            object previousStaticData = null;
+            previousValue?.RawValue?.TryGetValue("__staticData", out previousStaticData);
 
-            var newDynamicData = Common.SpliceHex((string)previousDynamicData, (int)start, Common.Size(data), data);
+            var newDynamicData = Common.SpliceHex((string)previousDynamicData ?? "0x", (int)start, (int)deleteCount, data); 
+
             var newValue = DecodeValueArgs(
                 table.Schema,
-                (string)previousStaticData,
-                (string)previousEncodedLengths,
+                (string)previousStaticData ?? "0x",
+                encodedLengths,
                 newDynamicData);
+            
             var expandedValue = new Dictionary<string, object>(newValue)
             {
                 ["__encodedLengths"] = encodedLengths,

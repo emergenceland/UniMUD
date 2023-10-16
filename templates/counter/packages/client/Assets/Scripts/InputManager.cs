@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
+using DefaultNamespace;
 using IWorld.ContractDefinition;
 using mud;
 using mudworld;
@@ -21,7 +22,7 @@ public class InputManager : MonoBehaviour
         net = NetworkManager.Instance;
         net.OnNetworkInitialized += SubscribeToCounter;
     }
-    
+
     private void SubscribeToCounter(NetworkManager _)
     {
         Debug.Log("Subscribed to counter.");
@@ -31,16 +32,19 @@ public class InputManager : MonoBehaviour
 
     private void OnIncrement(RecordUpdate update)
     {
+        CounterTable.CounterTableUpdate counterUpdate = (CounterTable.CounterTableUpdate)update;
 
-        CounterTable.CounterTableUpdate updateType = (CounterTable.CounterTableUpdate)update;
-
-        Debug.Log("UDPATE: " + JsonConvert.SerializeObject(update), this);
-        if (updateType.Type != UpdateType.DeleteRecord)
+        if (counterUpdate.Type != UpdateType.DeleteRecord)
         {
-            var currentValue = updateType.CurrentValue;
-            if (currentValue == null) {Debug.LogError("Null CurrentValue", this); return;}
+            var currentValue = counterUpdate.Value;
+            if (currentValue == null)
+            {
+                Debug.LogError("Null CurrentValue", this);
+                return;
+            }
+
             Debug.Log("Counter is now: " + currentValue);
-            SpawnPrefab(); 
+            SpawnPrefab();
         }
     }
 

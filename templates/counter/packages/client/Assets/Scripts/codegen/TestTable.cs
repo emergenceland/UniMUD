@@ -81,6 +81,12 @@ namespace mudworld
                 });
         }
 
+        public override void PropertyToTable(Property property)
+        {
+            key = (string)property["key"];
+            value = (bool)property["value"];
+        }
+
         public override RecordUpdate RecordUpdateToTyped(RecordUpdate recordUpdate)
         {
             var currentValue = recordUpdate.CurrentValue as Property;
@@ -99,16 +105,6 @@ namespace mudworld
                 Previouskey = (string)(previousValue?["key"] ?? null),
                 Previousvalue = (bool)(previousValue?["value"] ?? null),
             };
-        }
-
-        public override void RecordToTable(RxRecord record)
-        {
-            var table = record.RawValue;
-
-            var keyValue = (string)table["key"];
-            key = keyValue;
-            var valueValue = (bool)table["value"];
-            value = valueValue;
         }
     }
 }
