@@ -46,6 +46,11 @@ namespace mud
 
             return null;
         }
+        
+        public RxTable? TryGetTableById(string id)
+        {
+            return store.Values.FirstOrDefault(table => table.Id == id);
+        }
 
         public IEnumerable<IRxRecord> RunQuery(Query query)
         {

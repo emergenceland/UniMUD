@@ -90,7 +90,7 @@ namespace <%= namespace %>
 				    <% if (field.type.startsWith("uint") || field.type.startsWith("Uint")) { -%>
 				      previous<%= field.key.charAt(0).toUpperCase() + field.key.slice(1) %>Typed = (<%= field.type %>)(<%= field.type.charAt(0).toUpperCase() === field.type.charAt(0) ? field.type.slice(1).toUpperCase() : field.type.slice(1) %>)previousValue["<%= field.key.toLowerCase() %>"];
 				    <% } else { -%>
-				      previous<%= field.key.charAt(0).toUpperCase() + field.key.slice(1) %>Typed = (<%= field.type %>)currentValue["<%= field.key.toLowerCase() %>"];
+				      previous<%= field.key.charAt(0).toUpperCase() + field.key.slice(1) %>Typed = (<%= field.type %>)previousValue["<%= field.key.toLowerCase() %>"];
 				    <% } -%>	
 				 }
 				<% } -%>

@@ -33,7 +33,7 @@ public class InputManager : MonoBehaviour
     {
         if (update.Type != UpdateType.DeleteRecord)
         {
-            var currentValue = update.CurrentValue;
+            var currentValue = update.CurrentRecordValue;
             if (currentValue == null) return;
             // Debug.Log("Counter is now: " + currentValue["value"]);
             Debug.Log("Counter is now: " + JsonConvert.SerializeObject(currentValue));

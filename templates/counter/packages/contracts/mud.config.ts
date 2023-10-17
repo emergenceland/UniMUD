@@ -8,6 +8,22 @@ export default mudConfig({
       keySchema: {},
       valueSchema: "uint32",
     },
+    Position: {
+      valueSchema: {
+        x: "int32",
+        y: "int32",
+      },
+    },
+    MyTableWithTwoKeys: {
+      valueSchema: {
+        value1: "uint32",
+        value2: "uint32",
+      },
+      keySchema: {
+        key1: "bytes32",
+        key2: "bytes32",
+      },
+    },
   },
 
   modules: [
@@ -15,10 +31,10 @@ export default mudConfig({
       name: "UniqueEntityModule",
       root: true,
     },
-    // {
-    //   name: "KeysWithValueModule",
-    //   root: true,
-    //   // args: [resolveTableId("Counter")],
-    // },
+    {
+      name: "KeysWithValueModule",
+      root: true,
+      args: [resolveTableId("Position")],
+    },
   ],
 });

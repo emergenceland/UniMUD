@@ -303,6 +303,17 @@ namespace IWorld.ContractDefinition
         public virtual byte[] Args { get; set; }
     }
 
+    public partial class MoveFunction : MoveFunctionBase { }
+
+    [Function("move")]
+    public class MoveFunctionBase : FunctionMessage
+    {
+        [Parameter("int32", "x", 1)]
+        public virtual int X { get; set; }
+        [Parameter("int32", "y", 2)]
+        public virtual int Y { get; set; }
+    }
+
     public partial class PopFromDynamicFieldFunction : PopFromDynamicFieldFunctionBase { }
 
     [Function("popFromDynamicField")]
@@ -1115,6 +1126,8 @@ namespace IWorld.ContractDefinition
         [Parameter("bytes32", "valueSchema", 1)]
         public virtual byte[] ValueSchema { get; set; }
     }
+
+
 
 
 

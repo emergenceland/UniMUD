@@ -1117,6 +1117,24 @@
   {
     "inputs": [
       {
+        "internalType": "int32",
+        "name": "x",
+        "type": "int32"
+      },
+      {
+        "internalType": "int32",
+        "name": "y",
+        "type": "int32"
+      }
+    ],
+    "name": "move",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
         "internalType": "ResourceId",
         "name": "tableId",
         "type": "bytes32"

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 using mud.IStore.ContractDefinition;
 using Nethereum.Contracts;
 using Nethereum.RPC.Eth.DTOs;
@@ -106,7 +107,7 @@ namespace mud
         {
             var tableId = Common.BytesToHex(decoded.TableId);
             var tableResource = Common.HexToResourceId(tableId);
-            var table = ds.TryGetTable(tableResource.Name);
+            var table = ds.TryGetTableById(tableId);
             if (table == null)
             {
                 Debug.LogWarning(
@@ -145,7 +146,7 @@ namespace mud
         {
             var tableId = Common.BytesToHex(decoded.TableId);
             var tableResource = Common.HexToResourceId(tableId);
-            var table = ds.TryGetTable(tableResource.Name);
+            var table = ds.TryGetTableById(tableId);
             if (table == null)
             {
                 Debug.LogWarning(
@@ -200,7 +201,7 @@ namespace mud
         {
             var tableId = Common.BytesToHex(decoded.TableId);
             var tableResource = Common.HexToResourceId(tableId);
-            var table = ds.TryGetTable(tableResource.Name);
+            var table = ds.TryGetTableById(tableId);
             if (table == null)
             {
                 Debug.LogWarning(
@@ -255,7 +256,7 @@ namespace mud
         {
             var tableId = Common.BytesToHex(decoded.TableId);
             var tableResource = Common.HexToResourceId(tableId);
-            var table = ds.TryGetTable(tableResource.Name);
+            var table = ds.TryGetTableById(tableId);
             if (table == null)
             {
                 Debug.LogWarning(

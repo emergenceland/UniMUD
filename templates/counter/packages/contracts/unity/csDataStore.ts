@@ -13,17 +13,24 @@ export function createTableDefinition(
   valueSchema: { [key: string]: SchemaAbiType }
 ) {
   const fields: TableField[] = [];
+  const keyFields: TableField[] = [];
 
   for (const key in keySchema) {
     const keyType = keySchema[key];
     if (!keyType) throw new Error(`[${tableName}]: Unknown type for field ${key}`);
-    fields.push({ key: key[0] + key.slice(1), type: schemaTypesToCSTypeStrings[keyType] });
+    if (keyType === "bytes32" && key === "key") continue;
+    keyFields.push({ key: key[0] + key.slice(1), type: schemaTypesToCSTypeStrings[keyType] });
   }
 
   for (const key in valueSchema) {
     const valueType = valueSchema[key];
+    console.log(`Value schema has key: ${key}`);
     if (!valueType) throw new Error(`[${tableName}]: Unknown type for field ${key}`);
     fields.push({ key: key[0] + key.slice(1), type: schemaTypesToCSTypeStrings[valueType] });
+  }
+
+  if (keyFields.length > 0) {
+    console.warn("UniMUD currently only supports single key (key = bytes32) and singleton tables");
   }
 
   renderFile(

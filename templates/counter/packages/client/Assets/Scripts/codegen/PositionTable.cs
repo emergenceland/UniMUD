@@ -8,15 +8,17 @@ using Property = System.Collections.Generic.Dictionary<string, object>;
 
 namespace mudworld
 {
-    public class CounterTable : IMudTable
+    public class PositionTable : IMudTable
     {
-        public class CounterTableUpdate : RecordUpdate
+        public class PositionTableUpdate : RecordUpdate
         {
-            public uint? Value;
-            public uint? PreviousValue;
+            public int? X;
+            public int? PreviousX;
+            public int? Y;
+            public int? PreviousY;
         }
 
-        public readonly static string ID = "Counter";
+        public readonly static string ID = "Position";
         public static RxTable Table
         {
             get { return NetworkManager.Instance.ds.store[ID]; }
@@ -27,27 +29,32 @@ namespace mudworld
             return ID;
         }
 
-        public uint? Value;
+        public int? X;
+        public int? Y;
 
         public override Type TableType()
         {
-            return typeof(CounterTable);
+            return typeof(PositionTable);
         }
 
         public override Type TableUpdateType()
         {
-            return typeof(CounterTableUpdate);
+            return typeof(PositionTableUpdate);
         }
 
         public override bool Equals(object? obj)
         {
-            CounterTable other = (CounterTable)obj;
+            PositionTable other = (PositionTable)obj;
 
             if (other == null)
             {
                 return false;
             }
-            if (Value != other.Value)
+            if (X != other.X)
+            {
+                return false;
+            }
+            if (Y != other.Y)
             {
                 return false;
             }
@@ -56,12 +63,14 @@ namespace mudworld
 
         public override void SetValues(params object[] functionParameters)
         {
-            Value = (uint)functionParameters[0];
+            X = (int)functionParameters[0];
+
+            Y = (int)functionParameters[1];
         }
 
-        public static IObservable<RecordUpdate> GetCounterTableUpdates()
+        public static IObservable<RecordUpdate> GetPositionTableUpdates()
         {
-            CounterTable mudTable = new CounterTable();
+            PositionTable mudTable = new PositionTable();
 
             return NetworkManager.Instance.sync.onUpdate
                 .Where(update => update.Table.Name == ID)
@@ -73,27 +82,40 @@ namespace mudworld
 
         public override void PropertyToTable(Property property)
         {
-            Value = (uint)property["value"];
+            X = (int)property["x"];
+            Y = (int)property["y"];
         }
 
         public override RecordUpdate RecordUpdateToTyped(RecordUpdate recordUpdate)
         {
             var currentValue = recordUpdate.CurrentRecordValue as Property;
             var previousValue = recordUpdate.PreviousRecordValue as Property;
-            uint? currentValueTyped = null;
-            uint? previousValueTyped = null;
+            int? currentXTyped = null;
+            int? previousXTyped = null;
 
-            if (currentValue != null && currentValue.ContainsKey("value"))
+            if (currentValue != null && currentValue.ContainsKey("x"))
             {
-                currentValueTyped = (uint)(int)currentValue["value"];
+                currentXTyped = (int)currentValue["x"];
             }
 
-            if (previousValue != null && previousValue.ContainsKey("value"))
+            if (previousValue != null && previousValue.ContainsKey("x"))
             {
-                previousValueTyped = (uint)(int)previousValue["value"];
+                previousXTyped = (int)previousValue["x"];
+            }
+            int? currentYTyped = null;
+            int? previousYTyped = null;
+
+            if (currentValue != null && currentValue.ContainsKey("y"))
+            {
+                currentYTyped = (int)currentValue["y"];
             }
 
-            return new CounterTableUpdate
+            if (previousValue != null && previousValue.ContainsKey("y"))
+            {
+                previousYTyped = (int)previousValue["y"];
+            }
+
+            return new PositionTableUpdate
             {
                 Table = recordUpdate.Table,
                 CurrentRecordValue = recordUpdate.CurrentRecordValue,
@@ -101,8 +123,10 @@ namespace mudworld
                 CurrentRecordKey = recordUpdate.CurrentRecordKey,
                 PreviousRecordKey = recordUpdate.PreviousRecordKey,
                 Type = recordUpdate.Type,
-                Value = currentValueTyped,
-                PreviousValue = previousValueTyped,
+                X = currentXTyped,
+                PreviousX = previousXTyped,
+                Y = currentYTyped,
+                PreviousY = previousYTyped,
             };
         }
     }
