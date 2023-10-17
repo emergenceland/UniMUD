@@ -19,13 +19,14 @@ namespace mud
         public BigInteger MaxFeePerGas { get; set; } = 0;
     }
     
+    [System.Serializable]
     public class CreateContract
     {
         private Account _signer;
-        private string _rpcUrl;
-        private int _chainId;
+        [SerializeField] string _rpcUrl;
+        [SerializeField] int _chainId;
+        [SerializeField] string _contractAddress;
         private HexBigInteger _currentNonce = new(0);
-        private string _contractAddress;
         private GasConfig GasConfig { get; set; }
         private int PriorityFeeMultiplier { get; set; }
 

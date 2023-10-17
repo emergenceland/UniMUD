@@ -7,7 +7,8 @@ using Nethereum.Unity.Rpc;
 using Nethereum.Web3.Accounts;
 using UniRx;
 using UnityEngine;
-
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace mud
 {
@@ -28,22 +29,22 @@ namespace mud
         [SerializeField] bool autoConnect = true;
         [Tooltip("Generate new wallet every time instead of loading from PlayerPrefs")]
         [SerializeField] bool burnerWallet = true;
-        [SerializeField] bool uniqueWallets = false;
-        public string pk;
-        
+        [SerializeField] bool uniqueWallets = false;        
 
         private NetworkData activeNetwork;
         [Header("Network")] public NetworkTypes.NetworkType networkType;
         public NetworkData local;
         public NetworkData testnet;
         public NetworkData mainnet;
+
+
+        [Header("Debug")] public string address;
+        [SerializeField] string _worldAddress;
+        public string addressKey;
+        public string pk;
         private int _chainId;
         private string _rpcUrl;
         private string _wsRpcUrl;
-        private string _worldAddress;
-
-        [Header("Debug")] public string address;
-        public string addressKey;
 
         public Account account;
         private int startingBlockNumber = -1;
@@ -83,8 +84,20 @@ namespace mud
                 _rpcUrl = activeNetwork.jsonRpcUrl;
                 _wsRpcUrl = activeNetwork.wsRpcUrl;
                 _chainId = activeNetwork.chainId;
-                _worldAddress = activeNetwork.contractAddress;
+
+                if(string.IsNullOrEmpty(activeNetwork.contractAddress)) {_worldAddress = LoadWorldAddress(_chainId);} 
+                else {_worldAddress = activeNetwork.contractAddress;}
             }
+        }
+
+        string LoadWorldAddress(int chainID) {
+
+            // Specify the path to your JSON file
+            TextAsset json = Resources.Load<TextAsset>("worlds");
+            if(json == null) {Debug.LogError("Could not find worlds.json in Resources"); return null;}
+            JObject j = JObject.Parse(json?.text);
+            return j[chainID.ToString()]["address"].ToString();
+
         }
 
         private async void Start()

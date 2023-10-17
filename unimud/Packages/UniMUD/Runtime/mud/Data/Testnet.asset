@@ -14,7 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   jsonRpcUrl: https://follower.testnet-chain.linfra.xyz
   wsRpcUrl: ws://follower.testnet-chain.linfra.xyz
-  contractAddress: 0x24B36920076aF3d7d2eCFBD76F5Cb84f0466CBAf
+  faucetUrl: 
+  contractAddress: 
   pk: 
   chainId: 4242
   disableCache: 1
