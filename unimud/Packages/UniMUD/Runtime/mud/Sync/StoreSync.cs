@@ -24,7 +24,7 @@ namespace mud
 
     public class StoreSync : IDisposable
     {
-        public readonly ReplaySubject<RecordUpdate> onUpdate = new(1);
+        public readonly ReplaySubject<RecordUpdate> onUpdate = new();
         private readonly CompositeDisposable _disposables = new();
 
         // TODO: make RxDataStore something like IStorageAdapter

@@ -19,10 +19,10 @@ export interface ABIGenerator {
 }
 
 export const schemaTypesToCSTypeStrings: Record<SchemaAbiType, string> = {
-  uint8: "uint",
-  uint16: "uint",
-  uint24: "uint",
-  uint32: "uint",
+  uint8: "int",
+  uint16: "int",
+  uint24: "int",
+  uint32: "int",
   uint40: "UInt64",
   uint48: "UInt64",
   uint56: "System.Numerics.BigInteger",
