@@ -33,7 +33,6 @@ public class InputManager : MonoBehaviour
         PositionTable.PositionTableUpdate posUpdate = (PositionTable.PositionTableUpdate)update;
         if (posUpdate.Type != UpdateType.DeleteRecord && posUpdate.Table.Name == PositionTable.ID)
         {
-            Debug.Log($"HEE HEE: {JsonConvert.SerializeObject(posUpdate)}");
             Debug.Log($"Position changed: {posUpdate.X}, {posUpdate.Y}");
         }
     }
