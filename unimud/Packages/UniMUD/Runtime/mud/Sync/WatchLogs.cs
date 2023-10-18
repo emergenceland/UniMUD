@@ -26,6 +26,7 @@ namespace mud
 
     public class BlockStream : IDisposable
     {
+        public IWebSocket WS {get{return _ws;}}
         private WebSocket _ws;
         public Subject<Block> subject = new();
 

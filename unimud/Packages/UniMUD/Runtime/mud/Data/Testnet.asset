@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Testnet
   m_EditorClassIdentifier: 
   jsonRpcUrl: https://follower.testnet-chain.linfra.xyz
-  wsRpcUrl: ws://follower.testnet-chain.linfra.xyz
+  wsRpcUrl: wss://follower.testnet-chain.linfra.xyz/
   faucetUrl: 
   contractAddress: 
   pk: 

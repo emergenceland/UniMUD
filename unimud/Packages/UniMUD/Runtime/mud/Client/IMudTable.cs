@@ -37,17 +37,20 @@ namespace mud {
                 });
         }
         
-        public static T? GetValueFromTable<T>(string key) where T : IMudTable, new() {
-
-            var table = new T();
-
-            RxTable rxTable = NetworkManager.Datastore.store[table.GetTableId()];
+        public static RxRecord? GetRecord<T>(string key) where T : IMudTable, new() {
+            T mudTable = (T)Activator.CreateInstance(typeof(T));
+            RxTable rxTable = NetworkManager.Datastore.store[mudTable.GetTableId()];
+            if(rxTable == null) {Debug.LogError($"{mudTable.GetTableId()}: RxTable not found"); return null;}
             rxTable.Entries.TryGetValue(key, out RxRecord record);
+            return record;
+        }
 
-            if(record == null) return null;
-            table.PropertyToTable(record.RawValue);
-
-            return table;
+        public static T? MakeTable<T>(string key) where T : IMudTable, new() {
+            var mudTable = new T();
+            RxRecord? record = GetRecord<T>(key);
+            if(record == null) {return null;}
+            mudTable.PropertyToTable(record.RawValue);
+            return mudTable;
         }
 
         public abstract void SetValues(params object[] values);
