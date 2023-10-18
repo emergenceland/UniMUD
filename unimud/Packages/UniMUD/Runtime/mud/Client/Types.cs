@@ -24,9 +24,12 @@ namespace mud
         
         public void Set(string key, object value)
         {
-            if (Entries.TryGetValue(key, out var record)) return;
-            record = new RxRecord(Id, key, (Dictionary<string, object>)value); // TODO: this is a hack
-            Entries.Add(key, record);
+            bool exists = Entries.ContainsKey(key);
+            
+            var record = new RxRecord(Id, key, (Dictionary<string, object>)value); // TODO: this is a hack
+
+            if(exists) { Entries[key] = record; } 
+            else { Entries.Add(key, record); }
         }
 
         public RxRecord? Update(string key, object value)
