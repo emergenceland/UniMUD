@@ -94,6 +94,9 @@ namespace mud
                 
                 var txRequest = new TransactionSignedUnityRequest(_rpcUrl, _signer.PrivateKey, _chainId);
                 await txRequest.SignAndSendTransaction(functionMessage, _contractAddress).ToUniTask();
+
+                _currentNonce = new HexBigInteger(BigInteger.Add(BigInteger.One, _currentNonce.Value));
+
                 var txHash = txRequest.Result;
                 if(NetworkManager.Verbose) Debug.Log("TxHash: " + txHash);
                 if (txHash == null)
@@ -112,7 +115,6 @@ namespace mud
                 //tx was not successful
                 if(transferReceipt == null || (string)j["status"] == "0x0") {return false;}
 
-                _currentNonce = new HexBigInteger(BigInteger.Add(BigInteger.One, _currentNonce.Value));
 
                 return true;
             }
