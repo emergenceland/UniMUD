@@ -315,6 +315,12 @@ namespace HybridWebSocket
 
 
         protected WebSocketSharp.WebSocket ws;
+        private enum SslProtocolsHack
+        {
+            Tls = 192,
+            Tls11 = 768,
+            Tls12 = 3072
+        }
 
         public WebSocket(string url)
         {
@@ -339,9 +345,20 @@ namespace HybridWebSocket
                 // Bind OnClose event
                 this.ws.OnClose += (sender, ev) =>
                 {
-                    this.OnClose?.Invoke(
-                        WebSocketHelpers.ParseCloseCodeEnum((int)ev.Code)
-                    );
+                    var sslProtocolHack = (System.Security.Authentication.SslProtocols)(SslProtocolsHack.Tls12 | SslProtocolsHack.Tls11 | SslProtocolsHack.Tls);
+                    //TlsHandshakeFailure
+                    if (ev.Code == 1015 && ws.SslConfiguration.EnabledSslProtocols != sslProtocolHack)
+                    {
+                        Debug.LogError("TlsHandshakeFailure");
+                        ws.SslConfiguration.EnabledSslProtocols = sslProtocolHack;
+                        ws.Connect();
+                    } else {
+                        this.OnClose?.Invoke(
+                            WebSocketHelpers.ParseCloseCodeEnum((int)ev.Code)
+                        );
+                    }
+
+                    
                 };
             }
             catch (Exception e)

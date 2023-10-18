@@ -33,7 +33,10 @@ namespace mud
         [SerializeField] bool verbose = false;        
 
         private NetworkData activeNetwork;
-        [Header("Network")] public NetworkTypes.NetworkType networkType;
+
+        [Header("Network")] 
+        public NetworkTypes.NetworkType networkType;
+        public HybridWebSocket.WebSocketState wsState;
         public NetworkData local;
         public NetworkData testnet;
         public NetworkData mainnet;
@@ -142,7 +145,7 @@ namespace mud
              * ==== PROVIDER ====
              */
 
-            Debug.Log("Connecting to websocket...");
+            Debug.Log($"Connecting to websocket... [{_wsRpcUrl}]");
             bs = new BlockStream().AddTo(_disposables);
             await bs.WatchBlocks(_wsRpcUrl);
 
@@ -198,6 +201,10 @@ namespace mud
             var blockNumberRequest = new EthBlockNumberUnityRequest(_rpcUrl);
             yield return blockNumberRequest.SendRequest();
             startingBlockNumber = (int)blockNumberRequest.Result.Value;
+        }
+
+        void Update() {
+            wsState = bs?.WS?.GetState() ?? HybridWebSocket.WebSocketState.Closed;
         }
 
         private void OnDestroy()
