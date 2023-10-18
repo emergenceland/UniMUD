@@ -1,21 +1,38 @@
 # UniMUD
 
-Low-level networking utilities for interacting with the [MUD 2.0.0-next.9](https://mud.dev) framework in [Unity](https://unity3d.com).
+Networking utilities for interacting with the [MUD 2.0.0-next.11](https://mud.dev) framework in [Unity](https://unity3d.com).
 
-⚠️ If your goal is to just make a game, **you should not use UniMUD directly.**
-Instead, use [MUD Template Unity](https://github.com/emergenceland/mud-template-unity).
+## Prerequisites
 
-## Getting Started
+1. git ([download](https://git-scm.com/downloads))
+2. foundry (forge, anvil, cast) ([download](https://book.getfoundry.sh/getting-started/installation), make sure to foundryup at least once)
+3. node.js (v16+) ([download](https://nodejs.org/en/download))
+4. pnpm (after installing node: npm install --global pnpm)
+5. Unity ([download](https://unity.com/download))
+6. The .NET SDK (7.0) ([download](https://dotnet.microsoft.com/en-us/download))
 
-### Installation
+If you are using Windows:
+
+1. install git bash (gitforwindows.org)
+2. install nodejs, including “native modules” (nodejs.org/en/download) (re native modules: just keep the checkmark, it’s enabled by default in the installer)
+3. Install foundry via foundryup using Git bash
+
+## Quickstart (with template)
+
+1. `git clone https://github.com/emergenceland/UniMUD.git`
+2. `cd UniMUD/templates/counter`
+3. `pnpm install`
+4. `pnpm run dev`
+
+## Setup with an existing project
 
 Add UniMUD to the Unity Package Manager via git url
 
 ```
-https://github.com/emergenceland/unimud.git?path=Packages/UniMUD
+https://github.com/emergenceland/unimud.git?path=unimud/Packages/UniMUD
 ```
 
-### Setup
+### Unity Setup
 
 **1. Add a NetworkManager:**
 
