@@ -36,13 +36,17 @@ namespace mud {
                     return mudTable.RecordUpdateToTyped(recordUpdate); 
                 });
         }
-
+        
         public static T? GetValueFromTable<T>(string key) where T : IMudTable, new() {
+
             var table = new T();
-            // var record = NetworkManager.Instance.ds.GetValue(Table, key);
-            //
-            // if (record == null) { return null; }
-            // else { table.RecordToTable(record); return table; }
+
+            RxTable rxTable = NetworkManager.Datastore.store[table.GetTableId()];
+            rxTable.Entries.TryGetValue(key, out RxRecord record);
+
+            if(record == null) return null;
+            table.PropertyToTable(record.RawValue);
+
             return table;
         }
 

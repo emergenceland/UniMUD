@@ -128,8 +128,8 @@ namespace mud
                 ["__dynamicData"] = dynamicData
             };
 
-            Debug.Log(
-                $"Setting table: {tableResource.Namespace}:{tableResource.Name}, Value: {JsonConvert.SerializeObject(value)}");
+            if(NetworkManager.Verbose) {Debug.Log(
+                $"Setting table: {tableResource.Namespace}:{tableResource.Name}, Value: {JsonConvert.SerializeObject(value)}");}
             updates.Add(new RecordUpdate
             {
                 Type = UpdateType.SetRecord,
@@ -183,8 +183,8 @@ namespace mud
                 ["__staticData"] = newStaticData,
             };
 
-            Debug.Log(
-                $"Setting table via splice static: {tableResource.Namespace}:{tableResource.Name}, {JsonConvert.SerializeObject(newValue)}");
+            if(NetworkManager.Verbose) {Debug.Log(
+                $"Setting table via splice static: {tableResource.Namespace}:{tableResource.Name}, {JsonConvert.SerializeObject(newValue)}");}
             updates.Add(new RecordUpdate
             {
                 Type = UpdateType.SetField,

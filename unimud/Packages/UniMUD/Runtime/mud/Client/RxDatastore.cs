@@ -13,7 +13,7 @@ namespace mud
     {
         // Table name -> table
         public readonly Dictionary<string, RxTable> store = new();
-
+        
         public void RegisterTable(string id, string name, Dictionary<string, SchemaAbiTypes.SchemaType> schema)
         {
             if (store.TryGetValue(name, out _))

@@ -14,7 +14,7 @@ namespace mud
 {
     public class NetworkManager : MonoBehaviour
     {
-        public static string LocalKey {get{return Instance.addressKey;}}
+        public static string LocalKey {get{return Instance.key;}}
         public static string LocalAddress {get{return Instance.address;}}
         public static string WorldAddress {get{return Instance._worldAddress;}}
         public static NetworkManager Instance { get; private set; }
@@ -30,6 +30,7 @@ namespace mud
         [Tooltip("Generate new wallet every time instead of loading from PlayerPrefs")]
         [SerializeField] bool burnerWallet = true;
         [SerializeField] bool uniqueWallets = false;        
+        [SerializeField] bool verbose = false;        
 
         private NetworkData activeNetwork;
         [Header("Network")] public NetworkTypes.NetworkType networkType;
@@ -38,14 +39,16 @@ namespace mud
         public NetworkData mainnet;
 
 
-        [Header("Debug")] public string address;
-        [SerializeField] string _worldAddress;
-        public string addressKey;
+        [Header("Debug Address")] 
+        [SerializeField] string address;
+        [SerializeField] string key;
         public string pk;
         private int _chainId;
         private string _rpcUrl;
         private string _wsRpcUrl;
 
+        [Header("Debug World")] 
+        [SerializeField] string _worldAddress;
         public Account account;
         private int startingBlockNumber = -1;
         private int streamStartBlockNumber = 0; // TODO: get from indexer
@@ -54,7 +57,8 @@ namespace mud
         public StoreSync sync;
         public CreateContract world;
         private readonly CompositeDisposable _disposables = new();
-        
+        public static bool Verbose {get{return Instance.verbose;}}
+
         private bool _networkReady = false;
 
         protected void Awake()
@@ -125,8 +129,8 @@ namespace mud
                     ? new Account(Common.GeneratePrivateKey(), _chainId)
                     : new Account(Common.GetBurnerPrivateKey(), _chainId);
                 address = account.Address;
-                Debug.Log("Burner wallet created/loaded: " + address);
-                addressKey = "0x" + address.Replace("0x", "").PadLeft(64, '0').ToLower();
+                Debug.Log("Burner wallet created/loaded: " + LocalAddress);
+                key = "0x" + address.Replace("0x", "").PadLeft(64, '0').ToUpper();
             }
         }
 
