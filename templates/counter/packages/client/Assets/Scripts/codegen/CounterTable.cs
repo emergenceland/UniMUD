@@ -12,8 +12,8 @@ namespace mudworld
     {
         public class CounterTableUpdate : RecordUpdate
         {
-            public uint? Value;
-            public uint? PreviousValue;
+            public int? Value;
+            public int? PreviousValue;
         }
 
         public readonly static string ID = "Counter";
@@ -27,7 +27,7 @@ namespace mudworld
             return ID;
         }
 
-        public uint? Value;
+        public int? Value;
 
         public override Type TableType()
         {
@@ -56,7 +56,7 @@ namespace mudworld
 
         public override void SetValues(params object[] functionParameters)
         {
-            Value = (uint)functionParameters[0];
+            Value = (int)functionParameters[0];
         }
 
         public static IObservable<RecordUpdate> GetCounterTableUpdates()
@@ -73,24 +73,24 @@ namespace mudworld
 
         public override void PropertyToTable(Property property)
         {
-            Value = (uint)property["value"];
+            Value = (int)property["value"];
         }
 
         public override RecordUpdate RecordUpdateToTyped(RecordUpdate recordUpdate)
         {
             var currentValue = recordUpdate.CurrentRecordValue as Property;
             var previousValue = recordUpdate.PreviousRecordValue as Property;
-            uint? currentValueTyped = null;
-            uint? previousValueTyped = null;
+            int? currentValueTyped = null;
+            int? previousValueTyped = null;
 
             if (currentValue != null && currentValue.ContainsKey("value"))
             {
-                currentValueTyped = (uint)(int)currentValue["value"];
+                currentValueTyped = (int)currentValue["value"];
             }
 
             if (previousValue != null && previousValue.ContainsKey("value"))
             {
-                previousValueTyped = (uint)(int)previousValue["value"];
+                previousValueTyped = (int)previousValue["value"];
             }
 
             return new CounterTableUpdate

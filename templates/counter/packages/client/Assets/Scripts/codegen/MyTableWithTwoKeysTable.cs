@@ -12,10 +12,10 @@ namespace mudworld
     {
         public class MyTableWithTwoKeysTableUpdate : RecordUpdate
         {
-            public uint? Value1;
-            public uint? PreviousValue1;
-            public uint? Value2;
-            public uint? PreviousValue2;
+            public int? Value1;
+            public int? PreviousValue1;
+            public int? Value2;
+            public int? PreviousValue2;
         }
 
         public readonly static string ID = "MyTableWithTwoKeys";
@@ -29,8 +29,8 @@ namespace mudworld
             return ID;
         }
 
-        public uint? Value1;
-        public uint? Value2;
+        public int? Value1;
+        public int? Value2;
 
         public override Type TableType()
         {
@@ -63,9 +63,9 @@ namespace mudworld
 
         public override void SetValues(params object[] functionParameters)
         {
-            Value1 = (uint)functionParameters[0];
+            Value1 = (int)functionParameters[0];
 
-            Value2 = (uint)functionParameters[1];
+            Value2 = (int)functionParameters[1];
         }
 
         public static IObservable<RecordUpdate> GetMyTableWithTwoKeysTableUpdates()
@@ -82,37 +82,37 @@ namespace mudworld
 
         public override void PropertyToTable(Property property)
         {
-            Value1 = (uint)property["value1"];
-            Value2 = (uint)property["value2"];
+            Value1 = (int)property["value1"];
+            Value2 = (int)property["value2"];
         }
 
         public override RecordUpdate RecordUpdateToTyped(RecordUpdate recordUpdate)
         {
             var currentValue = recordUpdate.CurrentRecordValue as Property;
             var previousValue = recordUpdate.PreviousRecordValue as Property;
-            uint? currentValue1Typed = null;
-            uint? previousValue1Typed = null;
+            int? currentValue1Typed = null;
+            int? previousValue1Typed = null;
 
             if (currentValue != null && currentValue.ContainsKey("value1"))
             {
-                currentValue1Typed = (uint)(int)currentValue["value1"];
+                currentValue1Typed = (int)currentValue["value1"];
             }
 
             if (previousValue != null && previousValue.ContainsKey("value1"))
             {
-                previousValue1Typed = (uint)(int)previousValue["value1"];
+                previousValue1Typed = (int)previousValue["value1"];
             }
-            uint? currentValue2Typed = null;
-            uint? previousValue2Typed = null;
+            int? currentValue2Typed = null;
+            int? previousValue2Typed = null;
 
             if (currentValue != null && currentValue.ContainsKey("value2"))
             {
-                currentValue2Typed = (uint)(int)currentValue["value2"];
+                currentValue2Typed = (int)currentValue["value2"];
             }
 
             if (previousValue != null && previousValue.ContainsKey("value2"))
             {
-                previousValue2Typed = (uint)(int)previousValue["value2"];
+                previousValue2Typed = (int)previousValue["value2"];
             }
 
             return new MyTableWithTwoKeysTableUpdate
