@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 
 namespace mud
@@ -77,7 +78,11 @@ namespace mud
             HashSet<RxRecord> context = null;
             foreach (var table in _filters)
             {
-                if (!store.TryGetValue(table.Table.Id, out var candidates)) continue; // table not registered
+                if (!store.TryGetValue(table.Table.Name, out var candidates)) {
+                    UnityEngine.Debug.LogError($"{table.Table.Name}: table not in store"); 
+                    continue; // table not registered
+                } 
+
                 if (context == null)
                 {
                     // populate context with first table
