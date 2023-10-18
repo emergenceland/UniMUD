@@ -8,6 +8,7 @@ using Nethereum.RPC.TransactionTypes;
 using Nethereum.Unity.Rpc;
 using Nethereum.Web3.Accounts;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using UnityEngine;
 
 namespace mud
@@ -104,7 +105,12 @@ namespace mud
                 var pollingService = new TransactionReceiptPollingRequest(_rpcUrl);
                 await pollingService.PollForReceipt(txHash, 0.25f).ToUniTask();
                 var transferReceipt = pollingService.Result;
-                if(NetworkManager.Verbose) Debug.Log("Tx Receipt: " + JsonConvert.SerializeObject(transferReceipt));
+                
+                JObject j = JObject.Parse(JsonConvert.SerializeObject(transferReceipt));
+                if(NetworkManager.Verbose) {Debug.Log($"Tx Receipt: {j}");}
+
+                //tx was not successful
+                if(transferReceipt == null || (string)j["status"] == "0x0") {return false;}
 
                 _currentNonce = new HexBigInteger(BigInteger.Add(BigInteger.One, _currentNonce.Value));
 
