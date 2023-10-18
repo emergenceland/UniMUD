@@ -54,7 +54,7 @@ namespace mud
                     new EthGetBlockWithTransactionsHashesByNumberUnityRequest(_rpcUrl);
                 await blockNumberRequest.SendRequest(BlockParameter.CreateLatest()).ToUniTask();
                 var latestBlock = blockNumberRequest.Result;
-                Debug.Log(JsonConvert.SerializeObject(latestBlock));
+                if(NetworkManager.Verbose) Debug.Log(JsonConvert.SerializeObject(latestBlock));
 
                 if (_currentNonce == new HexBigInteger(0))
                 {
@@ -88,22 +88,23 @@ namespace mud
                 functionMessage.FromAddress = _signer.Address;
                 functionMessage.Nonce = _currentNonce;
                 
-                Debug.Log($"executing transaction with nonce {_currentNonce}");
-                Debug.Log("TxInput: " + JsonConvert.SerializeObject(functionMessage));
+                if(NetworkManager.Verbose) Debug.Log($"Tx Executing transaction with nonce {_currentNonce}");
+                if(NetworkManager.Verbose) Debug.Log("TxInput: " + JsonConvert.SerializeObject(functionMessage));
                 
                 var txRequest = new TransactionSignedUnityRequest(_rpcUrl, _signer.PrivateKey, _chainId);
                 await txRequest.SignAndSendTransaction(functionMessage, _contractAddress).ToUniTask();
                 var txHash = txRequest.Result;
-                Debug.Log("TxHash: " + txHash);
+                if(NetworkManager.Verbose) Debug.Log("TxHash: " + txHash);
                 if (txHash == null)
                 {
+                    Debug.LogError("Tx Failed");
                     return false;
                 }
                 
                 var pollingService = new TransactionReceiptPollingRequest(_rpcUrl);
-                await pollingService.PollForReceipt(txHash, 2).ToUniTask();
+                await pollingService.PollForReceipt(txHash, 0.25f).ToUniTask();
                 var transferReceipt = pollingService.Result;
-                Debug.Log("Tx Receipt: " + JsonConvert.SerializeObject(transferReceipt));
+                if(NetworkManager.Verbose) Debug.Log("Tx Receipt: " + JsonConvert.SerializeObject(transferReceipt));
 
                 _currentNonce = new HexBigInteger(BigInteger.Add(BigInteger.One, _currentNonce.Value));
 
@@ -111,7 +112,7 @@ namespace mud
             }
             catch (Exception ex)
             {
-                Debug.LogError(ex);
+                Debug.LogError("Tx Receipt: " + ex);
                 return false;
             }
         }
