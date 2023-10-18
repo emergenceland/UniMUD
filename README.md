@@ -1,13 +1,11 @@
 # UniMUD
 
-Low-level networking utilities for interacting with the [MUD v2](https://v2.mud.dev) framework in [Unity](https://unity3d.com).
+Low-level networking utilities for interacting with the [MUD 2.0.0-next.9](https://mud.dev) framework in [Unity](https://unity3d.com).
 
 ⚠️ If your goal is to just make a game, **you should not use UniMUD directly.**
-Instead, use the higher-level abstractions from [MUD Template Unity](https://github.com/emergenceland/mud-template-unity).
+Instead, use [MUD Template Unity](https://github.com/emergenceland/mud-template-unity).
 
 ## Getting Started
-
-UniMUD is under active development. Expect the API to change.
 
 ### Installation
 
@@ -40,8 +38,7 @@ You also need Nethereum bindings for your generated World contract. Bindings can
 
 ```csharp
 using IWorld.ContractDefinition;
-using mud.Unity;
-using UnityEngine;
+using mud;
 
 async void Move(int x, int y)
 {
@@ -49,7 +46,7 @@ async void Move(int x, int y)
 	// NetworkManager exposes a worldSend property that you can use to send transactions.
 	// It takes care of gas and nonce management for you.
 	// Make sure your MonoBehaviour is set up to handle async/await.
-	await NetworkManager.Instance.worldSend.TxExecute<MoveFunction>(x, y);
+  await NetworkManager.Instance.world.Write<MoveFunction>(x, y);
 }
 ```
 
@@ -58,8 +55,8 @@ async void Move(int x, int y)
 UniMUD caches MUD v2 events in the client for you in a "datastore." You can access the datastore via the NetworkManager instance. The datastore keeps a multilevel index of tableId -> table -> records
 
 ```csharp
-class Record {
-  public string table;
+class RxRecord {
+  public string tableId;
   public string key;
   public Dictionary<string, object> value;
 }
@@ -70,7 +67,7 @@ For example, records for an entity's Position might look like:
 ```json
 [
   {
-    "table": "Position",
+    "tableId": "Position",
     "key": "0x1234",
     "value": {
       "x": 1,
@@ -78,7 +75,7 @@ For example, records for an entity's Position might look like:
     }
   },
   {
-    "table": "Position",
+    "tableId": "Position",
     "key": "0x5678",
     "value": {
       "x": 3,
@@ -93,9 +90,9 @@ For example, records for an entity's Position might look like:
 To fetch a record by key, use `GetValue` on the datastore:
 
 ```csharp
-Record? GetMonstersWithKey(string monsterKey) {
-	var ds = NetworkManager.Instance.ds;
-	var monstersTable = new TableId("", "Monsters");
+RxRecord? GetMonstersWithKey(string monsterKey) {
+	RxDatastore ds = NetworkManager.Instance.ds;
+	RxTable monstersTable = ds.tableNameIndex["Monsters"];
 
 	return ds.GetValue(monstersTable, monsterKey);
 }
@@ -108,7 +105,7 @@ Use the `Set` method on the datastore:
 ```csharp
 void SetMonsterName(string monsterKey, string name) {
   var ds = NetworkManager.Instance.ds;
-  var monstersTable = new TableId("", "Monsters");
+	RxTable monstersTable = ds.tableNameIndex["Monsters"];
 
   ds.Set(monstersTable, monsterKey, new Dictionary<string, object> {
     { "name", name }
@@ -123,6 +120,9 @@ For queries that are useful in an ECS context, you can use the `Query` class to 
 **Get all records of entities that have Component X and Component Y**
 
 ```csharp
+RxTable Health = ds.tableNameIndex["Health"];
+RxTable Position ds.tableNameIndex["Position"];
+
 var hasHealthAndPosition = new Query().In(Health).In(Position)
 
 // -> [ { table: "Position", key: "0x1234", value: { x: 1, y: 2 } },
@@ -153,7 +153,7 @@ var allMonstersNamedChuck = new Query().In(MonsterTable).In(MonsterTable, new Co
 Make sure you actually run the query after building it, with `NetworkManager.Instance.ds.RunQuery(yourQuery)`
 
 ```csharp
-using mud.Client;
+using mud;
 
 void RenderHealth() {
   var hasHealth = new Query().Select(Health).In(InitialHealth).In(Health).In(TilePosition);
@@ -174,8 +174,8 @@ You can do reactive queries on the datastore, with the `RxQuery(yourQuery)` meth
 ```csharp
 using System;
 using UniRx;
-using mud.Client;
-using mud.Unity;
+using mud;
+using mud;
 using UnityEngine;
 
 public class Health : MonoBehaviour
@@ -187,6 +187,8 @@ public class Health : MonoBehaviour
     private void Awake()
     {
       // get the health table value from all entities that have health, initialHealth, and a position.
+      RxTable Health = ds.tableNameIndex["Health"];
+      // ... other tables here
       var healthValues = new Query().Select(Health).In(InitialHealth).In(Health).In(TilePosition);
 
       _disposable = NetworkManager.Instance.ds
@@ -240,9 +242,10 @@ UniMUD currently does not implement a faucet service, so you must manually send 
 
 ## Future work
 
-- MODE integration
-- Unity DOTS integration
-- SQLite as a backend for persistence
+- Indexer
+- Unity DOTS storage
+- Caching/persistence
+- Faucet
 
 ## License
 
