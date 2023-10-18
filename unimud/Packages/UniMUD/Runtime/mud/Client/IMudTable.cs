@@ -48,7 +48,7 @@ namespace mud {
         public static T? MakeTable<T>(string key) where T : IMudTable, new() {
             var mudTable = new T();
             RxRecord? record = GetRecord<T>(key);
-            if(record == null) {Debug.LogError($"{mudTable.GetTableId()}: RxRecord not found"); return null;}
+            if(record == null) {return null;}
             mudTable.PropertyToTable(record.RawValue);
             return mudTable;
         }
