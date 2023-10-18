@@ -53,6 +53,7 @@ namespace mud
         [Header("Debug World")] 
         [SerializeField] string _worldAddress;
         public Account account;
+        private int worldBlockNumber = -1;
         private int startingBlockNumber = -1;
         private int streamStartBlockNumber = 0; // TODO: get from indexer
         private BlockStream bs;
@@ -62,6 +63,7 @@ namespace mud
         private readonly CompositeDisposable _disposables = new();
         public static bool Verbose {get{return Instance.verbose;}}
 
+        WorldSelector worldSelector;
         private bool _networkReady = false;
 
         protected void Awake()
@@ -81,32 +83,23 @@ namespace mud
                 _ => activeNetwork
             };
 
-            if (activeNetwork == null)
-            {
+            if (activeNetwork == null) {
                 Debug.LogError("No network data", this);
+                return;
             }
 
-            if (activeNetwork != null)
-            {
-                _rpcUrl = activeNetwork.jsonRpcUrl;
-                _wsRpcUrl = activeNetwork.wsRpcUrl;
-                _chainId = activeNetwork.chainId;
+            worldSelector = GetComponent<WorldSelector>();
+            if(worldSelector == null) {worldSelector = gameObject.AddComponent<WorldSelector>();}
 
-                if(string.IsNullOrEmpty(activeNetwork.contractAddress)) {_worldAddress = LoadWorldAddress(_chainId);} 
-                else {_worldAddress = activeNetwork.contractAddress;}
-            }
-        }
+            _rpcUrl = activeNetwork.jsonRpcUrl;
+            _wsRpcUrl = activeNetwork.wsRpcUrl;
+            _chainId = activeNetwork.chainId;
 
-        string LoadWorldAddress(int chainID) {
-
-            // Specify the path to your JSON file
-            TextAsset json = Resources.Load<TextAsset>("worlds");
-            if(json == null) {Debug.LogError("Could not find worlds.json in Resources"); return null;}
-            JObject j = JObject.Parse(json?.text);
-            return j[chainID.ToString()]["address"].ToString();
+            //load the world contract from worlds.json or directly from NetworkData
+            if(string.IsNullOrEmpty(activeNetwork.contractAddress)) {_worldAddress = worldSelector.LoadWorldAddress(activeNetwork);} 
+            else {_worldAddress = activeNetwork.contractAddress;}
 
         }
-
         private async void Start()
         {
 
@@ -171,8 +164,11 @@ namespace mud
              * ==== SYNC ====
              */
 
-            if (startingBlockNumber < 0) await GetStartingBlockNumber().ToUniTask();
-            Debug.Log($"Starting sync from 0...{startingBlockNumber}");
+            if (worldBlockNumber < 0) {worldBlockNumber = worldSelector.LoadBlockNumber(activeNetwork);}
+            if (startingBlockNumber < 0) {await GetStartingBlockNumber().ToUniTask();}
+            
+            //TODO use streamStartBlockNumber
+            Debug.Log($"Starting sync from {worldBlockNumber}...{startingBlockNumber}");
 
             sync = new StoreSync().AddTo(_disposables);
             var updateStream =
@@ -192,11 +188,9 @@ namespace mud
 
             updateStream.Subscribe(onNext: _ => { }, onError: Debug.LogError)
                 .AddTo(_disposables);
-
-
         }
-
-        private IEnumerator GetStartingBlockNumber()
+        
+        private IEnumerator GetStartingBlockNumber() 
         {
             var blockNumberRequest = new EthBlockNumberUnityRequest(_rpcUrl);
             yield return blockNumberRequest.SendRequest();

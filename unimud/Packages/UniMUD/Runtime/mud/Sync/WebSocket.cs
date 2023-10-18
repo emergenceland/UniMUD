@@ -349,7 +349,7 @@ namespace HybridWebSocket
                     //TlsHandshakeFailure
                     if (ev.Code == 1015 && ws.SslConfiguration.EnabledSslProtocols != sslProtocolHack)
                     {
-                        Debug.LogError("TlsHandshakeFailure");
+                        Debug.Log("TlsHandshakeFailure");
                         ws.SslConfiguration.EnabledSslProtocols = sslProtocolHack;
                         ws.Connect();
                     } else {
