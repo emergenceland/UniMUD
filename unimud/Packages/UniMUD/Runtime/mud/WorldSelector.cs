@@ -19,7 +19,7 @@ namespace mud {
 
         void Awake() {
             TextAsset json = Resources.Load<TextAsset>(worldFilePath);
-            if(json == null) {Debug.LogError("Could not find worlds.json in Resources"); return;}
+            if(json == null) {Debug.LogError($"Could not find {worldFilePath} in Resources"); return;}
             worldJson = JObject.Parse(json?.text);
         }
 
