@@ -24,7 +24,6 @@ export function createTableDefinition(
 
   for (const key in valueSchema) {
     const valueType = valueSchema[key];
-    console.log(`Value schema has key: ${key}`);
     if (!valueType) throw new Error(`[${tableName}]: Unknown type for field ${key}`);
     fields.push({ key: key[0] + key.slice(1), type: schemaTypesToCSTypeStrings[valueType] });
   }

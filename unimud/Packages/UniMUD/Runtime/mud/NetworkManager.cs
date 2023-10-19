@@ -55,7 +55,6 @@ namespace mud
         public Account account;
         private int worldBlockNumber = -1;
         private int startingBlockNumber = -1;
-        private int streamStartBlockNumber = 0; // TODO: get from indexer
         private BlockStream bs;
         public RxDatastore ds;
         public StoreSync sync;
@@ -167,12 +166,11 @@ namespace mud
             if (worldBlockNumber < 0) {worldBlockNumber = worldSelector.LoadBlockNumber(activeNetwork);}
             if (startingBlockNumber < 0) {await GetStartingBlockNumber().ToUniTask();}
             
-            //TODO use streamStartBlockNumber
             Debug.Log($"Starting sync from {worldBlockNumber}...{startingBlockNumber}");
 
             sync = new StoreSync().AddTo(_disposables);
             var updateStream =
-                sync.StartSync(ds, bs.subject, _worldAddress, _rpcUrl, BigInteger.Zero, startingBlockNumber,
+                sync.StartSync(ds, bs.subject, _worldAddress, _rpcUrl, worldBlockNumber, startingBlockNumber,
                     opts =>
                     {
                         if (opts.step == SyncStep.Live && !_networkReady)

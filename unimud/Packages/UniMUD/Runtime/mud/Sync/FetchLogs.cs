@@ -36,14 +36,14 @@ namespace mud
         public static IObservable<FetchLogsResult> BlockRangeToLogs(this IObservable<BlockRangeType> source,
             string contractAddress, string rpcUrl)
         {
-           BigInteger fromBlock = default;
-           BigInteger toBlock = default; 
+           BigInteger? fromBlock = null;
+           BigInteger? toBlock = null; 
            
             return source.Scan(
                     seed: new BlockRangeType(),
                     accumulator: (acc, range) =>
                     {
-                        fromBlock = fromBlock == null ? range.StartBlock : fromBlock;
+                        fromBlock ??= range.StartBlock;
                         toBlock = range.EndBlock;
                         return acc;
                     }
