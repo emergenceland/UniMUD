@@ -41,7 +41,7 @@ namespace mud
             // TODO: Derive from initialState or deploy event
             var startBlockObservable = Observable.Return(streamStartBlockNumber).Replay(1).RefCount();
 
-            Debug.Log("Fetching gap state events...");
+            Debug.Log($"Fetching gap state events from...{initialBlockNumber}-{streamStartBlockNumber}");
             var blockRangeObservable = Observable.Return(new BlockRangeType
             {
                 StartBlock = initialBlockNumber,
@@ -56,14 +56,13 @@ namespace mud
                 RxStorageAdapter.ToStorage(onUpdate, ds, block);
                 return block;
             }).Concat().Replay(1).RefCount();
-            //
+            
             IObservable<BigInteger> latestBlockNumber = blockStream.Replay(1).RefCount().Select(block =>
             {
                 if (block.@params?.result.number == null) return 0;
                 return Common.HexToBigInt(block.@params.result.number);
             }).Replay(1).RefCount();
 
-            BlockRangeType blockRange = new BlockRangeType();
             IObservable<StorageAdapterBlock> blockLogs = startBlockObservable.CombineLatest(latestBlockNumber,
                     (start, end) => new BlockRangeType { StartBlock = start, EndBlock = end })
                 .Do(blockRange =>

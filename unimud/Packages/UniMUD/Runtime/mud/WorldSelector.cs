@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using JetBrains.Annotations;
 using UnityEngine;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -25,20 +26,21 @@ namespace mud {
         public int LoadBlockNumber(NetworkData network) {
 
             // Specify the path to your JSON file
-            string blockString = worldJson[network.chainId.ToString()]["blockNumber"]?.ToString();
+            string blockString = worldJson[network.chainId.ToString()]?["blockNumber"]?.ToString();
 
             if(string.IsNullOrEmpty(blockString)) {
                 blockNumber = 0;
             } else {
                 blockNumber = int.Parse(blockString);
             }
-                
+            
             return blockNumber;
 
         }
 
+        [CanBeNull]
         public string LoadWorldAddress(NetworkData network) {
-            worldAddress = worldJson[network.chainId.ToString()]["address"].ToString();
+            worldAddress = worldJson[network.chainId.ToString()]?["address"]?.ToString();
             return worldAddress;
         }
 
