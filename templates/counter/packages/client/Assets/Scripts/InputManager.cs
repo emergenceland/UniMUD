@@ -25,7 +25,19 @@ public class InputManager : MonoBehaviour
     private void SubscribeToCounter(NetworkManager _)
     {
         Debug.Log("Subscribed to Tables.");
+        _counterSub = IMudTable.GetUpdates<CounterTable>().ObserveOnMainThread().Subscribe(OnIncrement);
         _positionSub = IMudTable.GetUpdates<PositionTable>().ObserveOnMainThread().Subscribe(OnPositionChange);
+    }
+    private void OnIncrement(RecordUpdate update)
+    {
+        if (update.Type != UpdateType.DeleteRecord)
+        {
+            var currentValue = update.CurrentRecordValue;
+            if (currentValue == null) return;
+            // Debug.Log("Counter is now: " + currentValue["value"]);
+            Debug.Log("Counter is now: " + JsonConvert.SerializeObject(currentValue));
+            Instantiate(prefab, Vector3.up, Quaternion.identity); 
+        }
     }
 
     private void OnPositionChange(RecordUpdate update)
@@ -37,11 +49,11 @@ public class InputManager : MonoBehaviour
         }
     }
     
-    private void Update()
-    {
+    private void Update() {
         if (Input.GetMouseButtonDown(0))
         {
-            // SendIncrementTxAsync().Forget();
+            SendIncrementTxAsync().Forget();
+        } else if (Input.GetMouseButtonDown(1)){
             var randomX = Random.Range(-10, 10);
             var randomZ = Random.Range(-10, 10);
             SendMoveTx(randomX, randomZ).Forget();
@@ -77,5 +89,6 @@ public class InputManager : MonoBehaviour
     private void OnDestroy()
     {
         _counterSub?.Dispose();
+        _positionSub?.Dispose();
     }
 }
