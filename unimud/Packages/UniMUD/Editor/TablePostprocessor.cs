@@ -13,7 +13,7 @@ namespace mud {
 
         
         //TODO, file that defines these
-        static string Namespace = "DefaultNamespace";
+        static string Namespace = "mudworld";
         static string CodePath = "Assets/Scripts/codegen/";
         static string TablePath = "Assets/Resources/MUD/Tables/";
 
