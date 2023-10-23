@@ -27,6 +27,7 @@ namespace mud
         [SerializeField] string _rpcUrl;
         [SerializeField] int _chainId;
         [SerializeField] string _contractAddress;
+        [SerializeField] string _lastMessage;
         private HexBigInteger _currentNonce = new(0);
         private GasConfig GasConfig { get; set; }
         private int PriorityFeeMultiplier { get; set; }
@@ -94,25 +95,31 @@ namespace mud
                 
                 var txRequest = new TransactionSignedUnityRequest(_rpcUrl, _signer.PrivateKey, _chainId);
                 await txRequest.SignAndSendTransaction(functionMessage, _contractAddress).ToUniTask();
+
+                _currentNonce = new HexBigInteger(BigInteger.Add(BigInteger.One, _currentNonce.Value));
+
                 var txHash = txRequest.Result;
                 if(NetworkManager.Verbose) Debug.Log("TxHash: " + txHash);
                 if (txHash == null)
                 {
-                    Debug.LogError("Tx Failed");
+                    Debug.LogError("Tx Failed To Send");
                     return false;
                 }
                 
                 var pollingService = new TransactionReceiptPollingRequest(_rpcUrl);
                 await pollingService.PollForReceipt(txHash, 0.25f).ToUniTask();
-                var transferReceipt = pollingService.Result;
                 
+                var transferReceipt = pollingService.Result;
                 JObject j = JObject.Parse(JsonConvert.SerializeObject(transferReceipt));
-                if(NetworkManager.Verbose) {Debug.Log($"Tx Receipt: {j}");}
 
                 //tx was not successful
-                if(transferReceipt == null || (string)j["status"] == "0x0") {return false;}
+                if(transferReceipt == null || (string)j["status"] == "0x0") {
+                    Debug.LogError($"Tx Failed: {j}");
+                    return false;
+                } else {
+                    if(NetworkManager.Verbose) {Debug.Log($"Tx Receipt: {j}");}
+                }
 
-                _currentNonce = new HexBigInteger(BigInteger.Add(BigInteger.One, _currentNonce.Value));
 
                 return true;
             }

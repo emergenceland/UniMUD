@@ -9,6 +9,7 @@ using UniRx;
 using UnityEngine;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using System.Collections.Generic;
 
 namespace mud
 {
@@ -42,9 +43,10 @@ namespace mud
         public NetworkData mainnet;
 
 
-        [Header("Debug Address")] 
+        [Header("Debug Acount")] 
         [SerializeField] string address;
         [SerializeField] string key;
+        public Account Account;
         public string pk;
         private int _chainId;
         private string _rpcUrl;
@@ -52,7 +54,6 @@ namespace mud
 
         [Header("Debug World")] 
         [SerializeField] string _worldAddress;
-        public Account account;
         private int worldBlockNumber = -1;
         private int startingBlockNumber = -1;
         private BlockStream bs;
@@ -65,15 +66,32 @@ namespace mud
         WorldSelector worldSelector;
         private bool _networkReady = false;
 
-        protected void Awake()
-        {
-            if (Instance != null)
-            {
-                Debug.LogError("Already have a NetworkManager instance");
-                return;
-            }
-
+        protected void Awake() {
+            if (Instance != null) { Debug.LogError("Already have a NetworkManager instance"); return;}
             Instance = this;
+        }
+
+        private async void Start() {
+
+            if(autoConnect) {
+                await CreateNetwork();
+            }
+        }
+
+        public async UniTask CreateNetwork() {
+
+            LoadNetwork();
+            LoadWorldContract();
+
+            await CreateAccount();
+            await Connect();
+        }
+        
+        public void LoadNetwork() {LoadNetwork(networkType);}
+        public void LoadNetwork(NetworkTypes.NetworkType newNetwork) {
+
+            //load our network from enum
+            networkType = newNetwork;
             activeNetwork = networkType switch
             {
                 NetworkTypes.NetworkType.Local => local,
@@ -82,55 +100,65 @@ namespace mud
                 _ => activeNetwork
             };
 
-            if (activeNetwork == null) {
-                Debug.LogError("No network data", this);
+            SetNetwork(activeNetwork);
+        }
+        public void SetNetwork(NetworkData newData) {
+
+            if (newData == null) {
+                Debug.LogError($"Null network", this);
                 return;
             }
 
-            worldSelector = GetComponent<WorldSelector>();
-            if(worldSelector == null) {worldSelector = gameObject.AddComponent<WorldSelector>();}
+            activeNetwork = newData;
 
             _rpcUrl = activeNetwork.jsonRpcUrl;
             _wsRpcUrl = activeNetwork.wsRpcUrl;
             _chainId = activeNetwork.chainId;
-
-            //load the world contract from worlds.json or directly from NetworkData
-            if(string.IsNullOrEmpty(activeNetwork.contractAddress)) {_worldAddress = worldSelector.LoadWorldAddress(activeNetwork);} 
-            else {_worldAddress = activeNetwork.contractAddress;}
-
         }
-        private async void Start()
-        {
 
-            if(burnerWallet) {
-                CreateAccount();
-            }
-
-            if(autoConnect) {
-                await Connect();
+        public void LoadWorldContract() {
+            //load either directly from worlds.json or NetworkData
+            if(string.IsNullOrEmpty(activeNetwork.contractAddress)) {
+                worldSelector = GetComponent<WorldSelector>();
+                if(worldSelector == null) {worldSelector = gameObject.AddComponent<WorldSelector>();}
+                _worldAddress = worldSelector.LoadWorldAddress(activeNetwork);
+            } else {
+                _worldAddress = activeNetwork.contractAddress;
             }
         }
 
-        public void CreateAccount() {
+        public async UniTask CreateAccount() {
 
             if (!string.IsNullOrWhiteSpace(pk))
             {
-                account = new Account(pk, _chainId);
-                Debug.Log("Loaded account from pk: " + account.Address);
+                Account = new Account(pk, _chainId);
+                Debug.Log("Loaded account from pk: " + Account.Address);
             }
             else
             {
-                account = uniqueWallets
+                Account = uniqueWallets
                     ? new Account(Common.GeneratePrivateKey(), _chainId)
                     : new Account(Common.GetBurnerPrivateKey(), _chainId);
-                address = account.Address;
-                Debug.Log("Burner wallet created/loaded: " + LocalAddress);
-                key = "0x" + address.Replace("0x", "").PadLeft(64, '0').ToUpper();
+                Debug.Log("Burner wallet created/loaded: " + Account.Address);
             }
+
+            await SetAccount(Account);
+        }
+
+        public async UniTask SetAccount(Account newAccount) {
+
+            Account = newAccount;
+            address = Account.Address;
+            key = "0x" + address.Replace("0x", "").PadLeft(64, '0').ToUpper();
+
+            world = new CreateContract();
+            await world.CreateTxExecutor(Account, _worldAddress, _rpcUrl, _chainId);
+
         }
 
         public async UniTask Connect() {
 
+            if(Account == null) {Debug.LogError("No account", this); return;}
             if(bs != null) {Debug.LogError("Network Manager: Already connected", this); return;}
 
             /*
@@ -142,15 +170,9 @@ namespace mud
             await bs.WatchBlocks(_wsRpcUrl);
 
             /*
-             * ==== TX EXECUTOR ====
-             */
-
-            world = new CreateContract();
-            await world.CreateTxExecutor(account, _worldAddress, _rpcUrl, _chainId);
-
-            /*
              * ==== CLIENT CACHE ====
              */
+            Debug.Log($"Creating datastore...");
             ds = new RxDatastore(); // TODO: add persistence
 
             var worldConfig = MudDefinitions.DefineWorldConfig(_worldAddress);
@@ -163,6 +185,8 @@ namespace mud
              * ==== SYNC ====
              */
 
+            await UniTask.SwitchToMainThread();
+            
             if (worldBlockNumber < 0) {worldBlockNumber = worldSelector.LoadBlockNumber(activeNetwork);}
             if (startingBlockNumber < 0) {await GetStartingBlockNumber().ToUniTask();}
             
@@ -188,8 +212,7 @@ namespace mud
                 .AddTo(_disposables);
         }
         
-        private IEnumerator GetStartingBlockNumber() 
-        {
+        private IEnumerator GetStartingBlockNumber() {
             var blockNumberRequest = new EthBlockNumberUnityRequest(_rpcUrl);
             yield return blockNumberRequest.SendRequest();
             startingBlockNumber = (int)blockNumberRequest.Result.Value;

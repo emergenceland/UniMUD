@@ -110,8 +110,8 @@ namespace mud
             var table = ds.TryGetTableById(tableId);
             if (table == null)
             {
-                Debug.LogWarning(
-                    $"Skipping update for unknown table: {JsonConvert.SerializeObject(tableResource)} at {log.Address}, {tableId}");
+                if(NetworkManager.Verbose) {Debug.LogWarning(
+                    $"Skipping update for unknown table: {JsonConvert.SerializeObject(tableResource)} at {log.Address}, {tableId}");}
                 return;
             }
 
@@ -149,8 +149,8 @@ namespace mud
             var table = ds.TryGetTableById(tableId);
             if (table == null)
             {
-                Debug.LogWarning(
-                    $"Skipping update for unknown table: {JsonConvert.SerializeObject(tableResource)} at {log.Address}, {tableId}");
+                if(NetworkManager.Verbose) {Debug.LogWarning(
+                    $"Skipping update for unknown table: {JsonConvert.SerializeObject(tableResource)} at {log.Address}, {tableId}");}
                 return;
             }
 
@@ -204,8 +204,8 @@ namespace mud
             var table = ds.TryGetTableById(tableId);
             if (table == null)
             {
-                Debug.LogWarning(
-                    $"Skipping update for unknown table: {JsonConvert.SerializeObject(tableResource)} at {log.Address}, {tableId}");
+                if(NetworkManager.Verbose) {Debug.LogWarning(
+                    $"Skipping update for unknown table: {JsonConvert.SerializeObject(tableResource)} at {log.Address}, {tableId}");}
                 return;
             }
 
@@ -238,8 +238,9 @@ namespace mud
             };
 
 
-            Debug.Log(
-                $"Setting table via splice dynamic: {tableResource.Namespace}:{tableResource.Name}, {JsonConvert.SerializeObject(newValue)}");
+            if(NetworkManager.Verbose) {Debug.Log(
+                $"Setting table via splice dynamic: {tableResource.Namespace}:{tableResource.Name}, {JsonConvert.SerializeObject(newValue)}");}
+
             updates.Add(new RecordUpdate
             {
                 Type = UpdateType.SetField,
@@ -259,15 +260,16 @@ namespace mud
             var table = ds.TryGetTableById(tableId);
             if (table == null)
             {
-                Debug.LogWarning(
-                    $"Skipping update for unknown table: {JsonConvert.SerializeObject(tableResource)} at {log.Address}, {tableId}");
+                if(NetworkManager.Verbose) {Debug.LogWarning(
+                    $"Skipping update for unknown table: {JsonConvert.SerializeObject(tableResource)} at {log.Address}, {tableId}");}
                 return;
             }
 
             var entity = Common.ConcatHex(decoded.KeyTuple.Select(b => Common.BytesToHex(b)).ToArray());
 
-            Debug.Log(
-                $"Deleting key for table: {tableResource.Namespace}:{tableResource.Name}");
+            if(NetworkManager.Verbose) {Debug.Log(
+                $"Deleting key for table: {tableResource.Namespace}:{tableResource.Name}");}
+
             dbOps.Add(new RecordUpdate
             {
                 Table = table,

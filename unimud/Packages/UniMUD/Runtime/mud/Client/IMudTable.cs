@@ -15,7 +15,7 @@ namespace mud {
     public abstract class IMudTable {
 
         public string TableId { get { return GetTableId(); } }
-        public RxTable Table { get { return NetworkManager.Instance.ds.store[GetTableId()]; } }
+        public RxTable Table { get { return NetworkManager.Datastore.store[GetTableId()]; } }
 
         public abstract string GetTableId();
         public abstract Type TableType();
