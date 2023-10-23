@@ -16,7 +16,7 @@
     "prettier": "prettier --write 'src/**/*.sol'",
     "solhint": "solhint --config ./.solhint.json 'src/**/*.sol' --fix",
     "test": "tsc --noEmit && mud test",
-    "dev:unity": "pnpm run csgen && cp worlds.json ../client/Assets/Resources/worlds.json",
+    "dev:unity": "pnpm run csgen && npx mkdirp ../client/Assets/Resources && cp worlds.json ../client/Assets/Resources/worlds.json",
     "deploy:unity": "pnpm run dev && pnpm run deploy:unity",
     "csgen": "wait-on ./out/IWorld.sol/IWorld.abi.json && dotnet tool restore && pnpm run csBindings && pnpm run csTables",
     "csBindings": "ts-node unity/csBindings.ts ../client/Assets/Scripts",
@@ -27,7 +27,8 @@
     "@latticexyz/schema-type": "2.0.0-next.11",
     "@latticexyz/store": "2.0.0-next.11",
     "@latticexyz/world": "2.0.0-next.11",
-    "@latticexyz/world-modules": "2.0.0-next.11"
+    "@latticexyz/world-modules": "2.0.0-next.11",
+    "mkdirp": "^3.0.1"
   },
   "devDependencies": {
     "@types/ejs": "^3.1.3",
