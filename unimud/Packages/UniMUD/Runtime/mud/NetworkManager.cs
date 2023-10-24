@@ -1,15 +1,12 @@
 using System;
 using System.Collections;
-using System.Numerics;
 using Cysharp.Threading.Tasks;
-using mud;
 using Nethereum.Unity.Rpc;
 using Nethereum.Web3.Accounts;
 using UniRx;
 using UnityEngine;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
-using System.Collections.Generic;
+using Nethereum.RPC.Eth.DTOs;
+using Nethereum.Web3;
 
 namespace mud
 {
@@ -43,7 +40,7 @@ namespace mud
         public NetworkData mainnet;
 
 
-        [Header("Debug Acount")] 
+        [Header("Debug Account")] 
         [SerializeField] string address;
         [SerializeField] string key;
         public Account Account;
@@ -84,6 +81,14 @@ namespace mud
             LoadWorldContract();
 
             await CreateAccount();
+            Debug.Log($"[Dev Faucet]: Player address -> {address}");
+            var balance = await GetBalance(address);
+            Debug.Log($"Player balance -> {balance} ETH");
+            if (balance < 1)
+            {
+                Debug.Log("Balance is low, requesting funds from faucet...");
+                await Common.GetRequestAsync($"{activeNetwork.faucetUrl}?address={address}");
+            }
             await Connect();
         }
         
@@ -216,6 +221,15 @@ namespace mud
             var blockNumberRequest = new EthBlockNumberUnityRequest(_rpcUrl);
             yield return blockNumberRequest.SendRequest();
             startingBlockNumber = (int)blockNumberRequest.Result.Value;
+        }
+
+        private async UniTask<decimal> GetBalance(string address)
+        {
+            var balanceRequest = new EthGetBalanceUnityRequest(_rpcUrl);
+            await balanceRequest.SendRequest(address, BlockParameter.CreateLatest());
+            var balance = balanceRequest.Result.Value;
+            var ethBalance = Web3.Convert.FromWei(balance);
+            return ethBalance;
         }
 
         void Update() {
