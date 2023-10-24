@@ -5,6 +5,8 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using Cysharp.Threading.Tasks;
 using UniRx;
+using UnityEngine;
+using UnityEngine.Networking;
 
 namespace mud
 {
@@ -78,6 +80,23 @@ namespace mud
             foreach (var (_, table) in tables)
             {
                 ds.RegisterTable(table.TableId, table.Name, table.ValueSchema);
+            }
+        }
+        
+        public static async UniTask GetRequestAsync(string uri)
+        {
+            using (UnityWebRequest webRequest = UnityWebRequest.Get(uri))
+            {
+                await webRequest.SendWebRequest();
+
+                if (webRequest.result == UnityWebRequest.Result.ConnectionError)
+                {
+                    Debug.LogError("Error: " + webRequest.error);
+                }
+                else
+                {
+                    Debug.Log("Received: " + webRequest.downloadHandler.text);
+                }
             }
         }
     }
