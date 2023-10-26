@@ -17,5 +17,5 @@ MonoBehaviour:
   faucetUrl: http://faucet-worker.emergenceland.workers.dev
   contractAddress: 
   pk: 
-  chainId: 4242
+  chainId: 4243
   disableCache: 1

@@ -81,14 +81,10 @@ namespace mud
             LoadWorldContract();
 
             await CreateAccount();
-            Debug.Log($"[Dev Faucet]: Player address -> {address}");
-            var balance = await GetBalance(address);
-            Debug.Log($"Player balance -> {balance} ETH");
-            if (balance < 1)
-            {
-                Debug.Log("Balance is low, requesting funds from faucet...");
-                await Common.GetRequestAsync($"{activeNetwork.faucetUrl}?address={address}");
-            }
+
+            if(networkType!=NetworkTypes.NetworkType.Local) 
+                await Drip();
+                
             await Connect();
         }
         
@@ -148,6 +144,17 @@ namespace mud
             }
 
             await SetAccount(Account);
+        }
+
+        public async UniTask Drip() {
+            Debug.Log($"[Dev Faucet]: Player address -> {address}");
+            var balance = await GetBalance(address);
+            Debug.Log($"Player balance -> {balance} ETH");
+            if (balance < 1)
+            {
+                Debug.Log("Balance is low, requesting funds from faucet...");
+                await Common.GetRequestAsync($"{activeNetwork.faucetUrl}?address={address}");
+            }
         }
 
         public async UniTask SetAccount(Account newAccount) {
