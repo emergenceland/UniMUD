@@ -14,8 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   jsonRpcUrl: https://follower.testnet2-chain.linfra.xyz
   wsRpcUrl: wss://follower.testnet2-chain.linfra.xyz/
-  faucetUrl: http://faucet-worker.emergenceland.workers.dev
+  faucetUrl: https://faucet-worker.emergenceland.workers.dev
   contractAddress: 
   pk: 
-  chainId: 4242
+  chainId: 4243
   disableCache: 1

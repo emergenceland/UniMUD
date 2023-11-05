@@ -11,7 +11,6 @@ using UnityEditor;
 
 namespace mud {
     
-    [System.Serializable]
     public abstract class IMudTable {
 
         public string TableId { get { return GetTableId(); } }
@@ -22,6 +21,7 @@ namespace mud {
         public abstract Type TableUpdateType();
         public abstract void PropertyToTable(Property property);
         public abstract RecordUpdate RecordUpdateToTyped(RecordUpdate rxRecord);
+        
         public static IObservable<RecordUpdate> GetUpdates<T>() where T : IMudTable, new() {return GetUpdates(typeof(T));}
         public static IObservable<RecordUpdate> GetUpdates(Type table) {
 
@@ -54,47 +54,6 @@ namespace mud {
         }
 
         public abstract void SetValues(params object[] values);
-
-
-
-#if UNITY_EDITOR
-
-        public bool SpawnTableType(string path, string assemblyName) {
-
-            string fileName = path + this.GetType().ToString().Replace(assemblyName + ".", "") + ".asset";
-            MUDTableObject typeFile = (MUDTableObject)AssetDatabase.LoadAssetAtPath(fileName, typeof(MUDTableObject));
-
-            if (typeFile != null) {
-                return false;
-            }
-
-            MUDTableObject asset = (MUDTableObject)ScriptableObject.CreateInstance(typeof(MUDTableObject));
-            asset.SetTable(this.GetType());
-
-            AssetDatabase.CreateAsset(asset, fileName);
-            AssetDatabase.SaveAssets();
-
-            return true;
-        }
-
-        public bool DeleteTableType(string path, string assemblyName) {
-
-            string fileName = path + this.GetType().ToString().Replace(assemblyName + ".", "") + ".asset";
-
-            MUDTableObject typeFile = (MUDTableObject)AssetDatabase.LoadAssetAtPath(fileName, this.GetType());
-
-            if (typeFile == null) {
-                return false;
-            }
-
-            AssetDatabase.DeleteAsset(fileName);
-            AssetDatabase.SaveAssets();
-
-            return true;
-        }
-
-#endif
-
 
     }
 }

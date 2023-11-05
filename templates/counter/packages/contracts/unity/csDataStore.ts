@@ -7,6 +7,7 @@ import { renderFile } from "ejs";
 
 export function createTableDefinition(
   filePath: string,
+  namespace: string,
   mudConfig: any,
   tableName: string,
   keySchema: { [key: string]: SchemaAbiType },
@@ -35,7 +36,7 @@ export function createTableDefinition(
   renderFile(
     "./unity/templates/DefinitionTemplate.ejs",
     {
-      namespace: "mudworld",
+      namespace: namespace,
       tableClassName: tableName + "Table",
       tableName,
       fields,
@@ -46,12 +47,32 @@ export function createTableDefinition(
       if (err) throw err;
     }
   );
+
 }
+
+export function createAssemblyReference(
+  filePath: string,
+  namespace: string
+) {
+  renderFile(
+    "./unity/templates/AssemblyTemplate.ejs",
+    {
+      namespace: namespace,
+    },
+    (err, str) => {
+      console.log("writeAssembly " + filePath);
+      writeFileSync(filePath, str);
+      if (err) throw err;
+    }
+  );
+}
+
 
 async function main() {
   // get args
   const args = process.argv.slice(2);
   const outputPath = args[0] ?? `../client/Assets/Scripts/codegen`;
+  const namespace = "mudworld";
   console.log(outputPath);
 
   try {
@@ -61,11 +82,16 @@ async function main() {
     if (error instanceof Error) console.error("Error creating directory:", error.message);
   }
 
+  
   const tables = mudConfig.tables;
   Object.entries(tables).forEach(([tableName, { keySchema, valueSchema }]) => {
     const filePath = `${outputPath}/${tableName + "Table"}.cs`;
-    createTableDefinition(filePath, mudConfig, tableName, keySchema, valueSchema);
+    createTableDefinition(filePath, namespace, mudConfig, tableName, keySchema, valueSchema);
   });
+
+  const filePath = `${outputPath}/mudworld.asmdef`;
+  createAssemblyReference(filePath, namespace);
+  
 
   // formatting
   exec(`dotnet tool run dotnet-csharpier "${outputPath}"`, (err, stdout, stderr) => {
