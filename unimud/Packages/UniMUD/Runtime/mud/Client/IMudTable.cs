@@ -40,12 +40,12 @@ namespace mud {
         public static RxRecord? GetRecord<T>(string key) where T : IMudTable, new() {
             T mudTable = (T)Activator.CreateInstance(typeof(T));
             RxTable rxTable = NetworkManager.Datastore.store[mudTable.GetTableId()];
-            if(rxTable == null) {Debug.LogError($"{mudTable.GetTableId()}: RxTable not found"); return null;}
+            if(rxTable == null) {Debug.Log($"{mudTable.GetTableId()}: RxTable not found"); return null;}
             rxTable.Entries.TryGetValue(key, out RxRecord record);
             return record;
         }
 
-        public static T? MakeTable<T>(string key) where T : IMudTable, new() {
+        public static T? GetTable<T>(string key) where T : IMudTable, new() {
             var mudTable = new T();
             RxRecord? record = GetRecord<T>(key);
             if(record == null) {return null;}
