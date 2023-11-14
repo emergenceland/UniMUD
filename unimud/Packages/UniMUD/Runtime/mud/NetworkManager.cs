@@ -170,7 +170,7 @@ namespace mud
             Debug.Log($"[Dev Faucet]: Player address -> {address}");
             var balance = await GetBalance(address);
             Debug.Log($"Player balance -> {balance} ETH");
-            if (balance < 1)
+            if (balance < (decimal)0.1)
             {
                 Debug.Log("Balance is low, requesting funds from faucet...");
                 try {
