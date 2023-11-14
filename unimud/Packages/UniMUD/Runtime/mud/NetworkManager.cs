@@ -141,24 +141,25 @@ namespace mud
             await SetAccount(newAccount);
         }
 
-        public static Account CreateAccount(string newPrivateKey) { return CreateAccount(newPrivateKey, Instance._chainId);}
-        public static Account CreateAccount(string newPrivateKey, int chainID) {  return new Account(newPrivateKey, chainID);}
+        public static Account CreateAccount(string newPrivateKey) { return Common.CreateAndSaveAccount(newPrivateKey, Instance._chainId);}
 
         public static async UniTask SetAccount(Account newAccount) { await Instance.InternalSetAccount(newAccount);}
         public async UniTask InternalSetAccount(Account newAccount) {
             
             account = newAccount;
-            address = Account.Address;
+            address = newAccount.Address;
             key = AccountKey(address);
 
             world = new CreateContract();
-            await world.CreateTxExecutor(Account, _worldAddress, _rpcUrl, _chainId);
+            await world.CreateTxExecutor(account, _worldAddress, _rpcUrl, _chainId);
 
             //drip
             await Drip();
+
+            Debug.Log("Account Setup: " + newAccount.Address);
         }
 
-        public static string AccountKey(string address) { return "0x" + address.Replace("0x", "").PadLeft(64, '0').ToUpper();}
+        public static string AccountKey(string a) { return "0x" + a.Replace("0x", "").PadLeft(64, '0').ToUpper();}
 
         public async UniTask Drip() {
 
