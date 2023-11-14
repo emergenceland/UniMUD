@@ -16,17 +16,20 @@ namespace mud
         {
             {
                 var savedBurnerWallet = PlayerPrefs.GetString("burnerWallet");
-                if (!string.IsNullOrWhiteSpace(savedBurnerWallet))
-                {
+                if (!string.IsNullOrWhiteSpace(savedBurnerWallet)) {
                     return savedBurnerWallet;
                 }
 
-                // TODO: Insecure
-                var newPrivateKey = GeneratePrivateKey();
-                PlayerPrefs.SetString("burnerWallet", newPrivateKey);
-                PlayerPrefs.Save();
-                return newPrivateKey;
+                return SetPrivateKey(GeneratePrivateKey());
+           
             }
+        }
+
+        public static string SetPrivateKey(string newPrivateKey) {
+            // TODO: Insecure
+            PlayerPrefs.SetString("burnerWallet", newPrivateKey);
+            PlayerPrefs.Save();
+            return newPrivateKey;
         }
     }
 }

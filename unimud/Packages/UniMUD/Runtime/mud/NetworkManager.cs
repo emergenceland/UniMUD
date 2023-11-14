@@ -19,6 +19,7 @@ namespace mud
         public static CreateContract World { get {return Instance.world;}}
         public static RxDatastore Datastore { get {return Instance.ds;}}
         public static NetworkData Network { get {return Instance.activeNetwork;}}
+        public static Account Account {get{return Instance.account;}}
         public event Action<NetworkManager> OnNetworkInitialized = delegate { };
         public static Action OnInitialized;
         public static bool Initialized;
@@ -43,7 +44,7 @@ namespace mud
         [Header("Debug Account")] 
         [SerializeField] string address;
         [SerializeField] string key;
-        public Account Account;
+        public Account account;
         public string pk;
         private int _chainId;
         private string _rpcUrl;
@@ -80,11 +81,7 @@ namespace mud
             LoadNetwork();
             LoadWorldContract();
 
-            await CreateAccount();
-
-            if(networkType!=NetworkTypes.NetworkType.Local) 
-                await Drip();
-                
+            await LoadOrMakeAccount();
             await Connect();
         }
         
@@ -128,45 +125,64 @@ namespace mud
             }
         }
 
-        public async UniTask CreateAccount() {
+        public async UniTask LoadOrMakeAccount() {
 
-            if (!string.IsNullOrWhiteSpace(pk))
-            {
-                Account = new Account(pk, _chainId);
-                Debug.Log("Loaded account from pk: " + Account.Address);
-            }
-            else
-            {
-                Account = uniqueWallets
-                    ? new Account(Common.GeneratePrivateKey(), _chainId)
-                    : new Account(Common.GetBurnerPrivateKey(), _chainId);
-                Debug.Log("Burner wallet created/loaded: " + Account.Address);
+            Account newAccount = null;
+
+            if (!string.IsNullOrWhiteSpace(pk)) {
+                newAccount = CreateAccount(pk);
+                Debug.Log("Loaded account from pk: " + newAccount.Address);
+            } else {
+                string loadedOrCreatedKey = uniqueWallets ? Common.GeneratePrivateKey() : Common.GetBurnerPrivateKey();
+                newAccount = CreateAccount(loadedOrCreatedKey);
+                Debug.Log("Burner wallet created/loaded: " + newAccount.Address);
             }
 
-            await SetAccount(Account);
+            await SetAccount(newAccount);
         }
 
+        public static Account CreateAccount(string newPrivateKey) { return CreateAccount(newPrivateKey, Instance._chainId);}
+        public static Account CreateAccount(string newPrivateKey, int chainID) {  return new Account(newPrivateKey, chainID);}
+
+        public static async UniTask SetAccount(Account newAccount) { await Instance.InternalSetAccount(newAccount);}
+        public async UniTask InternalSetAccount(Account newAccount) {
+            
+            account = newAccount;
+            address = Account.Address;
+            key = AccountKey(address);
+
+            world = new CreateContract();
+            await world.CreateTxExecutor(Account, _worldAddress, _rpcUrl, _chainId);
+
+            //drip
+            await Drip();
+        }
+
+        public static string AccountKey(string address) { return "0x" + address.Replace("0x", "").PadLeft(64, '0').ToUpper();}
+
         public async UniTask Drip() {
+
+            if(string.IsNullOrEmpty(activeNetwork.faucetUrl)) {
+                return;
+            }
+            
             Debug.Log($"[Dev Faucet]: Player address -> {address}");
             var balance = await GetBalance(address);
             Debug.Log($"Player balance -> {balance} ETH");
             if (balance < 1)
             {
                 Debug.Log("Balance is low, requesting funds from faucet...");
-                await Common.GetRequestAsync($"{activeNetwork.faucetUrl}?address={address}");
+                try {
+                    await Common.GetRequestAsync($"{activeNetwork.faucetUrl}?address={address}");
+                } catch (Exception exception) {
+                    Debug.LogError(exception);
+                }   
+                
+                // Expected output: ReferenceError: nonExistentFunction is not defined
+                // (Note: the exact output may be browser-dependent)
             }
         }
-
-        public async UniTask SetAccount(Account newAccount) {
-
-            Account = newAccount;
-            address = Account.Address;
-            key = "0x" + address.Replace("0x", "").PadLeft(64, '0').ToUpper();
-
-            world = new CreateContract();
-            await world.CreateTxExecutor(Account, _worldAddress, _rpcUrl, _chainId);
-
-        }
+    
 
         public async UniTask Connect() {
 
