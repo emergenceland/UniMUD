@@ -79,8 +79,8 @@ namespace mud
         public async UniTask CreateNetwork() {
 
             LoadNetwork();
-            LoadWorldContract();
 
+            await LoadWorldContract();
             await LoadOrMakeAccount();
             await Connect();
         }
@@ -114,12 +114,15 @@ namespace mud
             _chainId = activeNetwork.chainId;
         }
 
-        public void LoadWorldContract() {
+        public async UniTask LoadWorldContract() {
             //load either directly from worlds.json or NetworkData
             if(string.IsNullOrEmpty(activeNetwork.contractAddress)) {
+                
                 worldSelector = GetComponent<WorldSelector>();
                 if(worldSelector == null) {worldSelector = gameObject.AddComponent<WorldSelector>();}
-                _worldAddress = worldSelector.LoadWorldAddress(activeNetwork);
+                await worldSelector.LoadWorldFile();
+
+                _worldAddress = worldSelector.GetWorldContract(activeNetwork);
             } else {
                 _worldAddress = activeNetwork.contractAddress;
             }
@@ -216,7 +219,7 @@ namespace mud
 
             await UniTask.SwitchToMainThread();
             
-            if (worldBlockNumber < 0) {worldBlockNumber = worldSelector.LoadBlockNumber(activeNetwork);}
+            if (worldBlockNumber < 0) {worldBlockNumber = worldSelector.GetBlockNumber(activeNetwork);}
             if (startingBlockNumber < 0) {await GetStartingBlockNumber().ToUniTask();}
             
             Debug.Log($"Starting sync from {worldBlockNumber}...{startingBlockNumber}");
