@@ -66,15 +66,16 @@ namespace mud {
             return worldAddress;
         }
 
-        public static async UniTask<string> GetRequestAsync(string uri) {
+        async UniTask<string> GetRequestAsync(string uri) {
 
             using (UnityWebRequest webRequest = UnityWebRequest.Get(uri)) {
 
                 await webRequest.SendWebRequest();
-                if (webRequest.result == UnityWebRequest.Result.ConnectionError) {
+                if (webRequest.result != UnityWebRequest.Result.Success) {
                     Debug.LogError("Error: " + webRequest.error);
                     return null;
                 } else {
+                    Debug.Log("Success: " + uri);
                     return webRequest.downloadHandler.text;
                 }
             }
