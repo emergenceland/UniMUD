@@ -20,9 +20,14 @@ If you are using Windows:
 ## Quickstart (with template)
 
 1. `git clone https://github.com/emergenceland/UniMUD.git`
-2. `cd UniMUD/templates/counter`
-3. `pnpm install`
-4. `pnpm run dev`
+2. Open a Git Bash window
+3. `cd UniMUD/templates/counter`
+4. `pnpm install`
+5. `cd packages/contracts`
+6. `pnpm dev`
+7. Open a second Git Bash window to contracts folder.
+8. `pnpm dev:unity`
+9. Enter play mode!
 
 ## Setup with an existing project
 
