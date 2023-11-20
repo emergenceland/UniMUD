@@ -35,7 +35,6 @@ namespace mud
 
         [Header("Network")] 
         public NetworkTypes.NetworkType networkType;
-        public HybridWebSocket.WebSocketState wsState;
         public NetworkData local;
         public NetworkData testnet;
         public NetworkData mainnet;
@@ -51,6 +50,7 @@ namespace mud
         private string _wsRpcUrl;
 
         [Header("Debug World")] 
+        public HybridWebSocket.WebSocketState wsState;
         [SerializeField] string _worldAddress;
         private int worldBlockNumber = -1;
         private int startingBlockNumber = -1;
@@ -146,8 +146,8 @@ namespace mud
 
         public static Account CreateAccount(string newPrivateKey) { return Common.CreateAndSaveAccount(newPrivateKey, Instance._chainId);}
 
-        public static async UniTask SetAccount(Account newAccount) { await Instance.InternalSetAccount(newAccount);}
-        public async UniTask InternalSetAccount(Account newAccount) {
+        public static async UniTask SetAccount(Account newAccount) { await Instance.UpdateAccount(newAccount);}
+        protected async UniTask UpdateAccount(Account newAccount) {
             
             account = newAccount;
             address = newAccount.Address;
