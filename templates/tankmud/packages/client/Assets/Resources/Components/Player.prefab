@@ -488,6 +488,8 @@ MonoBehaviour:
     updateType: 0
     source: 0
   IsLocalPlayer: 0
+  position: {fileID: 0}
+  health: {fileID: 0}
 --- !u!54 &2428493033774599304
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -751,6 +753,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a29feb63c03a43cd8ab8379280ef8219, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  player: {fileID: 6932180925373951102}
+  _moveMarker: {fileID: 7715415014581269739}
 --- !u!1001 &6687456151155439538
 PrefabInstance:
   m_ObjectHideFlags: 0
