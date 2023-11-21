@@ -11,12 +11,12 @@ using ObservableExtensions = UniRx.ObservableExtensions;
 public class PlayerController : MonoBehaviour
 {
     public PlayerComponent player;
+    public GameObject _moveMarker;
 
     private Camera _camera;
     private Vector3 destination;
     float distance;
 
-    public GameObject _moveMarker;
     private TankShooting _target;
     Quaternion rotation;
 
