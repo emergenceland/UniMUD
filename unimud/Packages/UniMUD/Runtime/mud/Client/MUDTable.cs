@@ -38,7 +38,11 @@ namespace mud {
         }
         
         public static RxRecord? GetRecord<T>(string key) where T : MUDTable, new() {
-            T mudTable = (T)Activator.CreateInstance(typeof(T));
+            return GetRecord(key, typeof(T));
+        }
+
+        public static RxRecord? GetRecord(string key, Type tableType) {
+            MUDTable mudTable = (MUDTable)Activator.CreateInstance(tableType);
             RxTable rxTable = NetworkManager.Datastore.store[mudTable.GetTableId()];
             if(rxTable == null) {Debug.Log($"{mudTable.GetTableId()}: RxTable not found"); return null;}
             rxTable.Entries.TryGetValue(key, out RxRecord record);
