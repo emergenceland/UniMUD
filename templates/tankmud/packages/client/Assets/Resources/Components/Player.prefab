@@ -453,7 +453,7 @@ Transform:
   - {fileID: 279969895461703997}
   - {fileID: 4845906281338685406}
   m_Father: {fileID: 0}
-  m_RootOrder: -1
+  m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &6932180925373951102
 MonoBehaviour:
@@ -754,7 +754,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   player: {fileID: 6932180925373951102}
-  _moveMarker: {fileID: 7715415014581269739}
+  _moveMarker: {fileID: 1937700992450270055}
 --- !u!1001 &6687456151155439538
 PrefabInstance:
   m_ObjectHideFlags: 0
