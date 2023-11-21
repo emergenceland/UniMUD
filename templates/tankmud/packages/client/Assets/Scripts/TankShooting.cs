@@ -26,12 +26,14 @@ public class TankShooting : MonoBehaviour
 		if (!Physics.Raycast(ray, out var hit)) return;
 
 		var dest = new Vector3(Mathf.RoundToInt(hit.point.x), 0, Mathf.RoundToInt(hit.point.z));
-		transform.position = dest;
 
 		//Turret rotation
-        var turretRotation = Quaternion.LookRotation(transform.position - _tankTurret.position);
-        var newTurretRotation = Quaternion.Lerp(transform.rotation, turretRotation, Time.deltaTime);
-        _tankTurret.rotation = newTurretRotation;
+		if(dest != transform.parent.position) {
+        	var turretRotation = Quaternion.LookRotation(dest - transform.parent.position);
+        	_tankTurret.rotation = Quaternion.Lerp(_tankTurret.rotation, turretRotation, Time.deltaTime * 20f);
+		}
+
+		transform.position = dest;
 
 		bool attackInput = Input.GetKey(KeyCode.E);
 
