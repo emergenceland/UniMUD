@@ -467,10 +467,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 717f29893e079d347a9d51538cc81020, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  table: {fileID: 11400000, guid: f2d3a08e839a0fc4b95535606fd1a1be, type: 2}
-  requiredComponents:
-  - {fileID: 2364618700405762781, guid: e16b76ca01267774da6609ffe5c2953a, type: 3}
-  - {fileID: 6645604060330023078, guid: cc20fd294d171cc4c897ae751f7b67f7, type: 3}
+  table: {fileID: 0}
+  requiredComponents: []
   canPool: 0
   entity: {fileID: 0}
   hasInit: 0
@@ -490,8 +488,6 @@ MonoBehaviour:
     updateType: 0
     source: 0
   IsLocalPlayer: 0
-  position: {fileID: 0}
-  health: {fileID: 0}
 --- !u!54 &2428493033774599304
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -755,8 +751,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a29feb63c03a43cd8ab8379280ef8219, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  player: {fileID: 6932180925373951102}
-  _moveMarker: {fileID: 1937700992450270055}
 --- !u!1001 &6687456151155439538
 PrefabInstance:
   m_ObjectHideFlags: 0

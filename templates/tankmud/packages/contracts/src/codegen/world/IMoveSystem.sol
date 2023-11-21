@@ -8,7 +8,5 @@ pragma solidity >=0.8.21;
  * @dev This interface is automatically generated from the corresponding system contract. Do not edit manually.
  */
 interface IMoveSystem {
-  function move(int32 x, int32 y) external;
 
-  function spawn(int32 x, int32 y) external;
 }
