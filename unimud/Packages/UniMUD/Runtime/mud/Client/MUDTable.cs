@@ -11,7 +11,7 @@ using UnityEditor;
 
 namespace mud {
     
-    public abstract class IMudTable {
+    public abstract class MUDTable {
 
         public string TableId { get { return GetTableId(); } }
         public RxTable Table { get { return NetworkManager.Datastore.store[GetTableId()]; } }
@@ -22,12 +22,12 @@ namespace mud {
         public abstract void PropertyToTable(Property property);
         public abstract RecordUpdate RecordUpdateToTyped(RecordUpdate rxRecord);
         
-        public static IObservable<RecordUpdate> GetUpdates<T>() where T : IMudTable, new() {return GetUpdates(typeof(T));}
+        public static IObservable<RecordUpdate> GetUpdates<T>() where T : MUDTable, new() {return GetUpdates(typeof(T));}
         public static IObservable<RecordUpdate> GetUpdates(Type table) {
 
-            if(table.IsSubclassOf(typeof(IMudTable)) == false) {Debug.LogError($"{table.Name} is not of type IMudTable"); return null;}
+            if(table.IsSubclassOf(typeof(MUDTable)) == false) {Debug.LogError($"{table.Name} is not of type IMudTable"); return null;}
 
-            IMudTable mudTable = (IMudTable)Activator.CreateInstance(table);
+            MUDTable mudTable = (MUDTable)Activator.CreateInstance(table);
 
             return NetworkManager.Instance.sync.onUpdate
                 .Where(update => update.Table.Name == mudTable.TableId)
@@ -37,15 +37,19 @@ namespace mud {
                 });
         }
         
-        public static RxRecord? GetRecord<T>(string key) where T : IMudTable, new() {
-            T mudTable = (T)Activator.CreateInstance(typeof(T));
+        public static RxRecord? GetRecord<T>(string key) where T : MUDTable, new() {
+            return GetRecord(key, typeof(T));
+        }
+
+        public static RxRecord? GetRecord(string key, Type tableType) {
+            MUDTable mudTable = (MUDTable)Activator.CreateInstance(tableType);
             RxTable rxTable = NetworkManager.Datastore.store[mudTable.GetTableId()];
-            if(rxTable == null) {Debug.LogError($"{mudTable.GetTableId()}: RxTable not found"); return null;}
+            if(rxTable == null) {Debug.Log($"{mudTable.GetTableId()}: RxTable not found"); return null;}
             rxTable.Entries.TryGetValue(key, out RxRecord record);
             return record;
         }
 
-        public static T? MakeTable<T>(string key) where T : IMudTable, new() {
+        public static T? GetTable<T>(string key) where T : MUDTable, new() {
             var mudTable = new T();
             RxRecord? record = GetRecord<T>(key);
             if(record == null) {return null;}

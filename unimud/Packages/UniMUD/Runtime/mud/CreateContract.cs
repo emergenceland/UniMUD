@@ -102,7 +102,7 @@ namespace mud
                 if(NetworkManager.Verbose) Debug.Log("TxHash: " + txHash);
                 if (txHash == null)
                 {
-                    Debug.LogError("Tx Failed To Send");
+                    Debug.LogError("Tx Failed " + txRequest.Exception);
                     return false;
                 }
                 

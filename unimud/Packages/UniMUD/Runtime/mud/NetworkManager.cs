@@ -19,6 +19,7 @@ namespace mud
         public static CreateContract World { get {return Instance.world;}}
         public static RxDatastore Datastore { get {return Instance.ds;}}
         public static NetworkData Network { get {return Instance.activeNetwork;}}
+        public static Account Account {get{return Instance.account;}}
         public event Action<NetworkManager> OnNetworkInitialized = delegate { };
         public static Action OnInitialized;
         public static bool Initialized;
@@ -34,7 +35,6 @@ namespace mud
 
         [Header("Network")] 
         public NetworkTypes.NetworkType networkType;
-        public HybridWebSocket.WebSocketState wsState;
         public NetworkData local;
         public NetworkData testnet;
         public NetworkData mainnet;
@@ -43,13 +43,14 @@ namespace mud
         [Header("Debug Account")] 
         [SerializeField] string address;
         [SerializeField] string key;
-        public Account Account;
+        public Account account;
         public string pk;
         private int _chainId;
         private string _rpcUrl;
         private string _wsRpcUrl;
 
         [Header("Debug World")] 
+        public HybridWebSocket.WebSocketState wsState;
         [SerializeField] string _worldAddress;
         private int worldBlockNumber = -1;
         private int startingBlockNumber = -1;
@@ -78,13 +79,9 @@ namespace mud
         public async UniTask CreateNetwork() {
 
             LoadNetwork();
-            LoadWorldContract();
 
-            await CreateAccount();
-
-            if(networkType!=NetworkTypes.NetworkType.Local) 
-                await Drip();
-                
+            await LoadWorldContract();
+            await LoadOrMakeAccount();
             await Connect();
         }
         
@@ -117,56 +114,79 @@ namespace mud
             _chainId = activeNetwork.chainId;
         }
 
-        public void LoadWorldContract() {
+        public async UniTask LoadWorldContract() {
             //load either directly from worlds.json or NetworkData
             if(string.IsNullOrEmpty(activeNetwork.contractAddress)) {
+                
                 worldSelector = GetComponent<WorldSelector>();
                 if(worldSelector == null) {worldSelector = gameObject.AddComponent<WorldSelector>();}
-                _worldAddress = worldSelector.LoadWorldAddress(activeNetwork);
+                await worldSelector.LoadWorldFile();
+
+                _worldAddress = worldSelector.GetWorldContract(activeNetwork);
             } else {
                 _worldAddress = activeNetwork.contractAddress;
             }
         }
 
-        public async UniTask CreateAccount() {
+        public async UniTask LoadOrMakeAccount() {
 
-            if (!string.IsNullOrWhiteSpace(pk))
-            {
-                Account = new Account(pk, _chainId);
-                Debug.Log("Loaded account from pk: " + Account.Address);
-            }
-            else
-            {
-                Account = uniqueWallets
-                    ? new Account(Common.GeneratePrivateKey(), _chainId)
-                    : new Account(Common.GetBurnerPrivateKey(), _chainId);
-                Debug.Log("Burner wallet created/loaded: " + Account.Address);
+            Account newAccount = null;
+
+            if (!string.IsNullOrWhiteSpace(pk)) {
+                newAccount = CreateAccount(pk);
+                Debug.Log("Loaded account from pk: " + newAccount.Address);
+            } else {
+                string loadedOrCreatedKey = uniqueWallets ? Common.GeneratePrivateKey() : Common.GetBurnerPrivateKey();
+                newAccount = CreateAccount(loadedOrCreatedKey);
+                Debug.Log("Burner wallet created/loaded: " + newAccount.Address);
             }
 
-            await SetAccount(Account);
+            await SetAccount(newAccount);
         }
 
+        public static Account CreateAccount(string newPrivateKey) { return Common.CreateAndSaveAccount(newPrivateKey, Instance._chainId);}
+
+        public static async UniTask SetAccount(Account newAccount) { await Instance.UpdateAccount(newAccount);}
+        protected async UniTask UpdateAccount(Account newAccount) {
+            
+            account = newAccount;
+            address = newAccount.Address;
+            key = AccountKey(address);
+
+            world = new CreateContract();
+            await world.CreateTxExecutor(account, _worldAddress, _rpcUrl, _chainId);
+
+            //drip
+            await Drip();
+
+            Debug.Log("Account Setup: " + newAccount.Address);
+        }
+
+        public static string AccountKey(string a) { return "0x" + a.Replace("0x", "").PadLeft(64, '0').ToUpper();}
+
         public async UniTask Drip() {
+
+            if(string.IsNullOrEmpty(activeNetwork.faucetUrl)) {
+                return;
+            }
+            
             Debug.Log($"[Dev Faucet]: Player address -> {address}");
             var balance = await GetBalance(address);
             Debug.Log($"Player balance -> {balance} ETH");
-            if (balance < 1)
+            if (balance < (decimal)0.1)
             {
                 Debug.Log("Balance is low, requesting funds from faucet...");
-                await Common.GetRequestAsync($"{activeNetwork.faucetUrl}?address={address}");
+                try {
+                    await Common.GetRequestAsync($"{activeNetwork.faucetUrl}?address={address}");
+                } catch (Exception exception) {
+                    Debug.LogError(exception);
+                }   
+                
+                // Expected output: ReferenceError: nonExistentFunction is not defined
+                // (Note: the exact output may be browser-dependent)
             }
         }
-
-        public async UniTask SetAccount(Account newAccount) {
-
-            Account = newAccount;
-            address = Account.Address;
-            key = "0x" + address.Replace("0x", "").PadLeft(64, '0').ToUpper();
-
-            world = new CreateContract();
-            await world.CreateTxExecutor(Account, _worldAddress, _rpcUrl, _chainId);
-
-        }
+    
 
         public async UniTask Connect() {
 
@@ -199,7 +219,7 @@ namespace mud
 
             await UniTask.SwitchToMainThread();
             
-            if (worldBlockNumber < 0) {worldBlockNumber = worldSelector.LoadBlockNumber(activeNetwork);}
+            if (worldBlockNumber < 0) {worldBlockNumber = worldSelector.GetBlockNumber(activeNetwork);}
             if (startingBlockNumber < 0) {await GetStartingBlockNumber().ToUniTask();}
             
             Debug.Log($"Starting sync from {worldBlockNumber}...{startingBlockNumber}");
