@@ -25,8 +25,8 @@ public class InputManager : MonoBehaviour
     private void SubscribeToCounter(NetworkManager _)
     {
         Debug.Log("Subscribed to Tables.");
-        _counterSub = IMudTable.GetUpdates<CounterTable>().ObserveOnMainThread().Subscribe(OnIncrement);
-        _positionSub = IMudTable.GetUpdates<PositionTable>().ObserveOnMainThread().Subscribe(OnPositionChange);
+        _counterSub = MUDTable.GetUpdates<CounterTable>().ObserveOnMainThread().Subscribe(OnIncrement);
+        _positionSub = MUDTable.GetUpdates<PositionTable>().ObserveOnMainThread().Subscribe(OnPositionChange);
     }
     private void OnIncrement(RecordUpdate update)
     {
