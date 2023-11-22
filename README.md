@@ -55,13 +55,13 @@ async void Move(int x, int y)
 	// NetworkManager exposes a worldSend property that you can use to send transactions.
 	// It takes care of gas and nonce management for you.
 	// Make sure your MonoBehaviour is set up to handle async/await.
-	await NetworkManager.Instance.world.Write<MoveFunction>(System.Convert.ToInt32(x), System.Convert.ToInt32(y));
+	await NetworkManager.World.Write<MoveFunction>(System.Convert.ToInt32(x), System.Convert.ToInt32(y));
 }
 ```
 
 ### Representing State
 
-UniMUD caches MUD v2 events in the client for you in a "datastore." You can access the datastore via the NetworkManager instance. The datastore keeps a multilevel index of tableId -> table -> records
+UniMUD caches MUD v2 events in the client for you in a "datastore." You can access the datastore via the NetworkManager. The datastore keeps a multilevel index of tableId -> table -> records
 
 ```csharp
 class RxRecord {
@@ -127,7 +127,7 @@ var allMonstersNamedChuck = new Query().In(MonsterTable).In(MonsterTable, new Co
 // -> [ { table: "Monsters", key: "0x1234", value: { name: "Chuck", strength: 100 } } ]
 ```
 
-Make sure you actually run the query after building it, with `NetworkManager.Instance.ds.RunQuery(yourQuery)`
+Make sure you actually run the query after building it, with `NetworkManager.Datastore.RunQuery(yourQuery)`
 
 ```csharp
 using mud;
@@ -135,7 +135,7 @@ using mud;
 void RenderHealth() {
   var hasHealth = new Query().Select(Health).In(InitialHealth).In(Health).In(TilePosition);
 
-  var recordsWithHealth = NetworkManager.Instance.ds.RunQuery(hasHealth); // don't forget
+  var recordsWithHealth = NetworkManager.Datastore.RunQuery(hasHealth); // don't forget
 
   foreach (var record in recordsWithHealth) {
     DrawHealthBar(record.value["healthValue"]);
