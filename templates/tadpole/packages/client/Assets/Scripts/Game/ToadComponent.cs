@@ -10,8 +10,8 @@ public class ToadComponent : MUDComponent
     protected override void PostInit() {
         transform.position = Entity.GetMUDComponent<PositionComponent>().position;
         ParticleSystem ps = GetComponentInChildren<ParticleSystem>(true);
-        ParticleSystemRenderer r = GetComponentInChildren<ParticleSystemRenderer>();
-        r.material = GetComponent<Renderer>().material;
+        ParticleSystemRenderer r = ps.GetComponentInChildren<ParticleSystemRenderer>();
+        r.material = GetComponentInChildren<Renderer>().material;
     }
 
     protected override void UpdateComponent(MUDTable update, UpdateInfo info) {
