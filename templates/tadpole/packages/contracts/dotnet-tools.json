@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "isRoot": true,
+  "tools": {
+    "nethereum.generator.console": {
+      "version": "4.12.0",
+      "commands": ["Nethereum.Generator.Console"]
+    },
+    "csharpier": {
+      "version": "0.24.1",
+      "commands": ["dotnet-csharpier"]
+    }
+  }
+}
