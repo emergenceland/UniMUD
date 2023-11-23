@@ -21,15 +21,15 @@ import { ResourceId } from "@latticexyz/store/src/ResourceId.sol";
 import { RESOURCE_TABLE, RESOURCE_OFFCHAIN_TABLE } from "@latticexyz/store/src/storeResourceTypes.sol";
 
 ResourceId constant _tableId = ResourceId.wrap(
-  bytes32(abi.encodePacked(RESOURCE_TABLE, bytes14(""), bytes16("Counter")))
+  bytes32(abi.encodePacked(RESOURCE_TABLE, bytes14(""), bytes16("GameManager")))
 );
-ResourceId constant CounterTableId = _tableId;
+ResourceId constant GameManagerTableId = _tableId;
 
 FieldLayout constant _fieldLayout = FieldLayout.wrap(
   0x0004010004000000000000000000000000000000000000000000000000000000
 );
 
-library Counter {
+library GameManager {
   /**
    * @notice Get the table values' field layout.
    * @return _fieldLayout The field layout for the table.
@@ -73,7 +73,7 @@ library Counter {
    */
   function getFieldNames() internal pure returns (string[] memory fieldNames) {
     fieldNames = new string[](1);
-    fieldNames[0] = "value";
+    fieldNames[0] = "tadpoles";
   }
 
   /**
@@ -98,9 +98,9 @@ library Counter {
   }
 
   /**
-   * @notice Get value.
+   * @notice Get tadpoles.
    */
-  function getValue() internal view returns (uint32 value) {
+  function getTadpoles() internal view returns (uint32 tadpoles) {
     bytes32[] memory _keyTuple = new bytes32[](0);
 
     bytes32 _blob = StoreSwitch.getStaticField(_tableId, _keyTuple, 0, _fieldLayout);
@@ -108,9 +108,9 @@ library Counter {
   }
 
   /**
-   * @notice Get value.
+   * @notice Get tadpoles.
    */
-  function _getValue() internal view returns (uint32 value) {
+  function _getTadpoles() internal view returns (uint32 tadpoles) {
     bytes32[] memory _keyTuple = new bytes32[](0);
 
     bytes32 _blob = StoreCore.getStaticField(_tableId, _keyTuple, 0, _fieldLayout);
@@ -118,9 +118,9 @@ library Counter {
   }
 
   /**
-   * @notice Get value (using the specified store).
+   * @notice Get tadpoles (using the specified store).
    */
-  function getValue(IStore _store) internal view returns (uint32 value) {
+  function getTadpoles(IStore _store) internal view returns (uint32 tadpoles) {
     bytes32[] memory _keyTuple = new bytes32[](0);
 
     bytes32 _blob = _store.getStaticField(_tableId, _keyTuple, 0, _fieldLayout);
@@ -128,9 +128,9 @@ library Counter {
   }
 
   /**
-   * @notice Get value.
+   * @notice Get tadpoles.
    */
-  function get() internal view returns (uint32 value) {
+  function get() internal view returns (uint32 tadpoles) {
     bytes32[] memory _keyTuple = new bytes32[](0);
 
     bytes32 _blob = StoreSwitch.getStaticField(_tableId, _keyTuple, 0, _fieldLayout);
@@ -138,9 +138,9 @@ library Counter {
   }
 
   /**
-   * @notice Get value.
+   * @notice Get tadpoles.
    */
-  function _get() internal view returns (uint32 value) {
+  function _get() internal view returns (uint32 tadpoles) {
     bytes32[] memory _keyTuple = new bytes32[](0);
 
     bytes32 _blob = StoreCore.getStaticField(_tableId, _keyTuple, 0, _fieldLayout);
@@ -148,9 +148,9 @@ library Counter {
   }
 
   /**
-   * @notice Get value (using the specified store).
+   * @notice Get tadpoles (using the specified store).
    */
-  function get(IStore _store) internal view returns (uint32 value) {
+  function get(IStore _store) internal view returns (uint32 tadpoles) {
     bytes32[] memory _keyTuple = new bytes32[](0);
 
     bytes32 _blob = _store.getStaticField(_tableId, _keyTuple, 0, _fieldLayout);
@@ -158,57 +158,57 @@ library Counter {
   }
 
   /**
-   * @notice Set value.
+   * @notice Set tadpoles.
    */
-  function setValue(uint32 value) internal {
+  function setTadpoles(uint32 tadpoles) internal {
     bytes32[] memory _keyTuple = new bytes32[](0);
 
-    StoreSwitch.setStaticField(_tableId, _keyTuple, 0, abi.encodePacked((value)), _fieldLayout);
+    StoreSwitch.setStaticField(_tableId, _keyTuple, 0, abi.encodePacked((tadpoles)), _fieldLayout);
   }
 
   /**
-   * @notice Set value.
+   * @notice Set tadpoles.
    */
-  function _setValue(uint32 value) internal {
+  function _setTadpoles(uint32 tadpoles) internal {
     bytes32[] memory _keyTuple = new bytes32[](0);
 
-    StoreCore.setStaticField(_tableId, _keyTuple, 0, abi.encodePacked((value)), _fieldLayout);
+    StoreCore.setStaticField(_tableId, _keyTuple, 0, abi.encodePacked((tadpoles)), _fieldLayout);
   }
 
   /**
-   * @notice Set value (using the specified store).
+   * @notice Set tadpoles (using the specified store).
    */
-  function setValue(IStore _store, uint32 value) internal {
+  function setTadpoles(IStore _store, uint32 tadpoles) internal {
     bytes32[] memory _keyTuple = new bytes32[](0);
 
-    _store.setStaticField(_tableId, _keyTuple, 0, abi.encodePacked((value)), _fieldLayout);
+    _store.setStaticField(_tableId, _keyTuple, 0, abi.encodePacked((tadpoles)), _fieldLayout);
   }
 
   /**
-   * @notice Set value.
+   * @notice Set tadpoles.
    */
-  function set(uint32 value) internal {
+  function set(uint32 tadpoles) internal {
     bytes32[] memory _keyTuple = new bytes32[](0);
 
-    StoreSwitch.setStaticField(_tableId, _keyTuple, 0, abi.encodePacked((value)), _fieldLayout);
+    StoreSwitch.setStaticField(_tableId, _keyTuple, 0, abi.encodePacked((tadpoles)), _fieldLayout);
   }
 
   /**
-   * @notice Set value.
+   * @notice Set tadpoles.
    */
-  function _set(uint32 value) internal {
+  function _set(uint32 tadpoles) internal {
     bytes32[] memory _keyTuple = new bytes32[](0);
 
-    StoreCore.setStaticField(_tableId, _keyTuple, 0, abi.encodePacked((value)), _fieldLayout);
+    StoreCore.setStaticField(_tableId, _keyTuple, 0, abi.encodePacked((tadpoles)), _fieldLayout);
   }
 
   /**
-   * @notice Set value (using the specified store).
+   * @notice Set tadpoles (using the specified store).
    */
-  function set(IStore _store, uint32 value) internal {
+  function set(IStore _store, uint32 tadpoles) internal {
     bytes32[] memory _keyTuple = new bytes32[](0);
 
-    _store.setStaticField(_tableId, _keyTuple, 0, abi.encodePacked((value)), _fieldLayout);
+    _store.setStaticField(_tableId, _keyTuple, 0, abi.encodePacked((tadpoles)), _fieldLayout);
   }
 
   /**
@@ -242,8 +242,8 @@ library Counter {
    * @notice Tightly pack static (fixed length) data using this table's schema.
    * @return The static data, encoded into a sequence of bytes.
    */
-  function encodeStatic(uint32 value) internal pure returns (bytes memory) {
-    return abi.encodePacked(value);
+  function encodeStatic(uint32 tadpoles) internal pure returns (bytes memory) {
+    return abi.encodePacked(tadpoles);
   }
 
   /**
@@ -252,8 +252,8 @@ library Counter {
    * @return The lengths of the dynamic fields (packed into a single bytes32 value).
    * @return The dyanmic (variable length) data, encoded into a sequence of bytes.
    */
-  function encode(uint32 value) internal pure returns (bytes memory, PackedCounter, bytes memory) {
-    bytes memory _staticData = encodeStatic(value);
+  function encode(uint32 tadpoles) internal pure returns (bytes memory, PackedCounter, bytes memory) {
+    bytes memory _staticData = encodeStatic(tadpoles);
 
     PackedCounter _encodedLengths;
     bytes memory _dynamicData;

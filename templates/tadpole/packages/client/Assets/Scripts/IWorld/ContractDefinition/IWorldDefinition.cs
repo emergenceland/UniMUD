@@ -88,6 +88,19 @@ namespace IWorld.ContractDefinition
         public virtual List<byte[]> KeyTuple { get; set; }
     }
 
+    public partial class DeleteToadFunction : DeleteToadFunctionBase { }
+
+    [Function("deleteToad")]
+    public class DeleteToadFunctionBase : FunctionMessage
+    {
+        [Parameter("int32", "x", 1)]
+        public virtual int X { get; set; }
+        [Parameter("int32", "y", 2)]
+        public virtual int Y { get; set; }
+        [Parameter("int32", "z", 3)]
+        public virtual int Z { get; set; }
+    }
+
     public partial class GetDynamicFieldFunction : GetDynamicFieldFunctionBase { }
 
     [Function("getDynamicField", "bytes")]
@@ -532,6 +545,27 @@ namespace IWorld.ContractDefinition
         public virtual byte[] Data { get; set; }
         [Parameter("bytes32", "fieldLayout", 5)]
         public virtual byte[] FieldLayout { get; set; }
+    }
+
+    public partial class SpawnPlayerFunction : SpawnPlayerFunctionBase { }
+
+    [Function("spawnPlayer")]
+    public class SpawnPlayerFunctionBase : FunctionMessage
+    {
+
+    }
+
+    public partial class SpawnToadFunction : SpawnToadFunctionBase { }
+
+    [Function("spawnToad")]
+    public class SpawnToadFunctionBase : FunctionMessage
+    {
+        [Parameter("int32", "x", 1)]
+        public virtual int X { get; set; }
+        [Parameter("int32", "y", 2)]
+        public virtual int Y { get; set; }
+        [Parameter("int32", "z", 3)]
+        public virtual int Z { get; set; }
     }
 
     public partial class SpliceDynamicDataFunction : SpliceDynamicDataFunctionBase { }
@@ -983,6 +1017,8 @@ namespace IWorld.ContractDefinition
 
 
 
+
+
     public partial class GetDynamicFieldOutputDTO : GetDynamicFieldOutputDTOBase { }
 
     [FunctionOutput]
@@ -1107,6 +1143,10 @@ namespace IWorld.ContractDefinition
         [Parameter("bytes32", "valueSchema", 1)]
         public virtual byte[] ValueSchema { get; set; }
     }
+
+
+
+
 
 
 

@@ -197,6 +197,36 @@ namespace IWorld.Service
              return ContractHandler.SendRequestAndWaitForReceiptAsync(deleteRecordFunction, cancellationToken);
         }
 
+        public Task<string> DeleteToadRequestAsync(DeleteToadFunction deleteToadFunction)
+        {
+             return ContractHandler.SendRequestAsync(deleteToadFunction);
+        }
+
+        public Task<TransactionReceipt> DeleteToadRequestAndWaitForReceiptAsync(DeleteToadFunction deleteToadFunction, CancellationTokenSource cancellationToken = null)
+        {
+             return ContractHandler.SendRequestAndWaitForReceiptAsync(deleteToadFunction, cancellationToken);
+        }
+
+        public Task<string> DeleteToadRequestAsync(int x, int y, int z)
+        {
+            var deleteToadFunction = new DeleteToadFunction();
+                deleteToadFunction.X = x;
+                deleteToadFunction.Y = y;
+                deleteToadFunction.Z = z;
+            
+             return ContractHandler.SendRequestAsync(deleteToadFunction);
+        }
+
+        public Task<TransactionReceipt> DeleteToadRequestAndWaitForReceiptAsync(int x, int y, int z, CancellationTokenSource cancellationToken = null)
+        {
+            var deleteToadFunction = new DeleteToadFunction();
+                deleteToadFunction.X = x;
+                deleteToadFunction.Y = y;
+                deleteToadFunction.Z = z;
+            
+             return ContractHandler.SendRequestAndWaitForReceiptAsync(deleteToadFunction, cancellationToken);
+        }
+
         public Task<byte[]> GetDynamicFieldQueryAsync(GetDynamicFieldFunction getDynamicFieldFunction, BlockParameter blockParameter = null)
         {
             return ContractHandler.QueryAsync<GetDynamicFieldFunction, byte[]>(getDynamicFieldFunction, blockParameter);
@@ -1037,6 +1067,56 @@ namespace IWorld.Service
                 setStaticFieldFunction.FieldLayout = fieldLayout;
             
              return ContractHandler.SendRequestAndWaitForReceiptAsync(setStaticFieldFunction, cancellationToken);
+        }
+
+        public Task<string> SpawnPlayerRequestAsync(SpawnPlayerFunction spawnPlayerFunction)
+        {
+             return ContractHandler.SendRequestAsync(spawnPlayerFunction);
+        }
+
+        public Task<string> SpawnPlayerRequestAsync()
+        {
+             return ContractHandler.SendRequestAsync<SpawnPlayerFunction>();
+        }
+
+        public Task<TransactionReceipt> SpawnPlayerRequestAndWaitForReceiptAsync(SpawnPlayerFunction spawnPlayerFunction, CancellationTokenSource cancellationToken = null)
+        {
+             return ContractHandler.SendRequestAndWaitForReceiptAsync(spawnPlayerFunction, cancellationToken);
+        }
+
+        public Task<TransactionReceipt> SpawnPlayerRequestAndWaitForReceiptAsync(CancellationTokenSource cancellationToken = null)
+        {
+             return ContractHandler.SendRequestAndWaitForReceiptAsync<SpawnPlayerFunction>(null, cancellationToken);
+        }
+
+        public Task<string> SpawnToadRequestAsync(SpawnToadFunction spawnToadFunction)
+        {
+             return ContractHandler.SendRequestAsync(spawnToadFunction);
+        }
+
+        public Task<TransactionReceipt> SpawnToadRequestAndWaitForReceiptAsync(SpawnToadFunction spawnToadFunction, CancellationTokenSource cancellationToken = null)
+        {
+             return ContractHandler.SendRequestAndWaitForReceiptAsync(spawnToadFunction, cancellationToken);
+        }
+
+        public Task<string> SpawnToadRequestAsync(int x, int y, int z)
+        {
+            var spawnToadFunction = new SpawnToadFunction();
+                spawnToadFunction.X = x;
+                spawnToadFunction.Y = y;
+                spawnToadFunction.Z = z;
+            
+             return ContractHandler.SendRequestAsync(spawnToadFunction);
+        }
+
+        public Task<TransactionReceipt> SpawnToadRequestAndWaitForReceiptAsync(int x, int y, int z, CancellationTokenSource cancellationToken = null)
+        {
+            var spawnToadFunction = new SpawnToadFunction();
+                spawnToadFunction.X = x;
+                spawnToadFunction.Y = y;
+                spawnToadFunction.Z = z;
+            
+             return ContractHandler.SendRequestAndWaitForReceiptAsync(spawnToadFunction, cancellationToken);
         }
 
         public Task<string> SpliceDynamicDataRequestAsync(SpliceDynamicDataFunction spliceDynamicDataFunction)
