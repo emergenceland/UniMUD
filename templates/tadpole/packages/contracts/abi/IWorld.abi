@@ -650,6 +650,29 @@
   {
     "inputs": [
       {
+        "internalType": "int32",
+        "name": "x",
+        "type": "int32"
+      },
+      {
+        "internalType": "int32",
+        "name": "y",
+        "type": "int32"
+      },
+      {
+        "internalType": "int32",
+        "name": "z",
+        "type": "int32"
+      }
+    ],
+    "name": "deleteToad",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
         "internalType": "ResourceId",
         "name": "tableId",
         "type": "bytes32"
@@ -1545,6 +1568,36 @@
       }
     ],
     "name": "setStaticField",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "spawnPlayer",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "int32",
+        "name": "x",
+        "type": "int32"
+      },
+      {
+        "internalType": "int32",
+        "name": "y",
+        "type": "int32"
+      },
+      {
+        "internalType": "int32",
+        "name": "z",
+        "type": "int32"
+      }
+    ],
+    "name": "spawnToad",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"

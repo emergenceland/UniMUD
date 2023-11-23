@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.8.21;
-
 import { Script } from "forge-std/Script.sol";
-import { console } from "forge-std/console.sol";
 import { IWorld } from "../src/codegen/world/IWorld.sol";
 
 contract PostDeploy is Script {
@@ -13,11 +11,9 @@ contract PostDeploy is Script {
     // Start broadcasting transactions from the deployer account
     vm.startBroadcast(deployerPrivateKey);
 
-    // ------------------ EXAMPLES ------------------
-
-    // Call increment on the world via the registered function selector
-    // uint32 newValue = IWorld(worldAddress).increment();
-    // console.log("Increment via IWorld:", newValue);
+    // ------------------ Add world spawn code ------------------
+    IWorld world = IWorld(worldAddress);
+    world.spawnToad(0,0,0);
 
     vm.stopBroadcast();
   }

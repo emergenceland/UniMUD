@@ -148,6 +148,13 @@
       },
       "url": "https://packages.unity.com"
     },
+    "study.engine.studio-mud": {
+      "version": "https://github.com/engine-study/studio-mud.git",
+      "depth": 0,
+      "source": "git",
+      "dependencies": {},
+      "hash": "e7230750af4d6bf9bb171373bf67007e4b555ec7"
+    },
     "com.unity.modules.ai": {
       "version": "1.0.0",
       "depth": 0,

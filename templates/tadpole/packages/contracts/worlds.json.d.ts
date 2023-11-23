@@ -1,2 +1,2 @@
-declare const worlds: Partial<Record<string, { address: string; blockNumber?: number }>>;
+declare const worlds: Partial<Record<string, { address: string; ToadNumber?: number }>>;
 export default worlds;
