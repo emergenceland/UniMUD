@@ -7,18 +7,20 @@ using UniRx;
 using UnityEngine;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.Web3;
+using UnityEngine.SceneManagement;
 
 namespace mud
 {
     public class NetworkManager : MonoBehaviour
     {
+
         public static string LocalKey {get{return Instance.key;}}
         public static string LocalAddress {get{return Instance.address;}}
         public static string WorldAddress {get{return Instance._worldAddress;}}
         public static NetworkManager Instance { get; private set; }
         public static CreateContract World { get {return Instance.world;}}
         public static RxDatastore Datastore { get {return Instance.ds;}}
-        public static NetworkData Network { get {return Instance.activeNetwork;}}
+        public static NetworkData ActiveNetwork;
         public static Account Account {get{return Instance.account;}}
         public event Action<NetworkManager> OnNetworkInitialized = delegate { };
         public static Action OnInitialized;
@@ -31,7 +33,6 @@ namespace mud
         [SerializeField] bool uniqueWallets = false;        
         [SerializeField] bool verbose = false;        
 
-        private NetworkData activeNetwork;
 
         [Header("Network")] 
         public NetworkTypes.NetworkType networkType;
@@ -63,6 +64,7 @@ namespace mud
 
         WorldSelector worldSelector;
         private bool _networkReady = false;
+        private static bool _firstLoad = true;
 
         protected void Awake() {
             if (Instance != null) { Debug.LogError("Already have a NetworkManager instance"); return;}
@@ -78,28 +80,38 @@ namespace mud
 
         public async UniTask CreateNetwork() {
 
-            LoadNetwork();
+            if(_firstLoad) { Initialize(); } 
+            else { Reload();}
 
             await LoadWorldContract();
             await LoadOrMakeAccount();
             await Connect();
         }
         
-        public void LoadNetwork() {LoadNetwork(networkType);}
+        public void Initialize() {
+            _firstLoad = false;
+            LoadNetwork(networkType);
+        }
+
+        public void Reload() {
+            SetNetwork(ActiveNetwork);
+        }
+
         public void LoadNetwork(NetworkTypes.NetworkType newNetwork) {
 
             //load our network from enum
             networkType = newNetwork;
-            activeNetwork = networkType switch
+            ActiveNetwork = networkType switch
             {
                 NetworkTypes.NetworkType.Local => local,
                 NetworkTypes.NetworkType.Testnet => testnet,
                 NetworkTypes.NetworkType.Mainnet => mainnet,
-                _ => activeNetwork
+                _ => ActiveNetwork
             };
 
-            SetNetwork(activeNetwork);
+            SetNetwork(ActiveNetwork);
         }
+
         public void SetNetwork(NetworkData newData) {
 
             if (newData == null) {
@@ -107,24 +119,31 @@ namespace mud
                 return;
             }
 
-            activeNetwork = newData;
+            Debug.Log($"Set network to {newData.name}.");
+            ActiveNetwork = newData;
 
-            _rpcUrl = activeNetwork.jsonRpcUrl;
-            _wsRpcUrl = activeNetwork.wsRpcUrl;
-            _chainId = activeNetwork.chainId;
+            _rpcUrl = ActiveNetwork.jsonRpcUrl;
+            _wsRpcUrl = ActiveNetwork.wsRpcUrl;
+            _chainId = ActiveNetwork.chainId;
+        }
+
+        public void SwitchNetwork(NetworkData newData) {
+            Debug.Log($"Switching to {newData.name}.");
+            SetNetwork(newData);
+            SceneManager.LoadScene(0);
         }
 
         public async UniTask LoadWorldContract() {
             //load either directly from worlds.json or NetworkData
-            if(string.IsNullOrEmpty(activeNetwork.contractAddress)) {
+            if(string.IsNullOrEmpty(ActiveNetwork.contractAddress)) {
                 
                 worldSelector = GetComponent<WorldSelector>();
                 if(worldSelector == null) {worldSelector = gameObject.AddComponent<WorldSelector>();}
                 await worldSelector.LoadWorldFile();
 
-                _worldAddress = worldSelector.GetWorldContract(activeNetwork);
+                _worldAddress = worldSelector.GetWorldContract(ActiveNetwork);
             } else {
-                _worldAddress = activeNetwork.contractAddress;
+                _worldAddress = ActiveNetwork.contractAddress;
             }
         }
 
@@ -145,7 +164,6 @@ namespace mud
         }
 
         public static Account CreateAccount(string newPrivateKey) { return Common.CreateAndSaveAccount(newPrivateKey, Instance._chainId);}
-
         public static async UniTask SetAccount(Account newAccount) { await Instance.UpdateAccount(newAccount);}
         protected async UniTask UpdateAccount(Account newAccount) {
             
@@ -166,7 +184,7 @@ namespace mud
 
         public async UniTask Drip() {
 
-            if(string.IsNullOrEmpty(activeNetwork.faucetUrl)) {
+            if(string.IsNullOrEmpty(ActiveNetwork.faucetUrl)) {
                 return;
             }
             
@@ -177,7 +195,7 @@ namespace mud
             {
                 Debug.Log("Balance is low, requesting funds from faucet...");
                 try {
-                    await Common.GetRequestAsync($"{activeNetwork.faucetUrl}?address={address}");
+                    await Common.GetRequestAsync($"{ActiveNetwork.faucetUrl}?address={address}");
                 } catch (Exception exception) {
                     Debug.LogError(exception);
                 }   
@@ -219,7 +237,7 @@ namespace mud
 
             await UniTask.SwitchToMainThread();
             
-            if (worldBlockNumber < 0) {worldBlockNumber = worldSelector.GetBlockNumber(activeNetwork);}
+            if (worldBlockNumber < 0) {worldBlockNumber = worldSelector.GetBlockNumber(ActiveNetwork);}
             if (startingBlockNumber < 0) {await GetStartingBlockNumber().ToUniTask();}
             
             Debug.Log($"Starting sync from {worldBlockNumber}...{startingBlockNumber}");
@@ -265,6 +283,7 @@ namespace mud
 
         private void OnDestroy()
         {
+            Instance = null;
             Initialized = false;
             _disposables?.Dispose();
         }

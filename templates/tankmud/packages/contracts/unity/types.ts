@@ -117,10 +117,10 @@ export const schemaTypesToCSTypeStrings: Record<SchemaAbiType, string> = {
   bytes32: "string",
   bool: "bool",
   address: "string",
-  "uint8[]": "uint[]",
-  "uint16[]": "uint[]",
-  "uint24[]": "uint[]",
-  "uint32[]": "uint[]",
+  "uint8[]": "int[]",
+  "uint16[]": "int[]",
+  "uint24[]": "int[]",
+  "uint32[]": "int[]",
   "uint40[]": "UInt64[]",
   "uint48[]": "UInt64[]",
   "uint56[]": "System.Numerics.BigInteger[]",
@@ -224,7 +224,7 @@ export interface TableField {
   type: string;
 }
 
-export interface TableDefinitionConfig {
-  namespace: string;
-  tableName: string;
+export interface EnumField {
+  enumName: string;
+  values: string[];
 }

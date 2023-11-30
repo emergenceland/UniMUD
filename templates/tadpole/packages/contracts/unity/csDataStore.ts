@@ -1,6 +1,6 @@
 import mudConfig from "../mud.config";
-import { SchemaAbiType } from "@latticexyz/schema-type";
-import { TableField, schemaTypesToCSTypeStrings } from "./types";
+import { SchemaAbiType, schemaAbiTypes, staticAbiTypes } from "@latticexyz/schema-type";
+import { EnumField, TableField, schemaTypesToCSTypeStrings } from "./types";
 import { writeFileSync, mkdirSync } from "fs";
 import { exec } from "child_process";
 import { renderFile } from "ejs";
@@ -24,8 +24,15 @@ export function createTableDefinition(
   }
 
   for (const key in valueSchema) {
-    const valueType = valueSchema[key];
+    var valueType = valueSchema[key];
+    console.log(valueType);
     if (!valueType) throw new Error(`[${tableName}]: Unknown type for field ${key}`);
+
+    if (valueType in mudConfig.enums) {
+      console.log(valueType + " is " + schemaAbiTypes[0]);
+      valueType = schemaAbiTypes[0];
+    } 
+
     fields.push({ key: key[0] + key.slice(1), type: schemaTypesToCSTypeStrings[valueType] });
   }
 
@@ -43,6 +50,34 @@ export function createTableDefinition(
     },
     (err, str) => {
       console.log("writeFileSync " + filePath);
+      writeFileSync(filePath, str);
+      if (err) throw err;
+    }
+  );
+
+}
+
+export function createUserEnums(
+  filePath: string,
+  namespace: string,
+  enums: any,
+) {
+
+  const fields: EnumField[] = [];
+
+  Object.entries(mudConfig.enums).forEach( ([enumName, enumValues]) => {
+    console.log(enumName);
+    fields.push({ enumName: enumName, values: enumValues });
+  });
+
+  renderFile(
+    "./unity/templates/EnumTemplate.ejs",
+    {
+      namespace: namespace,
+      enums: fields,
+    },
+    (err, str) => {
+      console.log("writeEnums " + filePath);
       writeFileSync(filePath, str);
       if (err) throw err;
     }
@@ -84,10 +119,14 @@ async function main() {
 
   
   const tables = mudConfig.tables;
-  Object.entries(tables).forEach(([tableName, { keySchema, valueSchema }]) => {
+  Object.entries(tables).forEach( ([tableName, { keySchema, valueSchema }]) => {
     const filePath = `${outputPath}/${tableName + "Table"}.cs`;
     createTableDefinition(filePath, namespace, mudConfig, tableName, keySchema, valueSchema);
   });
+
+
+  const enumPath = `${outputPath}/MUDTypes.cs`;
+  createUserEnums(enumPath, namespace, mudConfig.enums);
 
   const filePath = `${outputPath}/mudworld.asmdef`;
   createAssemblyReference(filePath, namespace);
