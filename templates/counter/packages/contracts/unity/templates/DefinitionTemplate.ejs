@@ -2,6 +2,7 @@
 
 #nullable enable
 using System;
+using System.Linq;
 using mud;
 using UniRx;
 using Property = System.Collections.Generic.Dictionary<string, object>;
@@ -66,8 +67,14 @@ namespace <%= namespace %>
 
 		public override void PropertyToTable(Property property) {
 			<% for (const field of fields) { -%>
-				<%= field.key.charAt(0).toUpperCase() + field.key.slice(1) %> = (<%= field.type %>)property["<%= field.key %>"];
+				<% if (field.type.endsWith("[]")) { -%>
+					<%= field.key.charAt(0).toUpperCase() + field.key.slice(1) %> = ((object[])property["<%= field.key %>"]).Cast<<%= field.type.replace("[]","") %>>().ToArray();
+				<% } else { -%>
+					<%= field.key.charAt(0).toUpperCase() + field.key.slice(1) %> = (<%= field.type %>)property["<%= field.key %>"];
+				<% } -%>
 			<% } -%>
+
+
 		}
 
 		public override RecordUpdate RecordUpdateToTyped(RecordUpdate recordUpdate) {
@@ -79,16 +86,16 @@ namespace <%= namespace %>
 				  <%= field.type %>? previous<%= field.key.charAt(0).toUpperCase() + field.key.slice(1) %>Typed = null;
 				
 				  if (currentValue != null && currentValue.ContainsKey("<%= field.key.toLowerCase() %>")) {
-				    <% if (field.type.startsWith("uint") || field.type.startsWith("Uint")) { -%>
-				      current<%= field.key.charAt(0).toUpperCase() + field.key.slice(1) %>Typed = (<%= field.type %>)(<%= field.type.charAt(0).toUpperCase() === field.type.charAt(0) ? field.type.slice(1).toUpperCase() : field.type.slice(1) %>)currentValue["<%= field.key.toLowerCase() %>"];
+				    <% if (field.type.endsWith("[]")) { -%>
+				      current<%= field.key.charAt(0).toUpperCase() + field.key.slice(1) %>Typed = ((object[])currentValue["<%= field.key.toLowerCase() %>"]).Cast<<%= field.type.replace("[]","") %>>().ToArray();
 				    <% } else { -%>
 				      current<%= field.key.charAt(0).toUpperCase() + field.key.slice(1) %>Typed = (<%= field.type %>)currentValue["<%= field.key.toLowerCase() %>"];
 				    <% } -%>
 				  }
 				
 				  if (previousValue != null && previousValue.ContainsKey("<%= field.key.toLowerCase() %>")) {
-				    <% if (field.type.startsWith("uint") || field.type.startsWith("Uint")) { -%>
-				      previous<%= field.key.charAt(0).toUpperCase() + field.key.slice(1) %>Typed = (<%= field.type %>)(<%= field.type.charAt(0).toUpperCase() === field.type.charAt(0) ? field.type.slice(1).toUpperCase() : field.type.slice(1) %>)previousValue["<%= field.key.toLowerCase() %>"];
+				    <% if (field.type.endsWith("[]")) { -%>
+				      previous<%= field.key.charAt(0).toUpperCase() + field.key.slice(1) %>Typed = ((object[])previousValue["<%= field.key.toLowerCase() %>"]).Cast<<%= field.type.replace("[]","") %>>().ToArray();
 				    <% } else { -%>
 				      previous<%= field.key.charAt(0).toUpperCase() + field.key.slice(1) %>Typed = (<%= field.type %>)previousValue["<%= field.key.toLowerCase() %>"];
 				    <% } -%>	

@@ -432,10 +432,10 @@ namespace mud
 
         public static readonly Dictionary<SchemaType, object> StaticAbiTypeToDefaultValue = new()
         {
-            { SchemaType.UINT8, 0 },
-            { SchemaType.UINT16, 0 },
-            { SchemaType.UINT24, 0 },
-            { SchemaType.UINT32, 0 },
+            { SchemaType.UINT8, (uint)0 },
+            { SchemaType.UINT16, (uint)0 },
+            { SchemaType.UINT24, (uint)0 },
+            { SchemaType.UINT32, (uint)0 },
             { SchemaType.UINT40, (UInt64)0 },
             { SchemaType.UINT48, (UInt64)0 },
             { SchemaType.UINT56, BigInteger.Zero },
