@@ -16,10 +16,13 @@ If you are using Windows:
 2. Install nodejs, including “native modules” (nodejs.org/en/download) (re native modules: just keep the checkmark, it’s enabled by default in the installer)
 3. Use Git Bash for all terminal commands
 
-## Tankmud Tutorial
+## Tankmud Written Tutorial
 Follow this [guide](https://gaulll.notion.site/Tankmud-Tutorial-studio-mud-03b74081dac14b998caddbd6c3db9e46) to make a basic MUD game with Unity.
 
 ![tankmud_gif](https://github.com/emergenceland/UniMUD/blob/main/templates/tankmud/packages/client/Docs/tankmud.gif?raw=true)
+
+## Tadpol Video Tutorial
+[![thumbnailGit](https://github.com/emergenceland/UniMUD/assets/7606952/d2cd3765-22a3-4d13-a8b4-f93cb5ec74d3)](https://www.youtube.com/watch?v=-cRTlDlTmSU)
 
 ## Quickstart (with template)
 
