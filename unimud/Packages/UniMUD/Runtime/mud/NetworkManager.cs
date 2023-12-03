@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Linq;
 using Cysharp.Threading.Tasks;
 using Nethereum.Unity.Rpc;
 using Nethereum.Web3.Accounts;
@@ -7,51 +8,77 @@ using UniRx;
 using UnityEngine;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.Web3;
+using Newtonsoft.Json;
 using UnityEngine.SceneManagement;
 
 namespace mud
 {
     public class NetworkManager : MonoBehaviour
     {
+        public static string LocalKey
+        {
+            get { return Instance.key; }
+        }
 
-        public static string LocalKey {get{return Instance.key;}}
-        public static string LocalAddress {get{return Instance.address;}}
-        public static string WorldAddress {get{return Instance._worldAddress;}}
+        public static string LocalAddress
+        {
+            get { return Instance.address; }
+        }
+
+        public static string WorldAddress
+        {
+            get { return Instance._worldAddress; }
+        }
+
         public static NetworkManager Instance { get; private set; }
-        public static CreateContract World { get {return Instance.world;}}
-        public static RxDatastore Datastore { get {return Instance.ds;}}
+
+        public static CreateContract World
+        {
+            get { return Instance.world; }
+        }
+
+        public static RxDatastore Datastore
+        {
+            get { return Instance.ds; }
+        }
+
         public static NetworkData ActiveNetwork;
-        public static Account Account {get{return Instance.account;}}
+
+        public static Account Account
+        {
+            get { return Instance.account; }
+        }
+
         public event Action<NetworkManager> OnNetworkInitialized = delegate { };
         public static Action OnInitialized;
         public static bool Initialized;
 
-        [Header("Settings")] 
-        [SerializeField] bool autoConnect = true;
-        [Tooltip("Generate new wallet every time instead of loading from PlayerPrefs")]
-        [SerializeField] bool burnerWallet = true;
-        [SerializeField] bool uniqueWallets = false;        
-        [SerializeField] bool verbose = false;        
+        [Header("Settings")] [SerializeField] bool autoConnect = true;
 
+        [Tooltip("Generate new wallet every time instead of loading from PlayerPrefs")] [SerializeField]
+        bool burnerWallet = true;
 
-        [Header("Network")] 
-        public NetworkTypes.NetworkType networkType;
+        [SerializeField] bool uniqueWallets = false;
+        [SerializeField] bool verbose = false;
+
+        [Header("Network")] public NetworkTypes.NetworkType networkType;
         public NetworkData local;
         public NetworkData testnet;
         public NetworkData mainnet;
 
 
-        [Header("Debug Account")] 
-        [SerializeField] string address;
+        [Header("Debug Account")] [SerializeField]
+        string address;
+
         [SerializeField] string key;
         public Account account;
         public string pk;
         private int _chainId;
         private string _rpcUrl;
         private string _wsRpcUrl;
+        private string _indexerUrl;
 
-        [Header("Debug World")] 
-        public HybridWebSocket.WebSocketState wsState;
+        [Header("Debug World")] public HybridWebSocket.WebSocketState wsState;
         [SerializeField] string _worldAddress;
         private int worldBlockNumber = -1;
         private int startingBlockNumber = -1;
@@ -60,45 +87,64 @@ namespace mud
         public StoreSync sync;
         public CreateContract world;
         private readonly CompositeDisposable _disposables = new();
-        public static bool Verbose {get{return Instance.verbose;}}
+
+        public static bool Verbose
+        {
+            get { return Instance.verbose; }
+        }
 
         WorldSelector worldSelector;
         private bool _networkReady = false;
         private static bool _firstLoad = true;
 
-        protected void Awake() {
-            if (Instance != null) { Debug.LogError("Already have a NetworkManager instance"); return;}
+        protected void Awake()
+        {
+            if (Instance != null)
+            {
+                Debug.LogError("Already have a NetworkManager instance");
+                return;
+            }
+
             Instance = this;
         }
 
-        private async void Start() {
-
-            if(autoConnect) {
+        private async void Start()
+        {
+            if (autoConnect)
+            {
                 await CreateNetwork();
             }
         }
 
-        public async UniTask CreateNetwork() {
-
-            if(_firstLoad) { Initialize(); } 
-            else { Reload();}
+        public async UniTask CreateNetwork()
+        {
+            if (_firstLoad)
+            {
+                Initialize();
+            }
+            else
+            {
+                Reload();
+            }
 
             await LoadWorldContract();
             await LoadOrMakeAccount();
             await Connect();
         }
-        
-        public void Initialize() {
+
+        public void Initialize()
+        {
             _firstLoad = false;
             LoadNetwork(networkType);
         }
 
-        public void Reload() {
+        public void Reload()
+        {
             SetNetwork(ActiveNetwork);
         }
 
-        public void LoadNetwork(NetworkTypes.NetworkType newNetwork) {
-
+        public void LoadNetwork(NetworkTypes.NetworkType newNetwork)
+        {
             //load our network from enum
             networkType = newNetwork;
             ActiveNetwork = networkType switch
@@ -112,9 +158,10 @@ namespace mud
             SetNetwork(ActiveNetwork);
         }
 
-        public void SetNetwork(NetworkData newData) {
-
-            if (newData == null) {
+        public void SetNetwork(NetworkData newData)
+        {
+            if (newData == null)
+            {
                 Debug.LogError($"Null network", this);
                 return;
             }
@@ -125,36 +172,48 @@ namespace mud
             _rpcUrl = ActiveNetwork.jsonRpcUrl;
             _wsRpcUrl = ActiveNetwork.wsRpcUrl;
             _chainId = ActiveNetwork.chainId;
+            _indexerUrl = ActiveNetwork.indexerUrl;
         }
 
-        public void SwitchNetwork(NetworkData newData) {
+        public void SwitchNetwork(NetworkData newData)
+        {
             Debug.Log($"Switching to {newData.name}.");
             SetNetwork(newData);
             SceneManager.LoadScene(0);
         }
 
-        public async UniTask LoadWorldContract() {
+        public async UniTask LoadWorldContract()
+        {
             //load either directly from worlds.json or NetworkData
-            if(string.IsNullOrEmpty(ActiveNetwork.contractAddress)) {
-                
+            if (string.IsNullOrEmpty(ActiveNetwork.contractAddress))
+            {
                 worldSelector = GetComponent<WorldSelector>();
-                if(worldSelector == null) {worldSelector = gameObject.AddComponent<WorldSelector>();}
+                if (worldSelector == null)
+                {
+                    worldSelector = gameObject.AddComponent<WorldSelector>();
+                }
+
                 await worldSelector.LoadWorldFile();
 
                 _worldAddress = worldSelector.GetWorldContract(ActiveNetwork);
-            } else {
+            }
+            else
+            {
                 _worldAddress = ActiveNetwork.contractAddress;
             }
         }
 
-        public async UniTask LoadOrMakeAccount() {
-
+        public async UniTask LoadOrMakeAccount()
+        {
             Account newAccount = null;
 
-            if (!string.IsNullOrWhiteSpace(pk)) {
+            if (!string.IsNullOrWhiteSpace(pk))
+            {
                 newAccount = CreateAccount(pk);
                 Debug.Log("Loaded account from pk: " + newAccount.Address);
-            } else {
+            }
+            else
+            {
                 string loadedOrCreatedKey = uniqueWallets ? Common.GeneratePrivateKey() : Common.GetBurnerPrivateKey();
                 newAccount = CreateAccount(loadedOrCreatedKey);
                 Debug.Log("Burner wallet created/loaded: " + newAccount.Address);
@@ -163,10 +222,18 @@ namespace mud
             await SetAccount(newAccount);
         }
 
-        public static Account CreateAccount(string newPrivateKey) { return Common.CreateAndSaveAccount(newPrivateKey, Instance._chainId);}
-        public static async UniTask SetAccount(Account newAccount) { await Instance.UpdateAccount(newAccount);}
-        protected async UniTask UpdateAccount(Account newAccount) {
-            
+        public static Account CreateAccount(string newPrivateKey)
+        {
+            return Common.CreateAndSaveAccount(newPrivateKey, Instance._chainId);
+        }
+
+        public static async UniTask SetAccount(Account newAccount)
+        {
+            await Instance.UpdateAccount(newAccount);
+        }
+
+        protected async UniTask UpdateAccount(Account newAccount)
+        {
             account = newAccount;
             address = newAccount.Address;
             key = AccountKey(address);
@@ -180,36 +247,52 @@ namespace mud
             Debug.Log("Account Setup: " + newAccount.Address);
         }
 
-        public static string AccountKey(string a) { return "0x" + a.Replace("0x", "").PadLeft(64, '0').ToUpper();}
+        public static string AccountKey(string a)
+        {
+            return "0x" + a.Replace("0x", "").PadLeft(64, '0').ToUpper();
+        }
 
-        public async UniTask Drip() {
-
-            if(string.IsNullOrEmpty(ActiveNetwork.faucetUrl)) {
+        public async UniTask Drip()
+        {
+            if (string.IsNullOrEmpty(ActiveNetwork.faucetUrl))
+            {
                 return;
             }
-            
+
             Debug.Log($"[Dev Faucet]: Player address -> {address}");
             var balance = await GetBalance(address);
             Debug.Log($"Player balance -> {balance} ETH");
             if (balance < (decimal)0.1)
             {
                 Debug.Log("Balance is low, requesting funds from faucet...");
-                try {
+                try
+                {
                     await Common.GetRequestAsync($"{ActiveNetwork.faucetUrl}?address={address}");
-                } catch (Exception exception) {
+                }
+                catch (Exception exception)
+                {
                     Debug.LogError(exception);
-                }   
-                
+                }
+
                 // Expected output: ReferenceError: nonExistentFunction is not defined
                 // (Note: the exact output may be browser-dependent)
             }
         }
-    
 
-        public async UniTask Connect() {
 
-            if(Account == null) {Debug.LogError("No account", this); return;}
-            if(bs != null) {Debug.LogError("Network Manager: Already connected", this); return;}
+        public async UniTask Connect()
+        {
+            if (Account == null)
+            {
+                Debug.LogError("No account", this);
+                return;
+            }
+
+            if (bs != null)
+            {
+                Debug.LogError("Network Manager: Already connected", this);
+                return;
+            }
 
             /*
              * ==== PROVIDER ====
@@ -228,6 +311,7 @@ namespace mud
             var worldConfig = MudDefinitions.DefineWorldConfig(_worldAddress);
             var storeConfig = MudDefinitions.DefineStoreConfig(_worldAddress);
             var moduleConfig = MudDefinitions.DefineModuleConfig(_worldAddress);
+
             Common.LoadConfig(worldConfig, ds);
             Common.LoadConfig(storeConfig, ds);
             Common.LoadConfig(moduleConfig, ds);
@@ -236,15 +320,15 @@ namespace mud
              */
 
             await UniTask.SwitchToMainThread();
-            
-            if (worldBlockNumber < 0) {worldBlockNumber = worldSelector.GetBlockNumber(ActiveNetwork);}
-            if (startingBlockNumber < 0) {await GetStartingBlockNumber().ToUniTask();}
-            
-            Debug.Log($"Starting sync from {worldBlockNumber}...{startingBlockNumber}");
+
+            if (worldBlockNumber < 0)
+            {
+                worldBlockNumber = worldSelector.GetBlockNumber(ActiveNetwork);
+            }
 
             sync = new StoreSync().AddTo(_disposables);
             var updateStream =
-                sync.StartSync(ds, bs.subject, _worldAddress, _rpcUrl, worldBlockNumber, startingBlockNumber,
+                sync.StartSync(ds, bs.subject, _worldAddress, _rpcUrl, _chainId, worldBlockNumber,
                     opts =>
                     {
                         if (opts.step == SyncStep.Live && !_networkReady)
@@ -256,13 +340,14 @@ namespace mud
                             OnInitialized?.Invoke();
                             OnNetworkInitialized(this);
                         }
-                    });
+                    }, _indexerUrl);
 
             updateStream.Subscribe(onNext: _ => { }, onError: Debug.LogError)
                 .AddTo(_disposables);
         }
-        
-        private IEnumerator GetStartingBlockNumber() {
+
+        private IEnumerator GetStartingBlockNumber()
+        {
             var blockNumberRequest = new EthBlockNumberUnityRequest(_rpcUrl);
             yield return blockNumberRequest.SendRequest();
             startingBlockNumber = (int)blockNumberRequest.Result.Value;
@@ -277,7 +362,8 @@ namespace mud
             return ethBalance;
         }
 
-        void Update() {
+        void Update()
+        {
             wsState = bs?.WS?.GetState() ?? HybridWebSocket.WebSocketState.Closed;
         }
 

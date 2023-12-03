@@ -134,6 +134,7 @@ namespace mud
 
         public static string ConcatHex(string[] values)
         {
+            if (values.Any(x => x == null)) return "0x";
             return $"0x{values.Aggregate("", (acc, x) => acc + x.Replace("0x", ""))}";
         }
 

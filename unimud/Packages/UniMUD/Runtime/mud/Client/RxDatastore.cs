@@ -2,7 +2,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using UniRx;
 using UnityEngine;
 
 namespace mud
@@ -49,7 +48,7 @@ namespace mud
         
         public RxTable? TryGetTableById(string id)
         {
-            return store.Values.FirstOrDefault(table => table.Id == id);
+            return store.Values.FirstOrDefault(table => string.Equals(table.Id, id, StringComparison.OrdinalIgnoreCase));
         }
 
         public IEnumerable<IRxRecord> RunQuery(Query query)

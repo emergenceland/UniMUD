@@ -2,8 +2,13 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Text.RegularExpressions;
 using Cysharp.Threading.Tasks;
+using mud.IStore.ContractDefinition;
+using Nethereum.Contracts;
+using Nethereum.RPC.Eth.DTOs;
+using Newtonsoft.Json;
 using UniRx;
 using UnityEngine;
 using UnityEngine.Networking;
@@ -64,7 +69,7 @@ namespace mud
 
             return parts.Count > 0 ? parts : new List<string> { string.Empty };
         }
-        
+
         public static Dictionary<string, object> CreateProperty(
             params (string Key, object Value)[] keyValuePairs
         )
@@ -73,8 +78,8 @@ namespace mud
                 keyValuePair => keyValuePair.Key,
                 keyValuePair => keyValuePair.Value
             );
-        } 
-        
+        }
+
         public static void LoadConfig(Dictionary<string, ProtocolParser.Table> tables, RxDatastore ds)
         {
             foreach (var (_, table) in tables)
@@ -82,7 +87,7 @@ namespace mud
                 ds.RegisterTable(table.TableId, table.Name, table.ValueSchema);
             }
         }
-        
+
         public static async UniTask GetRequestAsync(string uri)
         {
             using (UnityWebRequest webRequest = UnityWebRequest.Get(uri))
@@ -98,6 +103,142 @@ namespace mud
                     Debug.Log("Received: " + webRequest.downloadHandler.text);
                 }
             }
+        }
+
+        public static async UniTask<string?> GetRequestAsyncString(string uri)
+        {
+            try
+            {
+                using var webRequest = UnityWebRequest.Get(uri);
+                await webRequest.SendWebRequest();
+
+                if (webRequest.result is UnityWebRequest.Result.ConnectionError or UnityWebRequest.Result.ProtocolError)
+                {
+                    Debug.LogError($"Error: {webRequest.error}");
+                    return null;
+                }
+
+                return webRequest.downloadHandler.text;
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"Request to {uri} failed with exception: {ex.Message}");
+                return null;
+            }
+        } 
+
+        public static MudLog? FilterLogToSnapshotLog(FilterLog log, RxDatastore ds)
+        {
+            if (log.IsLogForEvent(new StoreSetRecordEventDTO().GetEventABI().Sha3Signature))
+            {
+                var decoded = Event<StoreSetRecordEventDTO>.DecodeEvent(log).Event;
+
+                return new MudLog
+                {
+                    eventName = "Store_SetRecord",
+                    address = log.Address,
+                    args = new MudLogArgs
+                    {
+                        tableId = BytesToHex(decoded.TableId),
+                        keyTuple = decoded.KeyTuple.Select(key => BytesToHex(key)).ToArray(),
+                        staticData = BytesToHex(decoded.StaticData),
+                        encodedLengths = BytesToHex(decoded.EncodedLengths),
+                        dynamicData = BytesToHex(decoded.DynamicData)
+                    },
+                };
+            }
+
+            if (log.IsLogForEvent(new StoreSpliceStaticDataEventDTO().GetEventABI().Sha3Signature))
+            {
+                var decoded = Event<StoreSpliceStaticDataEventDTO>.DecodeEvent(log).Event;
+                var start = (int)decoded.Start;
+                var tableId = BytesToHex(decoded.TableId);
+                var table = ds.TryGetTableById(tableId);
+                if (table == null) return null;
+                var entity = ConcatHex(decoded.KeyTuple.Select(b => BytesToHex(b)).ToArray());
+                var previousValue = table.GetValue(entity);
+                object previousStaticData = null;
+                previousValue?.RawValue?.TryGetValue("__staticData", out previousStaticData);
+                string previousStaticResult = previousStaticData as string ?? "0x";
+
+                object previousEncodedLengths = null;
+                object previousDynamicData = null;
+
+                previousValue?.RawValue?.TryGetValue("__encodedLengths", out previousEncodedLengths);
+                previousValue?.RawValue?.TryGetValue("__staticData", out previousDynamicData);
+
+                var data = BytesToHex(decoded.Data);
+                var staticData = SpliceHex(previousStaticResult, start, Size(data), data);
+                return new MudLog
+                {
+                    eventName = "Store_SpliceStatic",
+                    address = log.Address,
+                    args = new MudLogArgs
+                    {
+                        tableId = BytesToHex(decoded.TableId),
+                        keyTuple = decoded.KeyTuple.Select(key => BytesToHex(key)).ToArray(),
+                        staticData = staticData,
+                        encodedLengths = previousEncodedLengths as string ?? "0x",
+                        dynamicData = previousDynamicData as string ?? "0x"
+                    },
+                };
+            }
+
+            if (log.IsLogForEvent(new StoreSpliceDynamicDataEventDTO().GetEventABI().Sha3Signature))
+            {
+                var decoded = Event<StoreSpliceDynamicDataEventDTO>.DecodeEvent(log).Event;
+                var start = (int)decoded.Start;
+                var deleteCount = decoded.DeleteCount;
+                var tableId = BytesToHex(decoded.TableId);
+                var table = ds.TryGetTableById(tableId);
+                if (table == null) return null;
+                var entity = ConcatHex(decoded.KeyTuple.Select(b => BytesToHex(b)).ToArray());
+                var previousValue = table.GetValue(entity);
+
+                object previousStaticData = null;
+                previousValue?.RawValue?.TryGetValue("__staticData", out previousStaticData);
+
+                object previousDynamicData = null;
+                previousValue?.RawValue?.TryGetValue("__dynamicValue", out previousDynamicData);
+
+                var data = BytesToHex(decoded.Data);
+
+                var dynamicData =
+                    SpliceHex((string)previousDynamicData ?? "0x", start, (int)deleteCount, data);
+                return new MudLog
+                {
+                    eventName = "Store_SpliceDynamic",
+                    address = log.Address,
+                    args = new MudLogArgs
+                    {
+                        tableId = BytesToHex(decoded.TableId),
+                        keyTuple = decoded.KeyTuple.Select(key => BytesToHex(key)).ToArray(),
+                        staticData = previousStaticData as string ?? "0x",
+                        encodedLengths = BytesToHex(decoded.EncodedLengths),
+                        dynamicData = dynamicData
+                    },
+                };
+            }
+
+            if (log.IsLogForEvent(new StoreDeleteRecordEventDTO().GetEventABI().Sha3Signature))
+            {
+                var decoded = Event<StoreDeleteRecordEventDTO>.DecodeEvent(log).Event;
+                return new MudLog
+                {
+                    eventName = "Store_DeleteRecord",
+                    address = log.Address,
+                    args = new MudLogArgs
+                    {
+                        tableId = BytesToHex(decoded.TableId),
+                        keyTuple = decoded.KeyTuple.Select(key => BytesToHex(key)).ToArray(),
+                        staticData = null,
+                        encodedLengths = null,
+                        dynamicData = null
+                    },
+                };
+            }
+
+            throw new Exception("Unknown log type");
         }
     }
 }
