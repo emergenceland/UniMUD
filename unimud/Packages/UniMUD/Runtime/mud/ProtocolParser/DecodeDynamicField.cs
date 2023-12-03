@@ -1,4 +1,6 @@
 using System;
+using System.Collections;
+using System.Diagnostics;
 using System.Linq;
 using static mud.Common;
 using static mud.SchemaAbiTypes;
@@ -128,10 +130,15 @@ namespace mud
                 case SchemaType.ADDRESS_ARRAY:
                 {
                     var staticAbiType = fieldType.ToString().Replace("_ARRAY", "");
+
                     if (Enum.TryParse(staticAbiType, out SchemaType abiType))
                     {
+                        var defaultArrayType = DynamicAbiTypeToDefaultValue[fieldType].GetType();
+                        var defaultValueType = StaticAbiTypeToDefaultValue[abiType].GetType();
+                        // UnityEngine.Debug.Log($"ARRAY: {defaultArrayType} VALUE: {defaultValueType}");
                         var itemByteLength = GetStaticByteLength[abiType];
                         if (dataSize % itemByteLength != 0) throw InvalidHexLengthForArrayFieldError(abiType, data);
+                                                             
                         return Enumerable.Range(0, dataSize / itemByteLength)
                             .Select(i =>
                             {
@@ -140,6 +147,7 @@ namespace mud
                             }).ToArray();
                     }
 
+               
                     return UnsupportedDynamicField(fieldType);
                 }
                 default:
