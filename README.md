@@ -181,6 +181,10 @@ public class Counter : MonoBehaviour {
 ### Deploying to a testnet
 Select the Testnet NetworkType on the **NetworkManager** or create your own NetworkData ScriptableObject in the project window and link it.
 
+### Limitations
+- Does not support setters for individual table values on contracts (must set the entire table every time)
+- Does not support pop or push array functions on contracts
+  
 ## Future work
 - Indexer
 - Caching/persistence
