@@ -2,13 +2,11 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using System.Text.RegularExpressions;
 using Cysharp.Threading.Tasks;
 using mud.IStore.ContractDefinition;
 using Nethereum.Contracts;
 using Nethereum.RPC.Eth.DTOs;
-using Newtonsoft.Json;
 using UniRx;
 using UnityEngine;
 using UnityEngine.Networking;
@@ -125,7 +123,7 @@ namespace mud
                 Debug.LogError($"Request to {uri} failed with exception: {ex.Message}");
                 return null;
             }
-        } 
+        }
 
         public static MudLog? FilterLogToSnapshotLog(FilterLog log, RxDatastore ds)
         {

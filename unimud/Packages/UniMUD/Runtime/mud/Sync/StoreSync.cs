@@ -1,9 +1,6 @@
 using System;
-using System.Linq;
 using System.Numerics;
-using System.Web.NBitcoin;
 using Cysharp.Threading.Tasks;
-using Newtonsoft.Json;
 using UniRx;
 using UnityEngine;
 
