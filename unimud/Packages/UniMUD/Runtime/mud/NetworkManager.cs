@@ -1,6 +1,5 @@
 using System;
 using System.Collections;
-using System.Linq;
 using Cysharp.Threading.Tasks;
 using Nethereum.Unity.Rpc;
 using Nethereum.Web3.Accounts;
@@ -8,7 +7,6 @@ using UniRx;
 using UnityEngine;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.Web3;
-using Newtonsoft.Json;
 using UnityEngine.SceneManagement;
 
 namespace mud

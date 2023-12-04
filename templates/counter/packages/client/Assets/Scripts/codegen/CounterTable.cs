@@ -2,6 +2,7 @@
 
 #nullable enable
 using System;
+using System.Linq;
 using mud;
 using UniRx;
 using Property = System.Collections.Generic.Dictionary<string, object>;
@@ -12,8 +13,8 @@ namespace mudworld
     {
         public class CounterTableUpdate : RecordUpdate
         {
-            public int? Value;
-            public int? PreviousValue;
+            public uint? Value;
+            public uint? PreviousValue;
         }
 
         public readonly static string ID = "Counter";
@@ -27,7 +28,7 @@ namespace mudworld
             return ID;
         }
 
-        public int? Value;
+        public uint? Value;
 
         public override Type TableType()
         {
@@ -56,7 +57,7 @@ namespace mudworld
 
         public override void SetValues(params object[] functionParameters)
         {
-            Value = (int)functionParameters[0];
+            Value = (uint)functionParameters[0];
         }
 
         public static IObservable<RecordUpdate> GetCounterTableUpdates()
@@ -73,24 +74,24 @@ namespace mudworld
 
         public override void PropertyToTable(Property property)
         {
-            Value = (int)property["value"];
+            Value = (uint)property["value"];
         }
 
         public override RecordUpdate RecordUpdateToTyped(RecordUpdate recordUpdate)
         {
             var currentValue = recordUpdate.CurrentRecordValue as Property;
             var previousValue = recordUpdate.PreviousRecordValue as Property;
-            int? currentValueTyped = null;
-            int? previousValueTyped = null;
+            uint? currentValueTyped = null;
+            uint? previousValueTyped = null;
 
             if (currentValue != null && currentValue.ContainsKey("value"))
             {
-                currentValueTyped = (int)currentValue["value"];
+                currentValueTyped = (uint)currentValue["value"];
             }
 
             if (previousValue != null && previousValue.ContainsKey("value"))
             {
-                previousValueTyped = (int)previousValue["value"];
+                previousValueTyped = (uint)previousValue["value"];
             }
 
             return new CounterTableUpdate
