@@ -2,6 +2,7 @@
 
 #nullable enable
 using System;
+using System.Linq;
 using mud;
 using UniRx;
 using Property = System.Collections.Generic.Dictionary<string, object>;
@@ -12,8 +13,8 @@ namespace mudworld
     {
         public class GameManagerTableUpdate : RecordUpdate
         {
-            public int? Tadpoles;
-            public int? PreviousTadpoles;
+            public uint? Tadpoles;
+            public uint? PreviousTadpoles;
         }
 
         public readonly static string ID = "GameManager";
@@ -27,7 +28,7 @@ namespace mudworld
             return ID;
         }
 
-        public int? Tadpoles;
+        public uint? Tadpoles;
 
         public override Type TableType()
         {
@@ -56,7 +57,7 @@ namespace mudworld
 
         public override void SetValues(params object[] functionParameters)
         {
-            Tadpoles = (int)functionParameters[0];
+            Tadpoles = (uint)functionParameters[0];
         }
 
         public static IObservable<RecordUpdate> GetGameManagerTableUpdates()
@@ -73,24 +74,24 @@ namespace mudworld
 
         public override void PropertyToTable(Property property)
         {
-            Tadpoles = (int)property["tadpoles"];
+            Tadpoles = (uint)property["tadpoles"];
         }
 
         public override RecordUpdate RecordUpdateToTyped(RecordUpdate recordUpdate)
         {
             var currentValue = recordUpdate.CurrentRecordValue as Property;
             var previousValue = recordUpdate.PreviousRecordValue as Property;
-            int? currentTadpolesTyped = null;
-            int? previousTadpolesTyped = null;
+            uint? currentTadpolesTyped = null;
+            uint? previousTadpolesTyped = null;
 
             if (currentValue != null && currentValue.ContainsKey("tadpoles"))
             {
-                currentTadpolesTyped = (int)currentValue["tadpoles"];
+                currentTadpolesTyped = (uint)currentValue["tadpoles"];
             }
 
             if (previousValue != null && previousValue.ContainsKey("tadpoles"))
             {
-                previousTadpolesTyped = (int)previousValue["tadpoles"];
+                previousTadpolesTyped = (uint)previousValue["tadpoles"];
             }
 
             return new GameManagerTableUpdate

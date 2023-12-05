@@ -8,7 +8,7 @@
     "com.unity.timeline": "1.7.4",
     "com.unity.ugui": "1.0.0",
     "com.unity.visualscripting": "1.8.0",
-    "study.engine.studio-mud": "https://github.com/engine-study/studio-mud.git",
+    "study.engine.studio-mud": "https://github.com/engine-study/studio-mud.git#generic-components",
     "com.unity.modules.ai": "1.0.0",
     "com.unity.modules.androidjni": "1.0.0",
     "com.unity.modules.animation": "1.0.0",

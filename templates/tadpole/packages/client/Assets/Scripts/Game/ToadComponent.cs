@@ -4,22 +4,17 @@ using mud;
 using mudworld;
 using UnityEngine;
 
-public class ToadComponent : MUDComponent
+public class ToadComponent : MUDVisibility
 {
 
     protected override void PostInit() {
-        transform.position = Entity.GetMUDComponent<PositionComponent>().position;
+        transform.position = Entity.GetMUDComponent<MUDPosition>().position;
         ParticleSystem ps = GetComponentInChildren<ParticleSystem>(true);
         ParticleSystemRenderer r = ps.GetComponentInChildren<ParticleSystemRenderer>();
         r.material = GetComponentInChildren<Renderer>().material;
     }
 
     protected override void UpdateComponent(MUDTable update, UpdateInfo info) {
-        ToadTable table = (ToadTable)update;
-        
-        if(info.UpdateType == UpdateType.DeleteRecord || table.Value == false) {
-            Entity.Toggle(false);
-            //toad was deleted
-        }
+        base.UpdateComponent(update, info);
     }
 }
