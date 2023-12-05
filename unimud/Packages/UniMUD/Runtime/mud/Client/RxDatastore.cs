@@ -21,6 +21,10 @@ namespace mud
                 return;
             }
 
+            if(NetworkManager.Verbose) {
+                Debug.Log($"RxTable Registered: {name} with {id}");
+            }
+
             store.TryAdd(name, new RxTable(id, name, schema));
         }
 
