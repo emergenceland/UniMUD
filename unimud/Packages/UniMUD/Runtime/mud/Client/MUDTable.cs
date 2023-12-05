@@ -15,7 +15,8 @@ namespace mud {
 
         public string TableId { get { return GetTableId(); } }
         public RxTable Table { get { return NetworkManager.Datastore.store[GetTableId()]; } }
-
+        public Property? RawValue {get{return update == null ? null : (Property)(update.CurrentRecordValue);}}
+        public RecordUpdate? update = null;
         public abstract string GetTableId();
         public abstract Type TableType();
         public abstract Type TableUpdateType();
