@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
 using Nethereum.Unity.Rpc;
 using Nethereum.Web3.Accounts;
@@ -8,6 +9,8 @@ using UnityEngine;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.Web3;
 using UnityEngine.SceneManagement;
+using UnityEngine.Networking;
+using Newtonsoft.Json;
 
 namespace mud
 {
@@ -190,21 +193,71 @@ namespace mud
             
             Debug.Log($"[Dev Faucet]: Player address -> {address}");
             var balance = await GetBalance(address);
-            Debug.Log($"Player balance -> {balance} ETH");
-            if (balance < (decimal)0.1)
-            {
-                Debug.Log("Balance is low, requesting funds from faucet...");
+            int attempts = 0;
+
+            while(balance < (decimal)1.0 && attempts < 10) {
+
+                attempts++;
+
+                Debug.Log($"Player balance -> {balance} ETH");
+                Debug.Log($"Balance is low, requesting funds from faucet... {ActiveNetwork.faucetUrl}");
                 try {
-                    await Common.GetRequestAsync($"{ActiveNetwork.faucetUrl}?address={address}");
+                    await MakeDripRequest(LocalAddress);
+                    // await Common.GetRequestAsync($"{ActiveNetwork.faucetUrl}?address={address}");
                 } catch (Exception exception) {
                     Debug.LogError(exception);
                 }   
+
+                await UniTask.Delay(100);
                 
                 // Expected output: ReferenceError: nonExistentFunction is not defined
                 // (Note: the exact output may be browser-dependent)
+                
             }
         }
     
+        public async UniTask MakeDripRequest(string dripAddress)
+        {
+
+            var options = new Dictionary<string, object> {
+                // ["0"] = new { json = new { address = dripAddress } },
+                ["address"] =  dripAddress,
+            };
+
+
+            string json = JsonConvert.SerializeObject(options);
+            // string json = "{address: {dripAddress}}";
+            
+            Debug.Log(json);
+
+            // string encodedOptions = UnityWebRequest.EscapeURL(json);
+            // string requestUri = $"https://17001-faucet.quarry.linfra.xyz/trpc/drip?batch=1&input={encodedOptions}";
+
+            string requestUri = "https://17001-faucet.quarry.linfra.xyz/trpc/drip";
+            Debug.Log(requestUri);
+
+
+            //https://17001-faucet.quarry.linfra.xyz/trpc/drip?batch=1&input=%7b%220%22%3a%7b%22json%22%3a%7b%22address%22%3a%220xbF23860897cF6a1F59BfF8B99Bf2780597E05d51%22%7d%7d%7d
+
+            //https://17001-faucet.quarry.linfra.xyz/trpc/drip?batch=1&input=<ENCODED_OPTIONS>
+
+            using (UnityWebRequest webRequest = UnityWebRequest.Post(requestUri, json,"application/json"))
+            {
+
+                await webRequest.SendWebRequest();
+
+                if (webRequest.result == UnityWebRequest.Result.ConnectionError ||
+                    webRequest.result == UnityWebRequest.Result.ProtocolError)
+                {
+                    Debug.LogError($"Error: {webRequest.error}");
+                }
+                else
+                {
+
+                }
+            }
+        }
+        
 
         public async UniTask Connect() {
 
