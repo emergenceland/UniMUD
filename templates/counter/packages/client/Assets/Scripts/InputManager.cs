@@ -25,6 +25,7 @@ public class InputManager : MonoBehaviour
     private void SubscribeToCounter(NetworkManager _)
     {
         Debug.Log("Subscribed to Tables.");
+        Debug.Log($"Initial counter value: {JsonConvert.SerializeObject(MUDTable.GetRecord<CounterTable>("0x"))}");
         _counterSub = MUDTable.GetUpdates<CounterTable>().ObserveOnMainThread().Subscribe(OnIncrement);
         _positionSub = MUDTable.GetUpdates<PositionTable>().ObserveOnMainThread().Subscribe(OnPositionChange);
     }

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 using Cysharp.Threading.Tasks;
+using JetBrains.Annotations;
 using mud.IStore.ContractDefinition;
 using Nethereum.ABI.Model;
 using Nethereum.Contracts;
@@ -15,7 +16,24 @@ namespace mud
     public struct StorageAdapterBlock
     {
         public BigInteger BlockNumber;
-        public FilterLog[] Logs;
+        [ItemCanBeNull] public MudLog[] Logs;
+    }
+
+    public class MudLog
+    {
+        public string eventName { get; set; }
+        public string address { get; set; }
+        public MudLogArgs args { get; set; }
+    }
+
+    public class MudLogArgs
+    {
+        public string tableId { get; set; }
+        public string[] keyTuple { get; set; }
+
+        public string staticData { get; set; }
+        public string encodedLengths { get; set; }
+        public string dynamicData { get; set; }
     }
 
     public struct BlockRangeType
@@ -36,9 +54,9 @@ namespace mud
         public static IObservable<FetchLogsResult> BlockRangeToLogs(this IObservable<BlockRangeType> source,
             string contractAddress, string rpcUrl)
         {
-           BigInteger? fromBlock = null;
-           BigInteger? toBlock = null; 
-           
+            BigInteger? fromBlock = null;
+            BigInteger? toBlock = null;
+
             return source.Scan(
                     seed: new BlockRangeType(),
                     accumulator: (acc, range) =>
@@ -126,7 +144,8 @@ namespace mud
             // }
         }
 
-        public static IEnumerable<StorageAdapterBlock> ToStorageAdapterBlock(FilterLog[] logs, BigInteger toBlock)
+        public static IEnumerable<StorageAdapterBlock> ToStorageAdapterBlock(FilterLog[] logs, BigInteger toBlock,
+            RxDatastore ds)
         {
             var blockNumbers = logs.Select(log => log.BlockNumber).Distinct().ToList();
             blockNumbers.Sort((a, b) => a.Value.CompareTo(b.Value));
@@ -135,11 +154,13 @@ namespace mud
             {
                 var blockNumberLogs = logs.Where(log => log.BlockNumber == blockNumber).ToList();
                 blockNumberLogs.Sort((a, b) => a.LogIndex.Value.CompareTo(b.LogIndex.Value));
+                // TODO: decide if we really want to pass in datastore here
+                var snapshotLogs = blockNumberLogs.Select(l => Common.FilterLogToSnapshotLog(l, ds));
 
                 if (blockNumberLogs.Count > 0)
                 {
                     return new StorageAdapterBlock
-                        { BlockNumber = blockNumber, Logs = blockNumberLogs.ToArray() };
+                        { BlockNumber = blockNumber, Logs = snapshotLogs.ToArray() };
                 }
 
                 return default;
@@ -151,7 +172,7 @@ namespace mud
                 groupedBlocksList.Add(new StorageAdapterBlock
                 {
                     BlockNumber = toBlock,
-                    Logs = new FilterLog[] { }
+                    Logs = new MudLog[] { }
                 });
             }
 

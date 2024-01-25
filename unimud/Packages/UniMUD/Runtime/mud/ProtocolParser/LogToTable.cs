@@ -1,11 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using mud.IStore.ContractDefinition;
 using Nethereum.ABI.FunctionEncoding;
 using Nethereum.ABI.Model;
-using Nethereum.Contracts;
-using Nethereum.RPC.Eth.DTOs;
 using UnityEngine;
 using static mud.Common;
 
@@ -13,9 +10,9 @@ namespace mud
 {
     public partial class ProtocolParser
     {
-        public static bool IsTableRegistrationLog(FilterLog log)
+        public static bool IsTableRegistrationLog(MudLog log)
         {
-            var storeConfig = MudDefinitions.DefineStoreConfig(null); 
+            var storeConfig = MudDefinitions.DefineStoreConfig(null);
             var schemasTable = storeConfig["Tables"];
             var schemasTableId = ResourceIDToHex(new ResourceID
             {
@@ -23,12 +20,8 @@ namespace mud
                 Namespace = schemasTable.Namespace,
                 Name = schemasTable.Name
             });
-            var storeSetRecordSignature =
-                new StoreSetRecordEventDTO().GetEventABI().Sha3Signature;
-            if (!log.IsLogForEvent(storeSetRecordSignature)) return false;
-            var decoded = Event<StoreSetRecordEventDTO>.DecodeEvent(log);
-            var tableId = BytesToHex(decoded.Event.TableId, 32);
-            return string.Equals(tableId, schemasTableId, StringComparison.CurrentCultureIgnoreCase);
+            if (log.eventName != "Store_SetRecord") return false;
+            return string.Equals(log.args.tableId, schemasTableId, StringComparison.CurrentCultureIgnoreCase);
         }
 
         public static readonly Dictionary<string, SchemaAbiTypes.SchemaType> RegisterValueSchema = new()
@@ -40,21 +33,16 @@ namespace mud
             { "abiEncodedFieldNames", SchemaAbiTypes.SchemaType.BYTES }
         };
 
-        public static Table LogToTable(FilterLog log)
+        public static Table LogToTable(MudLog log)
         {
-            var decoded = Event<StoreSetRecordEventDTO>.DecodeEvent(log);
-            var keyTuple = decoded.Event.KeyTuple.Select(key => BytesToHex(key)).ToList();
-            if (keyTuple.Count > 1)
+            var keyTuple = log.args.keyTuple;
+            if (keyTuple.Length > 1)
                 Debug.LogWarning(
                     "registerSchema event is expected to have only one key in key tuple, but got multiple.");
 
             var table = HexToResourceId(keyTuple[0]);
 
-            var staticData = BytesToHex(decoded.Event.StaticData);
-            var encodedLengths = BytesToHex(decoded.Event.EncodedLengths);
-            var dynamicData = BytesToHex(decoded.Event.DynamicData);
-
-            var data = ConcatHex(new[] { staticData, encodedLengths, dynamicData });
+            var data = ConcatHex(new[] { log.args.staticData, log.args.encodedLengths, log.args.dynamicData });
             var value = DecodeValue(RegisterValueSchema, data);
 
             var keySchema = HexToSchema(value["keySchema"].ToString());
@@ -82,8 +70,8 @@ namespace mud
 
             return new Table
             {
-                Address = log.Address,
-                TableId = keyTuple[0],
+                Address = log.address,
+                TableId = log.args.tableId,
                 Namespace = FormatGetRecordResult(table.Namespace)[0],
                 Name = FormatGetRecordResult(table.Name)[0],
                 KeySchema = tableKeySchema,

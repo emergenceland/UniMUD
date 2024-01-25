@@ -1,9 +1,11 @@
 # UniMUD
+
 Package for interacting with the [MUD](https://mud.dev) framework in [Unity](https://unity3d.com).
 
 ![unimud_header](https://github.com/emergenceland/UniMUD/blob/main/unimud/unimud.png?raw=true)
 
 ## Prerequisites
+
 1. git ([download](https://git-scm.com/downloads))
 2. foundry (forge, anvil, cast) ([download](https://book.getfoundry.sh/getting-started/installation), make sure to foundryup at least once)
 3. node.js (v16+) ([download](https://nodejs.org/en/download))
@@ -12,16 +14,19 @@ Package for interacting with the [MUD](https://mud.dev) framework in [Unity](htt
 6. The .NET SDK (7.0) ([download](https://dotnet.microsoft.com/en-us/download))
 
 If you are using Windows:
+
 1. Install Git Bash (gitforwindows.org)
 2. Install nodejs, including “native modules” (nodejs.org/en/download) (re native modules: just keep the checkmark, it’s enabled by default in the installer)
 3. Use Git Bash for all terminal commands
 
 ## Tankmud Written Tutorial
+
 Follow this [guide](https://gaulll.notion.site/Tankmud-Tutorial-studio-mud-03b74081dac14b998caddbd6c3db9e46) to make a basic MUD game with Unity.
 
 ![tankmud_gif](https://github.com/emergenceland/UniMUD/blob/main/templates/tankmud/packages/client/Docs/tankmud.gif?raw=true)
 
 ## Tadpol Video Tutorial
+
 [![thumbnailGit](https://github.com/emergenceland/UniMUD/assets/7606952/d2cd3765-22a3-4d13-a8b4-f93cb5ec74d3)](https://www.youtube.com/watch?v=-cRTlDlTmSU)
 
 ## Quickstart (with template)
@@ -79,16 +84,16 @@ For example, records for an entity's Position might look like:
 ```json
 [
   {
-	"tableId": "Position",
-	"key": "0x1234",
-	"x": 1,
-	"y": 2
+    "tableId": "Position",
+    "key": "0x1234",
+    "x": 1,
+    "y": 2
   },
   {
-	"tableId": "Position",
-	"key": "0x5678",
-	"x": 3,
-	"y": 4
+    "tableId": "Position",
+    "key": "0x5678",
+    "x": 3,
+    "y": 4
   }
 ]
 ```
@@ -175,22 +180,29 @@ public class Counter : MonoBehaviour {
             if (currentValue == null) return;
 
             Debug.Log("Counter is now: " + JsonConvert.SerializeObject(currentValue));
-            Instantiate(prefab, Vector3.up, Quaternion.identity); 
+            Instantiate(prefab, Vector3.up, Quaternion.identity);
         }
     }
 }
 ```
 
 ### Deploying to a testnet
+
 Select the Testnet NetworkType on the **NetworkManager** or create your own NetworkData ScriptableObject in the project window and link it.
 
 ### Limitations
+
 - Does not support setters for individual table values on contracts (must set the entire table every time)
 - Does not support pop or push array functions on contracts
-  
+
+### Using an indexer
+
+Set the `IndexerUrl` property on the NetworkData ScriptableObject you're currently using.
+
 ## Future work
-- Indexer
+
 - Caching/persistence
 
 ## License
+
 MIT
